@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 0) do
+ActiveRecord::Schema.define(version: 2024_06_25_052730) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_graphql"
@@ -21,5 +21,14 @@ ActiveRecord::Schema.define(version: 0) do
   enable_extension "plpgsql"
   enable_extension "supabase_vault"
   enable_extension "uuid-ossp"
+
+  create_table "battles", force: :cascade do |t|
+    t.integer "creator_id"
+    t.integer "opponent_id"
+    t.string "mode"
+    t.string "status"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
 
 end
