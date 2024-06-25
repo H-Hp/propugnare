@@ -1,10 +1,12 @@
 class HomeController < ApplicationController
+  before_action :set_session_id
+
   def index
     @battles = Battle.where(status: 'waiting')
   end
 
   def create
-    @battle = Battle.new(creator_id: 1, status: 'waiting' ,mode: 'typing')
+    @battle = Battle.new(creator_id: session[:user_id], status: 'waiting' ,mode: 'typing')
     if @battle.save
       redirect_to home_index_path, notice: '対戦予約が作成されました'
     else
@@ -21,4 +23,11 @@ class HomeController < ApplicationController
     end
   end
 
+  private
+
+  def set_session_id
+    unless session[:user_id]
+      session[:user_id] = SecureRandom.uuid
+    end
+  end
 end
