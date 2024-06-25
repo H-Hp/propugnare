@@ -10,6 +10,7 @@ development:
   password: <%= ENV["SUPABASE_PASSWORD"] %>
   username: <%= ENV["SUPABASE_USERNAME"] %>
   database: <%= ENV["SUPABASE_DATABASE"] %>
+  port: <%= ENV["SUPABASE_PORT"] %>
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
@@ -25,3 +26,4 @@ production:
   password: <%= ENV["SUPABASE_PASSWORD"] %>
   username: <%= ENV["SUPABASE_USERNAME"] %>
   database: <%= ENV["SUPABASE_DATABASE"] %>
+  port: <%= ENV["SUPABASE_PORT"] %>
