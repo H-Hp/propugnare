@@ -1,5 +1,21 @@
 <%= stylesheet_link_tag "home" %>
 <%= javascript_pack_tag 'home/index' %>
 
- <h1>home</h1>
+<%= button_to '対戦予約を作成', home_index_path, method: :post %>
 
+<table>
+  <thead>
+    <tr>
+      <th>作成者</th>
+      <th>アクション</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @battles.each do |battle| %>
+      <tr>
+        <td><%= battle.creator_id %></td>
+        <td><%= button_to '参加', join_home_path(battle), method: :post %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

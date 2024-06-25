@@ -1,5 +1,11 @@
 Rails.application.routes.draw do
-  root 'home#index'
-  get '/'  => 'home#index'
-  # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
+  #root 'home#index'
+  root to: "home#index"
+  #get '/'  => 'home#index'
+
+  resources :home, only: [:index, :create] do
+    member do
+      post 'join'
+    end
+  end
 end
