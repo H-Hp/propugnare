@@ -6,11 +6,11 @@ default: &default
 
 development:
   <<: *default
-  host: <%= ENV["SUPABASE_HOST"] %>
-  password: <%= ENV["SUPABASE_PASSWORD"] %>
-  username: <%= ENV["SUPABASE_USERNAME"] %>
-  database: <%= ENV["SUPABASE_DATABASE"] %>
-  port: <%= ENV["SUPABASE_PORT"] %>
+  host: <%= ENV["PROPUGNARE_SUPABASE_HOST"] %>
+  password: <%= ENV["PROPUGNARE_SUPABASE_PASSWORD"] %>
+  username: <%= ENV["PROPUGNARE_SUPABASE_USERNAME"] %>
+  database: <%= ENV["PROPUGNARE_SUPABASE_DATABASE"] %>
+  port: <%= ENV["PROPUGNARE_SUPABASE_PORT"] %>
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
@@ -22,8 +22,8 @@ test:
 production:
   <<: *default
   #database: db/production.sqlite3
-  host: <%= ENV["SUPABASE_HOST"] %>
-  password: <%= ENV["SUPABASE_PASSWORD"] %>
-  username: <%= ENV["SUPABASE_USERNAME"] %>
-  database: <%= ENV["SUPABASE_DATABASE"] %>
-  port: <%= ENV["SUPABASE_PORT"] %>
+  host: <%= ENV["PROPUGNARE_SUPABASE_HOST"] %>
+  password: <%= ENV["PROPUGNARE_SUPABASE_PASSWORD"] %>
+  username: <%= ENV["PROPUGNARE_SUPABASE_USERNAME"] %>
+  database: <%= ENV["PROPUGNARE_SUPABASE_DATABASE"] %>
+  port: <%= ENV["PROPUGNARE_SUPABASE_PORT"] %>
