@@ -8,7 +8,7 @@ class HomeController < ApplicationController
   def create
     @battle = Battle.new(creator_id: session[:user_id], status: 'waiting' ,mode: 'typing')
     if @battle.save
-      redirect_to home_index_path, notice: '対戦予約が作成されました'
+      redirect_to root_path, notice: '対戦予約が作成されました'
     else
       render :index
     end
@@ -16,10 +16,11 @@ class HomeController < ApplicationController
 
   def join
     @battle = Battle.find(params[:id])
-    if @battle.update(opponent_id: 2, status: 'matched')
-      redirect_to home_index_path, notice: '対戦に参加しました'
+    if @battle.update(opponent_id: session[:user_id], status: 'matched')
+      redirect_to root_path, notice: '対戦に参加しました'
+      #ifでリダイレクト先
     else
-      redirect_to home_index_path, alert: '対戦への参加に失敗しました'
+      redirect_to root_path, alert: '対戦への参加に失敗しました'
     end
   end
 
