@@ -3,6 +3,7 @@ class HomeController < ApplicationController
 
   def index
     @battles = Battle.where(status: 'waiting')
+    #@battles = 1
   end
 
   def create
