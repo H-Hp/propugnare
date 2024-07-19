@@ -600,6 +600,7 @@ video {
 .border-double {
     border-style: double;
 }
+/*
 .border-gray-500 {
     --tw-border-opacity: 1;
     border-color: rgb(107 114 128 / var(--tw-border-opacity));
@@ -632,9 +633,12 @@ video {
     --tw-bg-opacity: 1;
     background-color: rgb(55 65 81 / var(--tw-bg-opacity));
     background-image: url('icon.svg');
+/*
     /*
     background-image: url('OIG3.opZ66U3f.jpeg');
     #252418 url("data:image/svg+xml,%3Csvg viewBox='-2.5 -2.5 45 55' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 20 0 L 33 4 L 23 50 L 0 50 L 7 4 Z' style='fill:none;stroke:%23383633;stroke-width:2.5;stroke-opacity:1;' /%3E%3C/svg%3E")*/
+
+/*
 }
 .bg-gray-800 {
     --tw-bg-opacity: 1;
@@ -996,7 +1000,7 @@ video {
         flex-wrap: wrap;
     }
 }
-
+*/
 
 
 
