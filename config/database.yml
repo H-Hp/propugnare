@@ -23,8 +23,8 @@ test:
 production:
   <<: *default
   #database: db/production.sqlite3
-  host: <%= ENV["PROPUGNARE_SUPABASE_HOST"] %>
-  password: <%= ENV["PROPUGNARE_SUPABASE_PASSWORD"] %>
-  username: <%= ENV["PROPUGNARE_SUPABASE_USERNAME"] %>
-  database: <%= ENV["PROPUGNARE_SUPABASE_DATABASE"] %>
-  port: <%= ENV["PROPUGNARE_SUPABASE_PORT"] %>
+  host: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_HOST] %>
+  password: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PASSWORD] %>
+  username: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_USERNAME] %>
+  database: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_DATABASE] %>
+  port: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PORT] %>
