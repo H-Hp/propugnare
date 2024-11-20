@@ -17,6 +17,7 @@
   },
   "version": "0.1.0",
   "devDependencies": {
-    "webpack-dev-server": "^3"
+    "webpack-dev-server": "^3",
+    "@babel/plugin-transform-private-methods": "^7.18.6"
   }
 }
