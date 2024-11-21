@@ -1,0 +1,74 @@
+
+
+body {
+  font: 14px "Century Gothic", Futura, sans-serif;
+  margin: 20px;
+}
+
+.board-row:after {
+  clear: both;
+  content: "";
+  display: table;
+}
+
+.square {
+  position: relative;
+  background: #FFCC00;
+  border: 1px solid #999;
+  float: left;
+  /*height: 34px;width: 34px;
+  height: 50%;width: 50%;*/
+  height: 50px;width: 50px;
+  margin-right: -1px;
+  margin-top: -1px;
+  padding: 0;
+  
+}
+
+.square p {
+  margin-top: 1px;
+  color: yellow;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.square:focus {
+  outline: none;
+}
+
+.kbd-navigation .square:focus {
+  background: #ddd;
+}
+
+.game {
+  display: flex;
+  flex-direction: row;
+  justify-content: center
+}
+
+#未選択.square {
+  background: rgba(0, 0, 0, .5);
+}
+
+#選択状態.square {
+  background: red;
+}
+
+#配置可能.square {
+  background: yellow;
+}
+
+#持駒.square {
+  background: darkgoldenrod;
+}
+
+img {
+  width: 50px;
+  /*width: 28px;*/
+}
+
+img#後手 {
+  transform: scale(-1, -1);
+}
+
