@@ -1,14 +1,14 @@
-class Piece {
+class Piece {// 駒の基底クラス
   constructor(owner) {
-      this.owner = owner;
+      this.owner = owner;// 駒の所有者（"先手" or "後手"）
   }
-  getPiece() {
+  getPiece() {// 成り駒を元の駒に戻す
       return null;
   }
-  getPromotedPiece() {
+  getPromotedPiece() { // 成り駒を取得
       return null;
   }
-  static getPieceByName(name, owner) {
+  static getPieceByName(name, owner) { // 駒の名前から対応する駒のインスタンスを生成
       switch (name) {
           case "飛":
               return new Rook(owner);
@@ -30,21 +30,26 @@ class Piece {
   }
 }
 
-class Blank extends Piece {
+class Blank extends Piece {// それぞれの駒の種類と移動ルールを定義する
 }
+
+// 各駒のクラス
+// dx: 移動可能な横方向の差分
+// dy: 移動可能な縦方向の差分
+// dk: その方向に何マス動けるか
 
 class King extends Piece {
   name = "玉";
-  dx = [-1, -1, -1, 0, 1, 1, 1, 0];
+  dx = [-1, -1, -1, 0, 1, 1, 1, 0];// 8方向に1マスずつ
   dy = [-1, 0, 1, 1, 1, 0, -1, -1];
   dk = [1, 1, 1, 1, 1, 1, 1, 1];
 }
 
 class Rook extends Piece {
   name = "飛";
-  dx = [-1, 0, 1, 0];
+  dx = [-1, 0, 1, 0]; // 上下左右
   dy = [0, 1, 0, -1];
-  dk = [10, 10, 10, 10];
+  dk = [10, 10, 10, 10];// 何マスでも動ける
   getPromotedPiece() {
       return new PromotedRook(this.owner);
   }

@@ -13,11 +13,12 @@
     "react-dom": "^18.3.1",
     "turbolinks": "^5.2.0",
     "webpack": "^4.46.0",
-    "webpack-cli": "^3.3.12"
+    "webpack-cli": "^3.3.12",
+    "ws": "^8.18.0"
   },
   "version": "0.1.0",
   "devDependencies": {
-    "webpack-dev-server": "^3",
-    "@babel/plugin-transform-private-methods": "^7.18.6"
+    "@babel/plugin-transform-private-methods": "^7.18.6",
+    "webpack-dev-server": "^3"
   }
 }

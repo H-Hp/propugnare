@@ -1,1 +1,123 @@
-<%= react_component("Shogi") %>
+
+<div id="game-container" data-game-id="<%= @game_id %>">
+
+<%= react_component("Shogi", { gameId: @game_id }) %>
+
+<!--
+<form id="shogi-form">
+  <input type="text" id="shogi-input" placeholder="shogi">
+  <button type="submit">Send</button>
+</form>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+
+    const socket = new WebSocket('ws://localhost:3000/cable');
+    
+    socket.onopen = () => {
+      socket.send(JSON.stringify({
+        command: 'subscribe',
+        identifier: JSON.stringify({ channel: 'GameChannel', game_id: <%= @game_id %> 
+        })
+      }));
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      // Skip connection confirmation messages
+      //console.log("サーバーからメッセージを受信したときの処理: "+data)
+
+      if (data.type === 'ping' || data.type === 'welcome' || data.type === 'confirm_subscription') return;
+      if (data.message) {
+        //const message = JSON.parse(data.message);
+        console.log("32サーバーからメッセージを受信したときの処理: "+data.message.move)
+        console.dir(data.message.move);
+      }
+      //this.handleChannelMessage(message);
+    };
+
+    const shogiForm = document.getElementById('shogi-form');
+
+    // フォーム送信時の処理
+    shogiForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      send_socket(1)
+    });
+
+    //function send_socket(move){
+    window.send_socket = function(move) {
+      // メッセージをサーバーに送信
+      socket.send(JSON.stringify({
+        command: 'message',
+        identifier: JSON.stringify({ channel: 'GameChannel' ,game_id: <%= @game_id %> }),
+        data: JSON.stringify({ action: 'make_move', game_id: <%= @game_id %>, move: move  })
+      }));
+    }
+  });
+
+
+</script>
+-->
+
+<h1>Chat<%= @game_id %></h1>
+
+<!-- チャットメッセージを表示する領域 -->
+<div id="chat-messages"></div>
+
+<!-- メッセージ入力フォーム -->
+<form id="chat-form">
+  <input type="text" id="chat-input" placeholder="Type a message...">
+  <button type="submit">Send</button>
+</form>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const chatMessages = document.getElementById('chat-messages');
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+
+    
+    const chat_socket = new WebSocket('ws://' + window.location.host + '/cable');// WebSocket接続を確立
+
+    // WebSocket接続が開いたときの処理
+    chat_socket.onopen = () => {
+      console.log('WebSocket connected');
+      // ChatChannelにサブスクライブ
+      chat_socket.send(JSON.stringify({
+        command: 'subscribe',
+        identifier: JSON.stringify({ channel: 'ChatChannel' })
+      }));
+    };
+
+    // サーバーからメッセージを受信したときの処理
+    chat_socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      //console.log("chat_socket サーバーからメッセージを受信したときの処理: "+data)
+
+      if (data.type === 'ping') return; // pingメッセージは無視
+      if (data.message) {
+        console.log("w222chat_socket サーバーからメッセージを受信したときの処理: "+data.message)
+
+        // 受信したメッセージをDOMに追加
+        const messageElement = document.createElement('p');
+        messageElement.textContent = data.message.message;
+        console.log(data.message.message)
+        chatMessages.appendChild(messageElement);
+      }
+    };
+
+    // フォーム送信時の処理
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const message = chatInput.value;
+      if (message) {
+        // メッセージをサーバーに送信
+        chat_socket.send(JSON.stringify({
+          command: 'message',
+          identifier: JSON.stringify({ channel: 'ChatChannel' }),
+          data: JSON.stringify({ action: 'speak', message: message })
+        }));
+        chatInput.value = ''; // 入力欄をクリア
+      }
+    });
+  });
+</script>
