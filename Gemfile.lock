@@ -67,6 +67,7 @@ GEM
     babel-transpiler (0.7.0)
       babel-source (>= 4.0, < 6)
       execjs (~> 2.0)
+    bigdecimal (3.1.9)
     bindex (0.8.1)
     bootsnap (1.18.3)
       msgpack (~> 1.2)
@@ -88,6 +89,8 @@ GEM
     connection_pool (2.4.1)
     crass (1.0.6)
     date (3.3.4)
+    dockerfile-rails (1.7.9)
+      rails (>= 3.0.0)
     erubi (1.13.0)
     execjs (2.10.0)
     ffi (1.17.0)
@@ -205,6 +208,12 @@ GEM
       rubyzip (>= 1.2.2, < 3.0)
       websocket (~> 1.0)
     semantic_range (3.0.0)
+    sentry-rails (5.23.0)
+      railties (>= 5.0)
+      sentry-ruby (~> 5.23.0)
+    sentry-ruby (5.23.0)
+      bigdecimal
+      concurrent-ruby (~> 1.0, >= 1.0.2)
     set (1.0.4)
     sidekiq (7.3.6)
       connection_pool (>= 2.3.0)
@@ -264,6 +273,7 @@ DEPENDENCIES
   bunny
   byebug
   capybara (>= 3.26)
+  dockerfile-rails (>= 1.7)
   jbuilder (~> 2.7)
   listen (~> 3.3)
   pg
@@ -274,6 +284,8 @@ DEPENDENCIES
   redis
   sass-rails (>= 6)
   selenium-webdriver (>= 4.0.0.rc1)
+  sentry-rails (~> 5.23)
+  sentry-ruby (~> 5.23)
   sidekiq
   spring
   sqlite3 (~> 1.4)
