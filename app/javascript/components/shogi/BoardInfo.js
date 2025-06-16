@@ -1,152 +1,174 @@
-import { Piece, Blank, King, Rook, Bishop, GoldGeneral, SilverGeneral, Knight, Lance, Pawn } from './Pieces';
+//import { Piece, Blank, King, Rook, Bishop, GoldGeneral, SilverGeneral, Knight, Lance, Pawn } from './Pieces';
+import { Piece, Blank, King, Rook, Bishop, GoldGeneral, SilverGeneral, Knight, Lance, Pawn, PromotedRook,PromotedBishop,PromotedSilverGeneral,PromotedKnight,PromotedLance,PromotedPawn } from './Pieces';
 
-class BoardInfo {// 将棋盤の状態や操作を管理するクラス
-   
-    constructor(props) {
-        //this.socket = null;
-        console.log("BoardInfo: props :" +props)
-        const gameId = props
-        /*const socket = new WebSocket('ws://' + window.location.host + '/cable');// WebSocket接続を確立
-        this.socket.onopen = () => {// WebSocket接続が開いたときの処理
-          console.log('GameChannel_WebSocket connected');
-          this.socket.send(JSON.stringify({// ChatChannelにサブスクライブ
-            command: 'subscribe',
-            identifier: JSON.stringify({ channel: 'GameChannel', game_id: gameId })
-          }));
-        };
-        this.socket.onmessage = (event) => {// サーバーからメッセージを受信したときの処理
-          const data = JSON.parse(event.data);
-          if (data.type === 'ping') return; // pingメッセージは無視
-          if (data.message) {
-            // 受信したメッセージをDOMに追加
-            console.log("サーバーからメッセージを受信したときの処理: "+data.message.message)
-          }
-        };*/
+class BoardInfo {
 
-
-        
-
-        
-        this.turn = "先手";// 現在の手番（"先手" or "後手"）
-        // 盤面の初期配置を設定
-        this.board = [
-        // 後手の駒の初期配置（1段目）
-        [new Lance("後手"), new Knight("後手"), new SilverGeneral("後手"), new GoldGeneral("後手"), new King("後手"), new GoldGeneral("後手"), new SilverGeneral("後手"), new Knight("後手"), new Lance("後手")],// 後手の駒の初期配置
-        // 2段目：飛車と角
-        [new Blank(), new Rook("後手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Bishop("後手"), new Blank()],
-        // 3段目：歩兵
-        [new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手")],
-        // 4-6段目：空白
-        [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
-        [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
-        [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
-        // 7段目：先手の歩兵
-        [new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手")],
-        // 8段目：角と飛車
-        [new Blank(), new Bishop("先手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Rook("先手"), new Blank()],
-        // 9段目：その他の駒
-        [new Lance("先手"), new Knight("先手"), new SilverGeneral("先手"), new GoldGeneral("先手"), new King("先手"), new GoldGeneral("先手"), new SilverGeneral("先手"), new Knight("先手"), new Lance("先手")]
+    // initialDataがない場合は、デフォルトの初期盤面を生成
+    constructor(initialData = {}) {
+        // デフォルトの初期盤面データ
+        const defaultBoard = [
+            [new Lance("後手"), new Knight("後手"), new SilverGeneral("後手"), new GoldGeneral("後手"), new King("後手"), new GoldGeneral("後手"), new SilverGeneral("後手"), new Knight("後手"), new Lance("後手")],
+            [new Blank(), new Rook("後手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Bishop("後手"), new Blank()],
+            [new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手")],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手")],
+            [new Blank(), new Bishop("先手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Rook("先手"), new Blank()],
+            [new Lance("先手"), new Knight("先手"), new SilverGeneral("先手"), new GoldGeneral("先手"), new King("先手"), new GoldGeneral("先手"), new SilverGeneral("先手"), new Knight("先手"), new Lance("先手")]
         ];
-        this.selection = new Selection();// 選択状態を管理するオブジェクトを初期化
-        this.pieceStandNum = {// 各プレイヤーの持ち駒の数を管理
+        const defaultSelection = new Selection();
+        const defaultPieceStandNum = {
             "先手": { "歩": 0, "香": 0, "桂": 0, "銀": 0, "金": 0, "角": 0, "飛": 0 },
             "後手": { "歩": 0, "香": 0, "桂": 0, "銀": 0, "金": 0, "角": 0, "飛": 0 }
         };
-        this.pieceStand = {// 持ち駒台の状態を管理（各プレイヤーごとに9マスの配列）
+        const defaultPieceStand = {
             "先手": [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
             "後手": [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()]
         };
+
+
+
+        // initialData.board が存在しない、または配列でない場合はデフォルトボードを使用
+        // 存在する場合はデシリアライズして復元
+        //console.log("initialData.board:"+initialData.board)
+        //console.log("initialData.board:"+JSON.stringify(initialData.BoardInfo))
+        //console.log("initialData.board.board:"+JSON.stringify(initialData.BoardInfo.board))
+        //console.log("initialData.board.board:"+JSON.stringify(JSON.parse(initialData.BoardInfo).board))
+        //console.log("initialData.board.board:"+JSON.stringify(JSON.parse(initialData.BoardInfo).board))
+
+        //console.log("defaultBoard:"+JSON.stringify(defaultBoard))
+        //console.log("initialData:"+JSON.stringify(initialData))
+
+        
+        if (Object.keys(initialData).length === 0) {// 初期値（空オブジェクト）のとき
+            //console.log("initialDataが空の時");
+            this.board = this.deserializeBoard(defaultBoard);
+        }else{//initialDataにデータが入っている場合
+            //console.log("initialDataが空じゃない時:"+JSON.stringify(initialData.BoardInfo.board));
+            //console.log("initialDataが空じゃない時:");
+            //const boardData = initialData.BoardInfo.board;
+            this.board = this.deserializeBoard(initialData.BoardInfo.board);
+        }
+        //this.board = this.deserializeBoard(initialData.board || defaultBoard);
+        //this.board = this.deserializeBoard(initialData.BoardInfo || defaultBoard);
+        //this.board = this.deserializeBoard(initialData.BoardInfo.board || defaultBoard);
+        //this.turn = initialData.turn || "先手";
+        this.turn = initialData.currentPlayer || "先手";
+
+        // selection の復元
+        // JSON.parse(JSON.stringify())でディープコピーし、必要に応じて駒を再構築
+        this.selection = initialData.selection ? JSON.parse(JSON.stringify(initialData.selection)) : defaultSelection;
+        if (this.selection.pieceStandPiece && this.selection.pieceStandPiece.name) {
+            this.selection.pieceStandPiece = this.deserializePiece(this.selection.pieceStandPiece);
+        } else {
+            this.selection.pieceStandPiece = {}; // 無効な場合は空オブジェクトに設定
+        }
+
+        // pieceStandNum は通常プレーンなデータなので、ディープコピーでOK
+        this.pieceStandNum = initialData.pieceStandNum ? JSON.parse(JSON.stringify(initialData.pieceStandNum)) : defaultPieceStandNum;
+
+        // pieceStand のデシリアライズ
+        this.pieceStand = this.deserializePieceStand(initialData.pieceStand || defaultPieceStand);
+
+        // メソッドのバインド (必要に応じて)
+        this.boardClick = this.boardClick.bind(this);
+        this.makePieceStand = this.makePieceStand.bind(this);
+        this.checkCanPutBoard = this.checkCanPutBoard.bind(this);
+        this.existCanMove = this.existCanMove.bind(this);
+        this.checkPromote = this.checkPromote.bind(this);
+        //this.canPromote = this.canPromote.bind(this);
+        this.getBoardState = this.getBoardState.bind(this);
+        
+        /*this.turn = "先手";
+        this.board = [[new Lance("後手"), new Knight("後手"), new SilverGeneral("後手"), new GoldGeneral("後手"), new King("後手"), new GoldGeneral("後手"), new SilverGeneral("後手"), new Knight("後手"), new Lance("後手")],
+        [new Blank(), new Rook("後手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Bishop("後手"), new Blank()],
+        [new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手")],
+        [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+        [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+        [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+        [new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手")],
+        [new Blank(), new Bishop("先手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Rook("先手"), new Blank()],
+        [new Lance("先手"), new Knight("先手"), new SilverGeneral("先手"), new GoldGeneral("先手"), new King("先手"), new GoldGeneral("先手"), new SilverGeneral("先手"), new Knight("先手"), new Lance("先手")]
+        ];
+        this.selection = new Selection();
+        this.pieceStandNum = {
+            "先手": { "歩": 0, "香": 0, "桂": 0, "銀": 0, "金": 0, "角": 0, "飛": 0 },
+            "後手": { "歩": 0, "香": 0, "桂": 0, "銀": 0, "金": 0, "角": 0, "飛": 0 }
+        };
+        this.pieceStand = {
+            "先手": [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            "後手": [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()]
+        };*/
     }
 
-    boardClick(i, j) {// 盤上のマスがクリックされた時の処理
-        if (this.selection.state) {// 既に駒が選択されている場合の処理
+    boardClick(i, j) {
+        if (this.selection.state) {
+            //console.log(`this.board[i][j].getPiece()：${this.board[i][j].getPiece()}`)
             if (this.selection.boardSelectInfo[i][j] !== "配置可能") {
-                console.log("配置可能じゃないから終了");
                 return;
             }
-            let myPiece;// 駒の移動処理
-            if (this.selection.pieceStandPiece.name) {// 持ち駒を置く場合
-                console.log("持ち駒を置く場合");
+            let myPiece;
+            if (this.selection.pieceStandPiece.name) {
                 myPiece = this.selection.pieceStandPiece;
-                this.pieceStandNum[this.turn][myPiece.name] -= 1;//持ち駒から引く
-                this.makePieceStand();// 持ち駒台を更新
-            } else {// 盤上の駒を動かす場合
-                console.log("盤上の駒を動かす場合");
+                this.pieceStandNum[this.turn][myPiece.name] -= 1;
+                this.makePieceStand();
+            } else {
                 myPiece = this.board[this.selection.before_i][this.selection.before_j];
                 this.board[this.selection.before_i][this.selection.before_j] = new Blank();
-                
-                // 移動先に相手の駒がある場合の処理
-                let yourPiece = this.board[i][j];// 相手の駒を取る場合の処理
+                let yourPiece = this.board[i][j];
                 if (yourPiece.name) {
                     if (yourPiece.getPiece()) {
-                        yourPiece = yourPiece.getPiece();// 成り駒を元の駒に戻す
+                        yourPiece = yourPiece.getPiece();
                     }
-                    this.pieceStandNum[myPiece.owner][yourPiece.name] += 1;// 持ち駒に追加
-                    this.makePieceStand();// 持ち駒台を更新
+                    this.pieceStandNum[myPiece.owner][yourPiece.name] += 1;
+                    this.makePieceStand();
                 }
-                // 成りの可能性をチェック
-                //existCanMoveは、その駒が(i, j)の位置に移動可能かどうかをチェックする関数
-                console.log("ii: "+i);
-                console.log("jj: "+j);
-                console.log("myPiece: "+JSON.stringify(myPiece));
-                if (this.existCanMove(i, j, myPiece)) {// 成りの確認
-                    console.log("成ることができる位置にいるかをチェックし、成れる場合は成った駒を返す");
-                    //checkPromoteは、その駒が成ることができる位置にいるかをチェックし、成れる場合は成った駒を返す関数です・i（移動先の段）とbefore_i（移動元の段）を比較して、敵陣に入ったかどうかを判断
+                if (this.existCanMove(i, j, myPiece)) {
                     myPiece = this.checkPromote(myPiece, i, this.selection.before_i);
-                    console.log("成りmyPiece "+JSON.stringify(myPiece));
                 } else {
-                    //// 移動できない場合は、強制的に成り駒になります（例：歩が最奥の段に到達した場合は必ず成る必要がある）
                     myPiece = myPiece.getPromotedPiece();
-                    console.log("強制成りmyPiece "+JSON.stringify(myPiece));
                 }
             }
-            this.board[i][j] = myPiece;// 駒を移動先に配置
-            this.turn = this.turn === "先手" ? "後手" : "先手";// 手番を交代
+                
+            this.board[i][j] = myPiece;
+            this.turn = this.turn === "先手" ? "後手" : "先手";
+            //return true; // コマが動いた
+            return {
+                //newBoardState: this.getBoardState(), // 変更後の盤面状態を返す
+                BoardInfo: this.getBoardState(), // 変更後の盤面状態を返す
+                moved: true,// 駒が動いた場合
+                //moveDetails: this.board[i][j]
+                move: this.board[i][j],
+                currentPlayer: this.turn
+            };
 
-    
-
-
-            //window.send_socket(gameState);
-
-
-            // WebSocketでメッセージをサーバーに送信
-            /*const moveData = {x: 1,y: 2};
-            socket.send(JSON.stringify({
-                command: 'message',
-                identifier: JSON.stringify({
-                    channel: 'GameChannel',
-                    game_id: 2
-                }),
-                data: JSON.stringify({
-                    action: 'make_move',
-                    game_id: 2,
-                    move: moveData
-                })
-            }));
-            */
-
-
-        } else {// 新しく駒を選択する場合
+        } else {
             if (this.turn !== this.board[i][j].owner) {
-                return;// 自分の駒でない場合は選択不可
+                return;
             }
-            // 選択状態を設定
             this.selection.isNow = true;
             this.selection.state = true;
             this.selection.before_i = i;
             this.selection.before_j = j;
-            // 選択状態をリセット
             this.selection.boardSelectInfo = JSON.parse(JSON.stringify((new Array(9)).fill((new Array(9)).fill("未選択"))));
             this.selection.pieceStandSelectInfo = {
                 "先手": Array(9).fill("未選択"),
                 "後手": Array(9).fill("未選択")
             };
-            this.selection.boardSelectInfo[i][j] = "選択状態";// クリックされたマスを選択状態に
-            this.checkCanPutBoard(i, j);// 移動可能なマスをチェック
+            this.selection.boardSelectInfo[i][j] = "選択状態";
+            this.checkCanPutBoard(i, j);
+            return {
+                //newBoardState: this.getBoardState(), // 変更後の盤面状態を返す
+                BoardInfo: this.getBoardState(), // 変更後の盤面状態を返す
+                moved: false,// 駒が動いた場合
+                //moveDetails: this.board[i][j]
+                move: this.board[i][j],
+                currentPlayer: this.turn
+            };
         }
     }
 
-    // 指定位置に駒が移動可能かをチェック//existCanMoveは、その駒が(i, j)の位置に移動可能かどうかをチェックする関数
     existCanMove(i, j, piece) {
         for (let l = 0; l < piece.dx.length; l++) {
             let y = i;
@@ -160,16 +182,14 @@ class BoardInfo {// 将棋盤の状態や操作を管理するクラス
         return false;
     }
 
-    // 成りが可能な場合の処理
     checkPromote(piece, i, before_i) {
-        console.dir("checkPromoteのpiece: "+JSON.stringify(piece));
-        console.dir("checkPromoteのi: "+i);
-        console.dir("checkPromoteのbefore_i: "+before_i);
-        console.dir("checkPromoteの!piece.getPromotedPiece(): "+JSON.stringify(!piece.getPromotedPiece()));
+        //console.dir("checkPromoteのpromotedPieceCandidate: "+JSON.stringify(piece.getPromotedPiece()));
+        console.log(`piece：${JSON.stringify(piece)}`);
+        console.log(`typeof piece.getPromotedPiece：${typeof piece.getPromotedPiece}`);
+
         if (!piece.getPromotedPiece()) {
             return piece;
         }
-        // 成り可能エリアを判定
         const promoteAreaMinY = piece.owner === "先手" ? 0 : 6;
         const promoteAreaMaxY = piece.owner === "先手" ? 2 : 8;
         if ((promoteAreaMinY <= i && i <= promoteAreaMaxY) || (promoteAreaMinY <= before_i && before_i <= promoteAreaMaxY)) {
@@ -180,7 +200,6 @@ class BoardInfo {// 将棋盤の状態や操作を管理するクラス
         return piece;
     }
 
-    // 選択された駒の移動可能なマスをチェック
     checkCanPutBoard(i, j) {
         const piece = this.board[i][j];
         for (let l = 0; l < piece.dx.length; l++) {
@@ -190,23 +209,21 @@ class BoardInfo {// 将棋盤の状態や操作を管理するクラス
                 y += this.turn === "先手" ? piece.dy[l] : -piece.dy[l];
                 x += this.turn === "先手" ? piece.dx[l] : -piece.dx[l];
                 if (y < 0 || y > 8 || x < 0 || x > 8 || this.board[y][x].owner === piece.owner) {
-                    break;// 盤外や自分の駒がある場合は移動不可
+                    break;
                 }
                 this.selection.boardSelectInfo[y][x] = "配置可能";
                 if (!this.board[y][x].owner) {
-                    continue;// 空マスの場合は続行
+                    continue;
                 }
-                break;// 相手の駒がある場合はそこまで
+                break;
             }
         }
     }
 
-    // 持ち駒がクリックされた時の処理
     pieceStandClick(piece) {
         if (this.selection.state || this.turn !== piece.owner) {
-            return;// 既に選択状態か、自分の持ち駒でない場合は処理しない
+            return;
         }
-        // 選択状態を設定
         this.selection.isNow = true;
         this.selection.state = true;
         this.selection.boardSelectInfo = JSON.parse(JSON.stringify((new Array(9)).fill((new Array(9)).fill("未選択"))));
@@ -215,43 +232,36 @@ class BoardInfo {// 将棋盤の状態や操作を管理するクラス
             "先手": Array(9).fill("未選択"),
             "後手": Array(9).fill("未選択")
         };
-        // 持ち駒台での選択位置を記録
         const i = this.pieceStand[piece.owner].findIndex(p => p.name === piece.name);
         this.selection.pieceStandSelectInfo[this.turn][i] = "選択状態";
-        this.checkCanPutPieceStand(piece);// 配置可能な場所をチェック
+        this.checkCanPutPieceStand(piece);
     }
 
-    // 持ち駒台の状態を更新
     makePieceStand() {
         let myPieceStand = [];
         const myPieceStandNum = this.pieceStandNum[this.turn];
-        // 持ち駒の数に応じて駒オブジェクトを作成
         for (let name in myPieceStandNum) {
             if (myPieceStandNum[name] > 0) {
                 myPieceStand.push(Piece.getPieceByName(name, this.turn));
             }
         }
-        // 9マスになるまで空マスで埋める
         while (myPieceStand.length < 9) {
             myPieceStand.push(new Blank());
         }
         this.pieceStand[this.turn] = myPieceStand;
     }
 
-    // 持ち駒を配置可能な場所をチェック
     checkCanPutPieceStand(piece) {
         let pawnColMemo = Array(9).fill(true);
-        // 歩の場合は二歩のチェックを行う
         if (piece.name === "歩") {
             for (let i = 0; i < 9; i++) {
                 for (let j = 0; j < 9; j++) {
                     if (this.board[i][j].name === "歩" && this.board[i][j].owner === piece.owner) {
-                        pawnColMemo[j] = false;// 既に歩がある列は配置不可
+                        pawnColMemo[j] = false;
                     }
                 }
             }
         }
-        // 配置可能な場所をチェック
         for (let i = 0; i < 9; i++) {
             for (let j = 0; j < 9; j++) {
                 if (!this.board[i][j].owner && this.existCanMove(i, j, piece) && pawnColMemo[j]) {
@@ -261,19 +271,126 @@ class BoardInfo {// 将棋盤の状態や操作を管理するクラス
         }
     }
 
+
+
+
+    //新規追加した処理
+    // 盤面上の駒をクラスインスタンスに再構築するヘルパーメソッド
+    deserializeBoard(boardData) {
+        if (!Array.isArray(boardData)) {
+            console.warn("deserializeBoard: received boardData is not an array. Initializing with empty board.", boardData);
+            return Array(9).fill(null).map(() => Array(9).fill(new Blank()));
+        }
+        return boardData.map(row => {
+            if (!Array.isArray(row)) {
+                console.warn("deserializeBoard: received row is not an array. Initializing with empty row.", row);
+                return Array(9).fill(new Blank());
+            }
+            return row.map(pieceData => {
+                return this.deserializePiece(pieceData);
+            });
+        });
+    }
+
+    // 駒台の駒をクラスインスタンスに再構築するヘルパーメソッド
+    deserializePieceStand(pieceStandData) {
+        if (!pieceStandData) {
+            return { "先手": Array(9).fill({}), "後手": Array(9).fill({}) };
+        }
+
+        const deserializedStand = {};
+        for (const owner in pieceStandData) {
+            if (pieceStandData.hasOwnProperty(owner)) {
+                if (Array.isArray(pieceStandData[owner])) {
+                    deserializedStand[owner] = pieceStandData[owner].map(pieceDataItem => {
+                        return this.deserializePiece(pieceDataItem);
+                    });
+                } else {
+                    console.warn(`deserializePieceStand: pieceStandData[${owner}] is not an array. Initializing with empty stand.`);
+                    deserializedStand[owner] = Array(9).fill({});
+                }
+            }
+        }
+        return deserializedStand;
+    }
+
+    // 個々の駒データをクラスインスタンスに変換する汎用ヘルパー
+    deserializePiece(pieceData) {
+        if (!pieceData || !pieceData.name || !pieceData.owner) {
+            return new Blank();
+        }
+
+        switch (pieceData.name) {
+            case "竜": return new PromotedRook(pieceData.owner);
+            case "馬": return new PromotedBishop(pieceData.owner);
+            case "成銀": return new PromotedSilverGeneral(pieceData.owner);
+            case "成桂": return new PromotedKnight(pieceData.owner);
+            case "成香": return new PromotedLance(pieceData.owner);
+            case "と": return new PromotedPawn(pieceData.owner);
+            case null: return new Blank();
+            default:
+                const pieceInstance = Piece.getPieceByName(pieceData.name, pieceData.owner);
+                return pieceInstance || new Blank();
+        }
+    }
+
+
+
+    // ... (getBoardState およびその他のゲームロジックメソッド)
+    // 例えば、getBoardState メソッドは、現在の BoardInfo インスタンスの状態を
+    // サーバーに送るためのプレーンなオブジェクト形式で返すようにします
+    getBoardState() {
+        // 各駒インスタンスをプレーンなオブジェクトに変換して返す
+        const serializedBoard = this.board.map(row =>
+            row.map(piece => ({
+                owner: piece.owner,
+                name: piece.name,
+                // dx, dy, dk などはクライアント側でのみ必要な情報なので、サーバーに送る必要がない場合が多い
+                // 必要であればここに含める
+            }))
+        );
+
+        const serializedPieceStand = {};
+        for (const owner in this.pieceStand) {
+            serializedPieceStand[owner] = this.pieceStand[owner].map(piece => ({
+                owner: piece.owner,
+                name: piece.name
+            }));
+        }
+
+        // selectionもそのまま送るか、必要な情報だけ抽出して送る
+        const serializedSelection = JSON.parse(JSON.stringify(this.selection));
+        // selection.pieceStandPiece にインスタンスが入っている場合、これもシリアライズ
+        if (serializedSelection.pieceStandPiece && serializedSelection.pieceStandPiece.name) {
+            serializedSelection.pieceStandPiece = {
+                owner: serializedSelection.pieceStandPiece.owner,
+                name: serializedSelection.pieceStandPiece.name
+            };
+        }
+
+
+        return {
+            turn: this.turn,
+            board: serializedBoard,
+            selection: serializedSelection,
+            pieceStandNum: JSON.parse(JSON.stringify(this.pieceStandNum)), // 駒台の数はそのまま送れる
+            pieceStand: serializedPieceStand,
+        };
+    }
+    //新規追加ここまで
 }
 
 class Selection {
-    boardSelectInfo = JSON.parse(JSON.stringify((new Array(9)).fill((new Array(9)).fill(""))));// 盤面上の選択状態を管理する9x9の配列
-    isNow = false;// 現在選択中かどうか
-    state = false;// 選択状態
-    before_i = null;// 前回選択した位置（行）
-    before_j = null;// 前回選択した位置（列）
+    boardSelectInfo = JSON.parse(JSON.stringify((new Array(9)).fill((new Array(9)).fill(""))));
+    isNow = false;
+    state = false;
+    before_i = null;
+    before_j = null;
     pieceStandSelectInfo = {
         "先手": Array(9).fill("持駒"),
         "後手": Array(9).fill("持駒")
     };
-    pieceStandPiece = new Blank();// 選択中の持ち駒
+    pieceStandPiece = new Blank();
 }
 
 export { BoardInfo, Selection };

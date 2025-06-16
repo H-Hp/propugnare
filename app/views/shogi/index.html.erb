@@ -1,7 +1,73 @@
 
-<div id="game-container" data-game-id="<%= @game_id %>">
 
-<%= react_component("Shogi", { gameId: @game_id }) %>
+<script src="https://cdn.tailwindcss.com"></script>
+
+
+<%#= react_component("Shogi", { gameId: @game_id }) %>
+
+<!--
+react-rails というGemが提供するヘルパーメソッド react_component
+shogi/indexはコンポーネント名でもいい・例えばShogiとか
+2つ目の引数はわたす値
+3つ目の引数レンダリングオプション（例：prerender: falseはサーバーサイドレンダリングを無効にする）-->
+<%#= react_component("shogi/index", {gameId: @game_id}, { prerender: false }) %>
+<%= react_component("shogi/index", {gameId: @game_id}) %>
+
+<div id="game-container" data-game-id="<%= @game_id %>" data-room-id="<%= @room_id %>">
+
+
+<div class="room-id" id="room-id">
+  部屋番号<%= @room_id %>
+
+<!--  Redisデータ<#%= @game_data %>
+  boardデータ<#%= @game_data["board"] %>
+  last_move<#%= @game_data["last_move"] %>
+  currentPlayer<#%= @game_data["currentPlayer"] %>-->
+</div>
+
+
+<script>
+/*
+// ローディング要素とメインコンテンツ要素を取得
+const loadingOverlay = document.getElementById('loading-overlay');
+const mainContent = document.getElementById('main-content');
+
+// 特定のメソッド（非同期処理）をシミュレート
+function loadImportantData() {
+  return new Promise(resolve => {
+    // 例: 3秒後にデータロードが完了する
+    setTimeout(() => {
+      console.log("重要なデータのロードが完了しました。");
+      resolve();
+    }, 3000);
+  });
+}
+
+// ページロード時のイベントリスナー
+document.addEventListener('DOMContentLoaded', async () => {
+// Turbo/Turbolinksを使用している場合はこちらも使う
+// document.addEventListener('turbo:load', async () => {
+// document.addEventListener('turbolinks:load', async () => {
+  console.log("DOMContentLoaded: DOMの準備ができました。");
+  // ローディング開始（ここでは既にHTMLで表示されている状態）
+  loadingOverlay.classList.remove('hidden'); // hiddenクラスを削除して表示状態を明示
+
+  try {
+    await loadImportantData(); // 特定のメソッドの完了を待つ
+    // 全ての準備が完了したらローディングを非表示にする
+    loadingOverlay.classList.add('hidden'); // hiddenクラスを追加して非表示
+    mainContent.style.display = 'block'; // メインコンテンツを表示
+    console.log("すべての処理が完了し、コンテンツが表示されました。");
+  } catch (error) {
+    console.error("データのロード中にエラーが発生しました:", error);
+    // エラー時の処理（例: エラーメッセージを表示してローディングを非表示にする）
+    loadingOverlay.classList.add('hidden');
+    mainContent.style.display = 'block'; // エラーでも表示したい場合
+  }
+});
+*/
+</script>
+
 
 <!--
 <form id="shogi-form">
@@ -56,68 +122,296 @@
 
 
 </script>
+
 -->
 
+
+
+<!-- チャット
 <h1>Chat<%= @game_id %></h1>
-
-<!-- チャットメッセージを表示する領域 -->
 <div id="chat-messages"></div>
-
-<!-- メッセージ入力フォーム -->
 <form id="chat-form">
   <input type="text" id="chat-input" placeholder="Type a message...">
   <button type="submit">Send</button>
 </form>
+-->
 
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
+/*
+  document.addEventListener('DOMContentLoaded', () => {// DOMContentLoadedイベントリスナー: HTMLドキュメントの読み込みが完了したときに実行される
     const chatMessages = document.getElementById('chat-messages');
     const chatForm = document.getElementById('chat-form');
     const chatInput = document.getElementById('chat-input');
 
-    
+    // WebSocket接続の確立:
+    // 'ws://' + window.location.host + '/cable' でWebSocketサーバーのアドレスを構築。
+    // window.location.hostは現在のページのホスト名（例: localhost:3000）を取得。
+    // '/cable'はRails Action CableのデフォルトのWebSocketエンドポイント。
     const chat_socket = new WebSocket('ws://' + window.location.host + '/cable');// WebSocket接続を確立
 
     // WebSocket接続が開いたときの処理
+    // サーバーとの接続が確立された直後に一度だけ実行される
     chat_socket.onopen = () => {
       console.log('WebSocket connected');
       // ChatChannelにサブスクライブ
+      // Action CableのChatChannelにサブスクライブ（購読）するためのメッセージをサーバーに送信
       chat_socket.send(JSON.stringify({
-        command: 'subscribe',
-        identifier: JSON.stringify({ channel: 'ChatChannel' })
+        command: 'subscribe', //ActionCableのコマンド種別・コマンドは「subscribe」
+        identifier: JSON.stringify({ channel: 'ChatChannel' }) // 購読するチャンネル名を指定・ JSON.stringifyでJavaScriptオブジェクトをJSON文字列に変換
       }));
     };
 
     // サーバーからメッセージを受信したときの処理
+    // サーバーからデータが送信されるたびに実行される
     chat_socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+      const data = JSON.parse(event.data);// 受信したJSON文字列をJavaScriptオブジェクトにパース(解析)
       //console.log("chat_socket サーバーからメッセージを受信したときの処理: "+data)
 
-      if (data.type === 'ping') return; // pingメッセージは無視
-      if (data.message) {
+      if (data.type === 'ping') return; // pingメッセージは無視・Action Cableが定期的に送信するpingメッセージは無視して処理を終了
+      if (data.message) { // 受信したデータに'message'プロパティがある場合（実際のチャットメッセージの場合）
         console.log("w222chat_socket サーバーからメッセージを受信したときの処理: "+data.message)
 
         // 受信したメッセージをDOMに追加
-        const messageElement = document.createElement('p');
-        messageElement.textContent = data.message.message;
+        const messageElement = document.createElement('p'); // p要素を動的に生成
+        messageElement.textContent = data.message.message; // メッセージ内容をテキストとして設定
         console.log(data.message.message)
-        chatMessages.appendChild(messageElement);
+        chatMessages.appendChild(messageElement);// チャット表示エリアに新しいメッセージを追加
       }
     };
 
     // フォーム送信時の処理
-    chatForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const message = chatInput.value;
-      if (message) {
-        // メッセージをサーバーに送信
+    chatForm.addEventListener('submit', (e) => {// ユーザーがメッセージ送信フォームを送信したときに実行される
+      e.preventDefault();// フォームのデフォルトの送信動作（ページのリロード）を防止
+      const message = chatInput.value;// 入力欄からメッセージテキストを取得
+      if (message) {// メッセージが空でない場合
+        // メッセージをサーバーに送信（Action Cableの'speak'アクションを呼び出す）
         chat_socket.send(JSON.stringify({
-          command: 'message',
-          identifier: JSON.stringify({ channel: 'ChatChannel' }),
-          data: JSON.stringify({ action: 'speak', message: message })
+          command: 'message',// コマンドは「message(メッセージ送信)」
+          identifier: JSON.stringify({ channel: 'ChatChannel' }),// 送信先チャンネル名 対象チャンネルはChatChannel
+          data: JSON.stringify({ action: 'speak', message: message })// 送信するデータ: speakアクションと実際のメッセージ内容
         }));
         chatInput.value = ''; // 入力欄をクリア
       }
     });
   });
+  */
 </script>
+
+
+<style>
+/* 共通ボタンスタイル（見やすく、大きく、白文字） */
+.room-id {
+  display: inline-block;
+  padding: 16px 32px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  text-decoration: none;
+  color: white;
+  text-align: center;
+  transition: background-color 0.3s ease;
+}
+
+/* ローディング要素のCSS */
+#loading-overlay {
+  position: fixed; /* 画面全体に固定 */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8); /* 半透明の白 */
+  display: flex; /* 中央寄せのため */
+  justify-content: center; /* 水平方向の中央 */
+  align-items: center; /* 垂直方向の中央 */
+  z-index: 9999; /* 他のコンテンツの上に表示 */
+  transition: opacity 0.3s ease-out; /* フェードアウトアニメーション */
+  opacity: 1; /* 初期状態は表示 */
+  visibility: visible;
+}
+#loading-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+.spinner {
+  border: 8px solid #f3f3f3; /* Light grey */
+  border-top: 8px solid #3498db; /* Blue */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite; /* 回転アニメーション */
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+/* メインコンテンツは初期は表示されないようにしても良い */
+#main-content {
+  display: none; /* JavaScriptで表示する */
+}
+
+
+
+/*チャット*/
+/* chat-container */
+.chat-container {
+  /* 配置の基準をビューポートにする */
+  position: fixed;
+  bottom: 0px;  /* 画面下端から20px上 */
+  right: 0px;   /* 画面右端から20px左 */
+  z-index: 1000; /* 他の要素の上に表示されるようにする (必要に応じて調整) */
+
+  /* サイズ設定 */
+  width: 35vw;   /* ビューポートの幅の20% */
+  height: 50vh;  /* ビューポートの高さの50% */
+
+  /* その他デザイン（以前のものを維持） */
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  background-color: #f9f9f9;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out; /* アニメーションを追加 */
+}
+/* chat-messages */
+.chat-messages {
+  flex-grow: 1;
+  padding: 5px;
+  overflow-y: auto;
+  background-color: #eef1f5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* chat-form */
+.chat-form {
+  display: flex;
+  padding: 15px;
+  border-top: 1px solid #ddd;
+  background-color: #ffffff;
+}
+/* chat-input */
+.chat-input {
+  flex-grow: 1;
+  padding: 10px 12px;
+  border: 1px solid #c9c9c9;
+  border-radius: 20px;
+  font-size: 1rem;
+  margin-right: 10px;
+  outline: none;
+}
+
+.chat-input::placeholder {
+  color: #a0a0a0;
+}
+
+/* chat-button */
+.chat-button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+.chat-button:hover {
+  background-color: #0056b3;
+}
+.chat-button:active {
+  background-color: #004085;
+}
+
+
+/* 非表示時のチャットコンテナのスタイル */
+.chat-container.closed {
+  transform: translateX(calc(100% - 40px)); /* 右端に隠れるように移動 (ボタンの幅に合わせて調整) */
+  opacity: 0.5; /* 半透明にする */
+  pointer-events: none; /* クリックイベントを無効にする */
+}
+/* 開閉ボタンのスタイル */
+.chat-toggle-button {
+  position: fixed; /* 画面に固定 */
+  bottom: 20px;    /* チャットコンテナと同じ高さ */
+  right: 20px;     /* チャットコンテナと同じ右端位置 */
+  /* ここはチャットコンテナのrightと同じ位置に、ただしz-indexはチャットコンテナより高く*/
+  /* もしくは、チャットコンテナのすぐ左に配置するように、rightを調整する */
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 50%; /* 丸いボタンにする */
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1001; /* チャットコンテナ (z-index: 1000) より手前に */
+}
+/* ボタンがチャットコンテナの隣に位置する場合のスタイル調整 */
+.chat-container.closed + .chat-toggle-button {
+    right: 20px; /* チャットコンテナが閉じている時はボタンが右端に */
+}
+.chat-container:not(.closed) + .chat-toggle-button {
+    /* チャットコンテナが開いている時はボタンをチャットコンテナの左端近くに */
+    /* chat-containerの幅(20vw)からボタンの幅(40px)を引いて、右端からの位置を計算 */
+    /*right: calc(20vw + 20px);*/
+    right: calc(20vw + 20px);
+}
+
+/*
+.chat-container {
+  position: fixed;
+  top: 0;
+  right: 400px;
+  width: 300px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+  border-left: 1px solid #ccc;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+.chat-messages {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  background-color: #f9f9f9;
+  border-bottom: 1px solid #ccc;
+}
+.chat-form {
+  display: flex;
+  padding: 0.75rem;
+  background-color: #fff;
+  border-top: 1px solid #ccc;
+}
+
+.chat-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+.chat-button {
+  margin-left: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.chat-button:hover {
+  background-color: #0056b3;
+}*/
+</style>

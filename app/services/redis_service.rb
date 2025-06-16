@@ -3,6 +3,16 @@ require 'redis'
 #Redisオブジェクトを作り、setでキーと値をセットし、getでキーから値を取得する
 
 class RedisService
+  def self.fetch_or_initialize_game(game_id)
+
+  end
+
+  def self.create_initial_board
+    # 実際の将棋の初期配置をここで返す（簡易例）
+    Array.new(9) { Array.new(9, nil) } # 空の9x9盤面
+  end
+
+
   def self.client
     @client ||= Redis.new
   end
