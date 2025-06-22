@@ -72,3 +72,172 @@ img#後手 {
   transform: scale(-1, -1);
 }
 
+
+
+
+/* 共通ボタンスタイル（見やすく、大きく、白文字） */
+.room-id {
+  display: inline-block;
+  padding: 16px 32px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  text-decoration: none;
+  color: white;
+  text-align: center;
+  transition: background-color 0.3s ease;
+}
+
+/* ローディング要素のCSS */
+#loading-overlay {
+  position: fixed; /* 画面全体に固定 */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8); /* 半透明の白 */
+  display: flex; /* 中央寄せのため */
+  justify-content: center; /* 水平方向の中央 */
+  align-items: center; /* 垂直方向の中央 */
+  z-index: 9999; /* 他のコンテンツの上に表示 */
+  transition: opacity 0.3s ease-out; /* フェードアウトアニメーション */
+  opacity: 1; /* 初期状態は表示 */
+  visibility: visible;
+}
+#loading-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+.spinner {
+  border: 8px solid #f3f3f3; /* Light grey */
+  border-top: 8px solid #3498db; /* Blue */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite; /* 回転アニメーション */
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+/* メインコンテンツは初期は表示されないようにしても良い */
+#main-content {
+  display: none; /* JavaScriptで表示する */
+}
+
+
+
+/*チャット*/
+/* chat-container */
+.chat-container {
+  /* 配置の基準をビューポートにする */
+  position: fixed;
+  bottom: 0px;  /* 画面下端から20px上 */
+  right: 0px;   /* 画面右端から20px左 */
+  z-index: 1000; /* 他の要素の上に表示されるようにする (必要に応じて調整) */
+
+  /* サイズ設定 */
+  width: 35vw;   /* ビューポートの幅の20% */
+  height: 50vh;  /* ビューポートの高さの50% */
+
+  /* その他デザイン（以前のものを維持） */
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  background-color: #f9f9f9;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out; /* アニメーションを追加 */
+}
+/* chat-messages */
+.chat-messages {
+  flex-grow: 1;
+  padding: 5px;
+  overflow-y: auto;
+  background-color: #eef1f5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* chat-form */
+.chat-form {
+  display: flex;
+  padding: 15px;
+  border-top: 1px solid #ddd;
+  background-color: #ffffff;
+}
+/* chat-input */
+.chat-input {
+  flex-grow: 1;
+  padding: 10px 12px;
+  border: 1px solid #c9c9c9;
+  border-radius: 20px;
+  font-size: 1rem;
+  margin-right: 10px;
+  outline: none;
+}
+
+.chat-input::placeholder {
+  color: #a0a0a0;
+}
+
+/* chat-button */
+.chat-button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+.chat-button:hover {
+  background-color: #0056b3;
+}
+.chat-button:active {
+  background-color: #004085;
+}
+
+
+/* 非表示時のチャットコンテナのスタイル */
+.chat-container.closed {
+  transform: translateX(calc(100% - 40px)); /* 右端に隠れるように移動 (ボタンの幅に合わせて調整) */
+  opacity: 0.5; /* 半透明にする */
+  pointer-events: none; /* クリックイベントを無効にする */
+}
+/* 開閉ボタンのスタイル */
+.chat-toggle-button {
+  position: fixed; /* 画面に固定 */
+  bottom: 20px;    /* チャットコンテナと同じ高さ */
+  right: 20px;     /* チャットコンテナと同じ右端位置 */
+  /* ここはチャットコンテナのrightと同じ位置に、ただしz-indexはチャットコンテナより高く*/
+  /* もしくは、チャットコンテナのすぐ左に配置するように、rightを調整する */
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 50%; /* 丸いボタンにする */
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1001; /* チャットコンテナ (z-index: 1000) より手前に */
+}
+/* ボタンがチャットコンテナの隣に位置する場合のスタイル調整 */
+.chat-container.closed + .chat-toggle-button {
+    right: 20px; /* チャットコンテナが閉じている時はボタンが右端に */
+}
+.chat-container:not(.closed) + .chat-toggle-button {
+    /* チャットコンテナが開いている時はボタンをチャットコンテナの左端近くに */
+    /* chat-containerの幅(20vw)からボタンの幅(40px)を引いて、右端からの位置を計算 */
+    /*right: calc(20vw + 20px);*/
+    right: calc(20vw + 20px);
+}

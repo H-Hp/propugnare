@@ -1,0 +1,154 @@
+
+
+<%#= link_to "対戦する", "/shogi/1", class: "btn btn-primary center-buttons" %>
+<%#= link_to "部屋No1", "/shogi/1", class: "btn btn-primary center-buttons" %>
+<%#= link_to "部屋No2", "/shogi/2", class: "btn btn-secondary center-buttons" %>
+
+
+
+<h1>ゲームロビー</h1>
+
+<button id="startMatchingButton" class="btn btn-primary center-buttons">対戦する</button>
+
+<div id="matchingStatus" style="display: none;">
+  <p id="loadingMessage">マッチング中です... <span class="spinner"></span></p>
+  <button id="cancelMatchingButton" style="display: none;">キャンセル</button>
+</div>
+
+<div id="gameRoomLink" style="display: none;">
+  <p>対戦相手が見つかりました！</p>
+  <a href="#" id="roomLink">ゲームを開始する</a>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const startButton = document.getElementById('startMatchingButton');
+  const matchingStatusDiv = document.getElementById('matchingStatus');
+  const loadingMessage = document.getElementById('loadingMessage');
+  const gameRoomLinkDiv = document.getElementById('gameRoomLink');
+  const roomLink = document.getElementById('roomLink');
+  // const cancelMatchingButton = document.getElementById('cancelMatchingButton'); // ポーリングでは実装が複雑になるため、今回は省略
+
+  let pollingIntervalId = null;
+
+  if (startButton) {
+    startButton.addEventListener('click', async () => {
+      startButton.disabled = true; // ボタンを無効化
+      matchingStatusDiv.style.display = 'block'; // ローディング表示
+
+      try {
+        // Railsコントローラにマッチング開始リクエストを送信
+        const response = await fetch('/matching/start', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content // CSRFトークンを送信
+          }
+        });
+
+        const data = await response.json();
+        console.log('Matching start response:', data);
+
+        if (data.status === 'matching_started') {
+          loadingMessage.textContent = '対戦相手を検索中です...';
+          // ポーリング開始
+          pollingIntervalId = setInterval(checkMatchingStatus, 3000); // 3秒ごとにステータス確認
+        } else {
+          loadingMessage.textContent = `エラー: ${data.message}`;
+          startButton.disabled = false; // ボタンを再有効化
+        }
+
+      } catch (error) {
+        console.error('マッチング開始エラー:', error);
+        loadingMessage.textContent = 'マッチング開始に失敗しました。';
+        startButton.disabled = false;
+        matchingStatusDiv.style.display = 'none';
+      }
+    });
+  }
+
+  // マッチングステータスを確認する関数 (ポーリング用)
+  async function checkMatchingStatus() {
+    try {
+      // 実際には、ユーザーの現在のマッチング状態を確認する別のエンドポイントが必要になります
+      // 例: GET /matching/status
+      // 今回はデモンストレーションのため、単純にマッチング完了をシミュレート
+      console.log('Checking matching status...');
+      // 実際のアプリケーションでは、RailsのAPIエンドポイントを叩いてユーザーの現在のマッチング状態（待機中、マッチ済み、エラーなど）を取得します
+      // 例: const statusResponse = await fetch('/api/user_matching_status');
+      //     const statusData = await statusResponse.json();
+
+      // ここでは、一定時間後にマッチングが完了したと仮定します
+      if (Math.random() > 0.7) { // 30%の確率でマッチング成功と仮定
+        clearInterval(pollingIntervalId); // ポーリング停止
+        loadingMessage.textContent = '対戦相手が見つかりました！';
+        matchingStatusDiv.style.display = 'none';
+        gameRoomLinkDiv.style.display = 'block';
+        const room_id = 'some_generated_room_id_123'; // 実際にはサーバーから取得
+        roomLink.href = `/rooms/${room_id}`; // ゲーム部屋へのリンクを設定
+      }
+
+    } catch (error) {
+      console.error('マッチングステータス確認エラー:', error);
+      clearInterval(pollingIntervalId);
+      loadingMessage.textContent = 'ステータス確認中にエラーが発生しました。';
+      startButton.disabled = false;
+      matchingStatusDiv.style.display = 'none';
+    }
+  }
+});
+</script>
+
+<style>
+  /* 簡単なローディングスピナーのCSS */
+  .spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border-left-color: #09f;
+    animation: spin 1s ease infinite;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+
+
+
+.btn {
+  display: inline-block;
+  padding: 16px 32px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  text-decoration: none;
+  color: white;
+  text-align: center;
+  transition: background-color 0.3s ease;
+}
+.btn-primary {
+  background-color: #007bff;
+}
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+.btn-secondary {
+  background-color: #6c757d;
+}
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
+.center-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 40px;
+}
+
+</style>

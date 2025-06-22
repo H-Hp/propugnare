@@ -17,6 +17,9 @@ import imgPromotedLance from "./img/成香.png";
 import imgPromotedPawn from "./img/と.png";
 import { BoardInfo, Selection } from './BoardInfo';
 
+import Header from '../Header';
+
+
 import consumer from '../../channels/consumer'; // Action Cableのconsumerをインポート
 
 const imgByName = {
@@ -234,11 +237,7 @@ class Room extends React.Component {
     // イベントハンドラのバインド
     this.handleChatInputChange = this.handleChatInputChange.bind(this);
     this.handleChatSubmit = this.handleChatSubmit.bind(this);
-    this.toggleChat = this.toggleChat.bind(this); 
- 
-    //console.dir(`aまんこaaaaaちんこ1。: ${this.state.boardInfo}`);
-    //console.dir(`aまんこaaaaaちんこ2。: ${typeof this.state.boardInfo}`);
-    //console.log(`aまんこaaaaaちんこ3。${JSON.stringify(this.state.boardInfo)}`);
+    this.toggleChat = this.toggleChat.bind(this);  
   }
 
   // コンポーネントがマウントされた後に一度だけ実行される
@@ -320,15 +319,6 @@ class Room extends React.Component {
             
             //data_type: "redis_stored_data",
             //redis_stored_data: redis_stored_data
-            //console.log(`aaaaaaちんこ1。: ${JSON.stringify(data.redis_stored_board_data)}`);
-            //console.log(`aaaaaaちんこ1。: ${typeof data.redis_stored_data}`);
-            //console.dir(`aaaaaaちんこ2。: ${ typeof data.boardInfo}`);
-            //console.dir(`aaaaaaちんこ3。: ${ data.boardInfo}`);
-            //console.log(`aaaaaaちんこ4。: ${typeof JSON.parse(data.boardInfo)}`);
-            //console.log(`aaaaaaちんこ5。: ${ JSON.parse(data.boardInfo)}`);
-            //console.dir(`aaaaaaちんこ6。: ${ data.BoardInfo}`);
-            //console.dir(`aaaaaaちんこ63。: ${ JSON.stringify(data.BoardInfo)}`);
-            //console.dir(`aaaaaaちんこ6。: ${ data.currentPlayer}`);
 
             //data.BoardInfo を受け取った後、それを BoardInfo クラスのインスタンスに「復元」する必要があります・Object.assign()では、オブジェクトのプロパティ（データ）はコピーされますが、メソッドやprototypeチェーンは正しく復元されません。そのため、getPromotedPiece()などのメソッドが利用できなくなります。
             //let NewBoardInfo=Object.assign(new BoardInfo(), data.BoardInfo);
@@ -370,9 +360,7 @@ class Room extends React.Component {
             //const boardDataFromServer = data.BoardInfo; // サーバーから来たプレーンなデータ
             const boardDataFromServer = data.new_board_data; // サーバーから来たプレーンなデータ
             //console.log(`Received ${data.data_type} for reconstruction:`, boardDataFromServer);
-            //console.log(`ちんこdata.new_board_data.board ${JSON.stringify(data.new_board_data.board)}`);
             //console.log(`data_type： ${JSON.stringify(data.data_type)}`);
-            //console.log(`ちんこdata.BoardInfo.board ${JSON.stringify(data.BoardInfo.board)}`);
             //console.log(`data.new_board_data： ${JSON.stringify(data.new_board_data)}`);
             
             if (boardDataFromServer) {
@@ -598,14 +586,23 @@ class Room extends React.Component {
           'X-CSRF-Token': csrfToken
           // 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content, // 必要に応じて
         },
+        //body: JSON.stringify({ game_id: 12345 })
       });
 
       const data = await response.json(); // await を使う
 
+      const MATCH_STATUS_KEY = 'shogi_matching_status';
+      const MATCH_ROOM_ID_KEY = 'shogi_matched_room_id';
+      const MATCH_PLAYER_ROLE_KEY = 'shogi_player_role';
+      const SESSION_ID_KEY = 'shogi_session_id'; // localStorageにセッションIDを保存するキー
+      localStorage.removeItem(MATCH_STATUS_KEY);
+      localStorage.removeItem(MATCH_ROOM_ID_KEY);
+      localStorage.removeItem(MATCH_PLAYER_ROLE_KEY);
+
       if (response.ok) {
         console.log('削除成功:', data.message);
         //alert(data.message);
-        window.location.href = '/'; // トップページへ戻る
+        //window.location.href = '/'; // トップページへ戻る
       } else {
         console.error('削除失敗:', data.error || data.message);
         alert('データの削除に失敗しました: ' + (data.error || data.message));
@@ -693,6 +690,7 @@ class Room extends React.Component {
     }
     return (
       <>
+      <Header/>
 
         {/*<div id="chat-zone">
           <div id="chat-messages"></div>

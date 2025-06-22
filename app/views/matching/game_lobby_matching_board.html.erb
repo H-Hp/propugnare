@@ -1,0 +1,291 @@
+<script src="https://cdn.tailwindcss.com"></script>
+
+
+<%= javascript_pack_tag "matching", defer: true %>
+
+
+<meta name="client-session-id" content="<%= session.id.to_s %>">
+
+
+<%= react_component("Header", { logoPath: asset_path("Logo.png") }) %>
+
+
+<h1>ゲームロビー</h1>
+
+<button id="AllResetButton" class="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-5 rounded-full text-base transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-300">
+マッチングデータを全部リセット
+</button>
+
+<script>
+/*
+//import Header from '../Header';
+//HTMLドキュメントの読み込みが完了したときに実行され、viewにReactをレンダリングする処理
+//document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('turbolinks:load', () => {//urbolinks による初回ページロード時・Turbolinks によるページ遷移時・通常のブラウザリロード時 のすべてで発生します。
+  const rootElement = document.createElement('div');
+  document.body.appendChild(rootElement);  
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(<Header />);
+})*/
+</script>
+
+<!--
+<button id="startMatchingButton" class="btn btn-primary center-buttons">対戦する</button>
+<div id="matchingStatus" style="display: none;">
+  <p id="loadingMessage">マッチング中です... <span class="spinner"></span></p>
+  <button id="cancelMatchingButton" style="display: none;">キャンセル</button>
+</div>
+
+<div id="gameRoomLink" style="display: none;">
+  <p>対戦相手が見つかりました！</p>
+  <a href="#" id="roomLink">ゲームを開始する</a>
+</div>
+-->
+
+
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 p-4">
+  <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md text-center">
+    <h1 class="text-3xl font-extrabold text-gray-800 mb-6">将棋対戦ロビー</h1>
+    <button id="startMatchingButton"
+            class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full text-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300">
+      対戦相手を探す
+    </button>
+
+    <%# ローディング中の表示 %>
+    <div id="matchingStatus" class="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-lg shadow-inner flex flex-col items-center justify-center space-y-4" style="display: none;">
+      <div class="relative w-16 h-16">
+        <%# Tailwind CSSでスピナーを作成 %>
+        <div class="absolute inset-0 border-4 border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
+      </div>
+      <p id="loadingMessage" class="text-blue-700 text-xl font-semibold">マッチング中です...</p>
+      <button id="cancelMatchingButton"
+              class="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-5 rounded-full text-base transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-300">
+        キャンセル
+      </button>
+    </div>
+
+    <%# マッチング完了時の表示 %>
+    <div id="gameRoomLink" class="mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-lg shadow-inner text-center" style="display: none;">
+      <p class="text-yellow-700 text-xl font-semibold mb-4">対戦相手が見つかりました！</p>
+      <a href="#" id="roomLink"
+         class="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full text-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300">
+        ゲームを開始する
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+
+
+
+/*
+document.addEventListener('DOMContentLoaded', () => {
+  const startButton = document.getElementById('startMatchingButton');
+  const matchingStatusDiv = document.getElementById('matchingStatus');
+  const loadingMessage = document.getElementById('loadingMessage');
+  const gameRoomLinkDiv = document.getElementById('gameRoomLink');
+  const roomLink = document.getElementById('roomLink');
+  const cancelMatchingButton = document.getElementById('cancelMatchingButton');
+
+  let pollingIntervalId = null; // ポーリングのインターバルID
+
+  // CSRFトークンを取得するヘルパー関数
+  function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]').content;
+  }
+
+  if (startButton) {
+    startButton.addEventListener('click', async () => {
+      // 既にポーリング中の場合は何もしない
+      if (pollingIntervalId) {
+        console.log("Already checking matching status.");
+        return;
+      }
+
+      startButton.disabled = true; // ボタンを無効化
+      matchingStatusDiv.style.display = 'block'; // ローディング表示
+      loadingMessage.textContent = '対戦相手を検索中です...';
+      cancelMatchingButton.style.display = 'block'; // キャンセルボタンを表示
+      gameRoomLinkDiv.style.display = 'none'; // リンクは非表示に
+
+      try {
+        // マッチング開始リクエストをサーバーに送信
+        const response = await fetch('/matching/start', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': getCsrfToken()
+          }
+        });
+        const data = await response.json();
+        console.log('Matching start response:', data);
+
+        if (data.status === 'matched') {
+          // 稀に、即座にマッチングが成立した場合（2人目がボタンを押したときなど）
+          handleMatched(data.room_id,data.game_id, data.player_role);
+        } else if (data.status === 'in_progress') {
+          // マッチング待機中であれば、ポーリングを開始
+          pollingIntervalId = setInterval(checkMatchingStatus, 3000); // 3秒ごとにステータス確認
+        } else {
+          // 想定外のステータス
+          loadingMessage.textContent = `エラー: ${data.message}`;
+          resetMatchingUI();
+        }
+
+      } catch (error) {
+        console.error('マッチング開始エラー:', error);
+        loadingMessage.textContent = 'マッチング開始に失敗しました。';
+        resetMatchingUI();
+      }
+    });
+  }
+
+  // マッチングステータスをチェックする関数 (ポーリング)
+  async function checkMatchingStatus() {
+    try {
+      const response = await fetch('/matching/status');
+      const data = await response.json();
+      console.log('Matching status response:', data);
+
+      if (data.status === 'matched') {
+        clearInterval(pollingIntervalId); // ポーリング停止
+        pollingIntervalId = null;
+        handleMatched(data.room_id,data.room_id, data.player_role);
+      } else if (data.status === 'not_matching') {
+        // マッチングがサーバー側でキャンセルされた、または初期状態に戻った
+        clearInterval(pollingIntervalId); // ポーリング停止
+        pollingIntervalId = null;
+        loadingMessage.textContent = 'マッチングは終了しました。';
+        resetMatchingUI();
+      }
+      // 'in_progress' の場合は何もしない (引き続きポーリングを続ける)
+
+    } catch (error) {
+      console.error('マッチングステータス確認エラー:', error);
+      clearInterval(pollingIntervalId); // エラー時もポーリング停止
+      pollingIntervalId = null;
+      loadingMessage.textContent = 'ステータス確認中にエラーが発生しました。';
+      resetMatchingUI();
+    }
+  }
+
+  // マッチングが成立した際の処理
+  function handleMatched(roomId, playerRole) {
+    loadingMessage.textContent = '対戦相手が見つかりました！ゲームを開始します。';
+    matchingStatusDiv.style.display = 'none';
+    gameRoomLinkDiv.style.display = 'block';
+    //roomLink.href = `/rooms/${roomId}`;
+    roomLink.href = `/shogi/${roomId}`;
+    roomLink.textContent = `ゲームを開始する (${playerRole === 'sente' ? '先手' : '後手'})`;
+
+    // 少し遅延させてメッセージを表示し、自動で部屋へリダイレクト
+    setTimeout(() => {
+      //window.location.href = `/rooms/${roomId}`;
+      //window.location.href = `/shogi/${roomId}`;
+      attemptRedirect(roomId)
+    }, 1000); // 1秒後にリダイレクト
+  }
+
+   // 画面遷移を試みる関数
+  function attemptRedirect(roomId) {
+    // タブがアクティブならすぐに遷移
+    if (document.visibilityState === 'visible') {
+      console.log("タブがアクティブなので、即座にリダイレクトします。");
+      window.location.href = `/shogi/${roomId}`;
+      //stopFlashingPageTitle(); // タイトル点滅を停止
+    } else {
+      console.log("タブが非アクティブなので、アクティブ化を待ちます。");
+      // 非アクティブな場合は、visibilitychangeイベントで処理される
+    }
+  }
+
+  // UIを初期状態に戻す関数
+  function resetMatchingUI() {
+    startButton.disabled = false;
+    matchingStatusDiv.style.display = 'none';
+    cancelMatchingButton.style.display = 'none';
+    gameRoomLinkDiv.style.display = 'none';
+  }
+
+  if (cancelMatchingButton) {
+    cancelMatchingButton.addEventListener('click', async () => {
+      clearInterval(pollingIntervalId); // ポーリングを停止
+      pollingIntervalId = null;
+
+      try {
+        const response = await fetch('/matching/cancel', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': getCsrfToken()
+          }
+        });
+        const data = await response.json();
+        console.log('Matching cancel response:', data);
+        loadingMessage.textContent = data.message;
+        resetMatchingUI();
+      } catch (error) {
+        console.error('マッチングキャンセルエラー:', error);
+        loadingMessage.textContent = 'マッチングキャンセルに失敗しました。';
+        resetMatchingUI();
+      }
+    });
+  }
+});
+*/
+</script>
+
+<style>
+  /* 簡単なローディングスピナーのCSS */
+  .spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border-left-color: #09f;
+    animation: spin 1s ease infinite;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+
+
+
+.btn {
+  display: inline-block;
+  padding: 16px 32px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  text-decoration: none;
+  color: white;
+  text-align: center;
+  transition: background-color 0.3s ease;
+}
+.btn-primary {
+  background-color: #007bff;
+}
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+.btn-secondary {
+  background-color: #6c757d;
+}
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
+.center-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 40px;
+}
+
+</style>
