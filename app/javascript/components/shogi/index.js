@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
+//import './index.css';
 import imgKing from "./img/玉.png";
 import imgRook from "./img/飛.png";
 import imgBishop from "./img/角.png";
@@ -108,101 +108,6 @@ class PieceStand extends React.Component {
     );
   }
 }
-
-class Game extends React.Component {
-  constructor(props) {
-    super(props);
-    const element = document.querySelector('#game-container');
-    const gameId = element.dataset.gameId;// #data-game-id属性からゲームIDを取得
-    this.state = {
-      boardInfo: new BoardInfo(),
-      socket: null, // WebSocket接続のインスタンスを格納するプロパティ (初期値はnull)
-      gameState: {} // ゲームの現在の状態を格納するプロパティ
-    };
-  }
-
-  componentDidMount() {//コンポーネントがDOMにマウント（描画）された直後に実行されるライフサイクルメソッド
-/*    const socket = new WebSocket('ws://' + window.location.host + '/cable');// WebSocket接続の確立
-    // WebSocket接続が開いたときの処理・サーバーとの接続が確立された直後に一度だけ実行される
-    socket.onopen = () => {
-      //console.log('shogi WebSocket Connected');
-      // ゲームチャンネルへの接続
-      socket.send(JSON.stringify({
-        command: 'subscribe',
-        identifier: JSON.stringify({ channel: 'GameChannel', game_id: this.state.boardInfo.gameId })
-      }));
-    };
-
-    // サーバーからメッセージを受信したときの処理・サーバーからデータが送信されるたびに実行される
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      //console.log('shogi onmessage');
-      if (data.type === 'ping') return;
-      if (data.message) {
-        //const gameState = JSON.parse(data.message);
-        const gameState = data.message.move;
-        //console.dir('shogi onmessage'+data.message.move);
-        // 受信したゲーム状態で盤面を更新
-        this.updateGameState(gameState);
-      }
-    };
-    this.setState({ socket });
-*/
-  }
-
-  canselSelection() {
-    const nextBoardInfo = this.state.boardInfo;
-    if (nextBoardInfo.selection.isNow) {
-      nextBoardInfo.selection.isNow = false;
-    } else {
-      nextBoardInfo.selection = new Selection();
-    }
-    //盤面情報の更新
-    this.setState({boardInfo: nextBoardInfo});
-    //Railsの
-  }
-
-  boardClick(i, j) {
-    this.state.boardInfo.boardClick(i, j);
-  }
-
-  pieceStandClick(piece) {
-    this.state.boardInfo.pieceStandClick(piece);
-  }
-
-  render() {
-    return (
-      <div className="game" onClick={() => this.canselSelection()}>
-        <div className="game-board">
-          <PieceStand
-            pieceStand={this.state.boardInfo.pieceStand["後手"]}
-            pieceStandNum={this.state.boardInfo.pieceStandNum["後手"]}
-            pieceStandSelectInfo={this.state.boardInfo.selection.pieceStandSelectInfo["後手"]}
-            onClick={(i) => this.pieceStandClick(this.state.boardInfo.pieceStand["後手"][i])}
-          />
-          <br />
-          <Board
-            board={this.state.boardInfo.board}
-            boardSelectInfo={this.state.boardInfo.selection.boardSelectInfo}
-            onClick={(i, j) => this.boardClick(i, j)}
-          />
-          <br />
-          <PieceStand
-            pieceStand={this.state.boardInfo.pieceStand["先手"]}
-            pieceStandNum={this.state.boardInfo.pieceStandNum["先手"]}
-            pieceStandSelectInfo={this.state.boardInfo.selection.pieceStandSelectInfo["先手"]}
-            onClick={(i) => this.pieceStandClick(this.state.boardInfo.pieceStand["先手"][i])}
-          />
-        </div>
-      </div>
-    );
-  }
-}
-
-// ========================================
-
-
-
 
 class Room extends React.Component {
   constructor(props) {

@@ -11,37 +11,14 @@ class MatchingController < ApplicationController
   #end
 
   def game_lobby_matching_board
-    #$redis.del(MATCHING_QUEUE_KEY)
-    #$redis.ltrim(MATCHING_QUEUE_KEY, 1, 0)
-    #Rails.logger.info "ああ：#{$redis.lrange(MATCHING_QUEUE_KEY, 0, -1)}"
   end
 
   #このstartメソッドは、将棋のオンライン対戦における「マッチング機能」を実装しています。Redisのキューを使って2つのプレイヤーを待機させ、2人揃ったら対戦部屋を作成する仕組み
   #render json: {...}の値はJsのマッチ開始イベントのfetch内のresponse.json()で取得
   def start
-
     #各ユーザーは自身のユニークな識別子を持つ
     user_identifier = session.id.to_s # 現在のセッションIDをユーザー識別子として使用
     Rails.logger.info "user_identifier:#{user_identifier} "
-    
-    #redis_data=""
-    # 既にマッチング進行中か確認
-    # Redisキューにすでにいる、またはゲーム部屋に割り当てられている場合は再スタートしない
-
-=begin
-    if $redis.lrange(MATCHING_QUEUE_KEY, 0, -1).include?({ identifier: user_identifier }.to_json) || $redis.hgetall(GAME_ROOMS_HASH_KEY).values.any? do |room_data_json|
-         Rails.logger.info "既にマッチング進行中か確認・Redisキューにすでにいる、またはゲーム部屋に割り当てられている場合は再スタートしない"
-         room_data = JSON.parse(room_data_json).symbolize_keys
-         room_data[:sente_identifier] == user_identifier || room_data[:gote_identifier] == user_identifier
-         redis_data = room_data
-         Rails.logger.info "@room_data:#{room_data} "
-       end
-      render json: { status: 'in_progress', message: '既にマッチング進行中です。' ,redis_data: redis_data}
-      #render json: { status: 'in_progress', message: '既にマッチング中です。'}
-      #ActionCable.server.broadcast("matching_status", { status: 'matched', redis_data: redis_data } )
-      return
-    end
-=end
 
     #現在のユーザー情報をJSON文字列に変換する
     user_info_json = {
@@ -51,7 +28,6 @@ class MatchingController < ApplicationController
     }.to_json
     Rails.logger.info "アクセスしてきたユーザー情報・user_info_json:#{user_info_json} "
 
-    
     #Redis のマッチング待ちキューからすでに登録されている全データを取得する・$redis.lrange(MATCHING_QUEUE_KEY, 0, -1)で、マッチングキュー内の全ユーザー情報（JSON文字列）を取得
     existing_queue = $redis.lrange(MATCHING_QUEUE_KEY, 0, -1)# 既存のキューから全てのデータを取得
 
@@ -68,28 +44,11 @@ class MatchingController < ApplicationController
       # 重複している場合は、ログにその旨を出力する
       Rails.logger.info "ユーザー識別子は既にキューに存在する"
     end
-=begin
-    #user_agentsが被らないようにredisにデータ入れる
-    #各JSON文字列をパースしてユーザーエージェント部分のみを取り出す
-    existing_user_agents = existing_queue.map do |json|# 既存のuser_agentをチェック
-      JSON.parse(json)['user_agent']
-    end
-    #もし既存のキュー内に、現在のリクエストのuser_agent（ブラウザ識別情報）が存在していなければ、現在のユーザー情報を Redis キューに追加する
-    #既存キューのUser-Agentをチェックし、重複していなければキューに追加
-    unless existing_user_agents.include?(request.user_agent)# 重複チェック
-      $redis.rpush(MATCHING_QUEUE_KEY, user_info_json)
-      Rails.logger.info "ユーザー#{user_info_json}をRedisキューに追加した。現在のキューの長さ: #{$redis.llen(MATCHING_QUEUE_KEY)}."
-    else # 重複の場合の処理
-      Rails.logger.info "ユーザーエージェントは既にキューに存在する"
-    end
-=end
+
     # Redisキューに現在のユーザーを追加
     #$redis.rpush(MATCHING_QUEUE_KEY, user_info_json)
 
-    # マッチングロジックを同期的に実行
-    # ここでは、Redis操作がアトミックであることを利用して、
-    # 複数リクエストが同時に来ても整合性を保つようにします。
-    # しかし、完全に競合状態を避けるにはRedisのLuaスクリプトがより適切です。
+    # マッチングロジックを同期的に実行・ここでは、Redis操作がアトミックであることを利用して、複数リクエストが同時に来ても整合性を保つようにします。しかし、完全に競合状態を避けるにはRedisのLuaスクリプトがより適切です。
     
     #現在のマッチング待ち人数を確認・キューの長さを確認
     queue_length = $redis.llen(MATCHING_QUEUE_KEY)
@@ -146,7 +105,6 @@ class MatchingController < ApplicationController
       $redis.hset(GAME_ROOMS_HASH_KEY, room_id, room_data.to_json)
       Rails.logger.info "RedisにGameRoom#{room_id}が作成された。"
 
-
       #マッチングのRedisデータからマッチング完了した2人だけを削除(他のマッチング中の人は消さない)
       #上の処理でlpopしてるからすでにデータから削除されてる？・LPOPを利用して先頭から2件取り出すと、自動的にリストから削除されます
       Rails.logger.info "マッチング後の2人だけを除いたマッチングのRedisデータ：#{$redis.lrange(MATCHING_QUEUE_KEY, 0, -1)}" #キュー全体の内容を lrange で取得（0番目から最後まで）
@@ -154,8 +112,6 @@ class MatchingController < ApplicationController
       #マッチング成立後の通知・各プレイヤーにマッチング成立をブロードキャスト
       #player1にマッチング成立後の通知
       ActionCable.server.broadcast("personal_notification_#{player1_info[:identifier]}" ,{ status: 'matched', room_id: room_id, player_role: (player1_info[:identifier] == sente_identifier ? 'sente' : 'gote') })
-      #"matching_status",
-        #"matching_status_#{player1_info[:identifier]}",
       Rails.logger.info "#{player1_info[:identifier]}にブロードキャストマッチした"
       #player2にマッチング成立後の通知
       ActionCable.server.broadcast("personal_notification_#{player2_info[:identifier]}" ,{ status: 'matched', room_id: room_id, player_role: (player2_info[:identifier] == sente_identifier ? 'sente' : 'gote') })
@@ -190,15 +146,11 @@ class MatchingController < ApplicationController
   def cancel
     #reset_session# ここでセッション ID が廃棄 → 次のリクエストで新しいセッション ID が発行される
     user_identifier = session.id.to_s #現在のセッション ID を取得
-    
-    
-    # Redisのマッチングキューから、該当するユーザーを削除する
-    # JSON文字列として完全に一致する要素のみ削除
-    # 実際には、キューに追加する際に識別子のみを保存し、LREM identifier のように使うか、キューの全要素を読み込んで対象を削除し、再書き込みするなどの工夫が必要です。
-    
+      
     #確実な削除のため、一度キューをすべて取得し、該当要素を除外して再登録する (非効率だが確実)
     #キューの全要素を取得してRuby配列に変換・全キューアイテムを取得してパース・取得した要素はJSON文字列として格納されているため、Rubyのハッシュにパースし、キーをシンボルに変換する
     all_queue_items = $redis.lrange(MATCHING_QUEUE_KEY, 0, -1).map { |json| JSON.parse(json).symbolize_keys }
+  
     #パースされた全キューアイテムの中から、現在のユーザーの user_identifier と一致する :identifier を持つアイテムを除外し、削除後のキューのリストupdated_queue_itemsを作成する
     updated_queue_items = all_queue_items.reject { |item| item[:identifier] == user_identifier }
     

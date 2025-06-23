@@ -1,4 +1,5 @@
 <script src="https://cdn.tailwindcss.com"></script>
+<%= stylesheet_link_tag 'shogi', media: 'all' %>
 
 
 
@@ -25,12 +26,9 @@ shogi/indexはコンポーネント名でもいい・例えばShogiとか
 </div>
 
 
-
 <div class="min-h-screen flex items-center justify-center bg-gray-100 p-4">
   <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg text-center">
     <h1 class="text-4xl font-extrabold text-indigo-700 mb-6">対戦部屋 <%= params[:id] %></h1>
-    <%# room_id は params[:id] から直接取得 %>
-
     <% if @player_role == 'sente' %>
       <p class="text-2xl font-bold text-green-600 mb-4 animate-fade-in">あなたは先手番です。</p>
       <p class="text-gray-700 text-lg">駒を動かして対局を開始してください。</p>
@@ -40,7 +38,6 @@ shogi/indexはコンポーネント名でもいい・例えばShogiとか
     <% else %>
       <p class="text-2xl font-bold text-gray-500 mb-4">あなたの役割は不明です。</p>
     <% end %>
-
     <div class="mt-8">
       <%# ここに将棋盤やチャットなどのゲームUIを配置します %>
       <div class="bg-gray-200 h-96 w-full rounded-lg flex items-center justify-center text-gray-500">
