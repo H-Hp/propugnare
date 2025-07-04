@@ -71,7 +71,6 @@ class BoardInfo {
         //this.board = this.deserializeBoard(initialData.BoardInfo.board || defaultBoard);
         //this.turn = initialData.turn || "先手";
         
-
         // selection の復元
         // JSON.parse(JSON.stringify())でディープコピーし、必要に応じて駒を再構築
         this.selection = initialData.selection ? JSON.parse(JSON.stringify(initialData.selection)) : defaultSelection;

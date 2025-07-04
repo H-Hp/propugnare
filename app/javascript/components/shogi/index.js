@@ -623,6 +623,15 @@ class Room extends React.Component {
               <div>
                 <h2>10:00</h2>
               </div>
+
+              <div 
+                style={ nowTurn !== yourRole
+                    ? { display: "none" }
+                    : undefined
+                  }
+              >
+                <h3>あなたの手番です</h3>
+              </div>
             </div>
               
           </div>
