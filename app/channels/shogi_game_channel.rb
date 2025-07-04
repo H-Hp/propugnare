@@ -31,7 +31,7 @@ class ShogiGameChannel < ApplicationCable::Channel
   # クライアントからメッセージを受信した時
   def board_broadcast_and_store(data)
     move_data = data['move']
-    currentPlayer_data = data['currentPlayer']
+    nowTurn_data = data['nowTurn']
     boardInfo = data['BoardInfo']
     @room_id = data['room_id']
     @game_id = data['game_id']
@@ -49,7 +49,7 @@ class ShogiGameChannel < ApplicationCable::Channel
     
     Rails.logger.info "room_id に対応する move_data を受信しました： #{@room_id}: #{move_data}"
 
-    new_board_state = { board: "新盤面情報のboadstate", last_move: move_data, currentPlayer: currentPlayer_data } # 実際はゲームロジックで生成
+    new_board_state = { board: "新盤面情報のboadstate", last_move: move_data, nowTurn: nowTurn_data } # 実際はゲームロジックで生成
 
     routing_key = "game.#{@room_id}.board_update"
   end

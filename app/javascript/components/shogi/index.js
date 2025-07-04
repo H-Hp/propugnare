@@ -130,7 +130,7 @@ class Room extends React.Component {
       //boardInfo: new_boardInfo, // 盤面状態を保持
       gameInfo: {},
       moveHistory: [],
-      currentPlayer: '先手',
+      nowTurn: '先手',
       isConnected: false,
       gameId: gameId,
       roomId: roomId, // ルームIDもstateで管理
@@ -253,13 +253,13 @@ class Room extends React.Component {
               //console.log(`newBoardInfoInstance: ${JSON.stringify(newBoardInfoInstance)}`);
               this.setState({
                 boardInfo: newBoardInfoInstance,
-                currentPlayer: newBoardInfoInstance.currentPlayer, // BoardInfoのturnをstateに反映
+                nowTurn: newBoardInfoInstance.nowTurn, // BoardInfoのturnをstateに反映
                 // selection, pieceStandNum, pieceStand は newBoardInfoInstance 内に保持される
                 isLoading: false,
                 loadingMessage: "",
                 //hasReceivedInitialData: true,
               }, () => {
-                console.log(`BoardInfo instance reconstructed:`, this.state.boardInfo);
+                //console.log(`BoardInfo instance reconstructed:`, this.state.boardInfo);
               });
             }
             
@@ -280,13 +280,13 @@ class Room extends React.Component {
               this.setState({
                 boardInfo: newBoardInfoInstance,
                 //currentPlayer: newBoardInfoInstance.turn, // BoardInfoのturnをstateに反映
-                currentPlayer: newBoardInfoInstance.currentPlayer, // BoardInfoのturnをstateに反映
+                nowTurn: newBoardInfoInstance.nowTurn, // BoardInfoのturnをstateに反映
                 // selection, pieceStandNum, pieceStand は newBoardInfoInstance 内に保持される
                 isLoading: false,
                 loadingMessage: "",
                 //hasReceivedInitialData: true,
               }, () => {
-                console.log(`BoardInfo instance reconstructed:`, this.state.boardInfo);
+                //console.log(`BoardInfo instance reconstructed:`, this.state.boardInfo);
               });
             }
 
@@ -352,7 +352,7 @@ class Room extends React.Component {
           this.subscription.perform('board_broadcast_and_store', { 
             move: move, 
             BoardInfo: boardData,
-            currentPlayer: this.state.currentPlayer,
+            nowTurn: this.state.nowTurn,
             room_id: this.state.roomId,
             game_id: this.state.gameId
            });
@@ -389,8 +389,10 @@ class Room extends React.Component {
 
   //ユーザーが盤面上のi行、j列をクリックしたときに呼ばれるメソッド
   handleBoardClick(i, j) {
-    const { boardInfo, isConnected } = this.state;
-    const clickResult = boardInfo.boardClick(i, j);// BoardInfoインスタンスのboardClickメソッドを呼び出す・この呼び出しで boardInfo インスタンス内部の状態が更新される・戻り値clickResultに移動情報などがまとまっている
+    //const { boardInfo, isConnected } = this.state;
+    //const clickResult = boardInfo.boardClick(i, j);// BoardInfoインスタンスのboardClickメソッドを呼び出す・この呼び出しで boardInfo インスタンス内部の状態が更新される・戻り値clickResultに移動情報などがまとまっている
+    const { boardInfo, isConnected, yourRole } = this.state;
+    const clickResult = boardInfo.boardClick(i, j,yourRole);// BoardInfoインスタンスのboardClickメソッドを呼び出す・この呼び出しで boardInfo インスタンス内部の状態が更新される・戻り値clickResultに移動情報などがまとまっている
 
     //新しいボードデータ作るためのデータを作成
     const game_data = {
@@ -398,9 +400,9 @@ class Room extends React.Component {
       BoardInfo:     clickResult.BoardInfo,
       pieceStandNum: clickResult.pieceStandNum,
       pieceStand: clickResult.pieceStand,
-      currentPlayer: clickResult.currentPlayer
+      nowTurn: clickResult.nowTurn
     };
-
+    console.log(`clickResultのnowTurn：${JSON.stringify(clickResult.nowTurn)}`);
     //console.log(`clickResultから作ったgame_data：${JSON.stringify(game_data)}`);
     //console.log(`ああああclickResult.pieceStandNum: ${JSON.stringify(clickResult.pieceStandNum)}`);
     //console.log(`ううううああああclickResult.pieceStand：${JSON.stringify(clickResult.pieceStand)}`);
@@ -419,7 +421,7 @@ class Room extends React.Component {
     this.setState({
       boardInfo: newBoardInfoInstance, // 新しいインスタンスでstateを更新
       //currentPlayer: newBoardInfoInstance.turn, // BoardInfoインスタンスから手番を取得して更新
-      currentPlayer: clickResult.currentPlayer, // BoardInfoインスタンスから手番を取得して更新
+      nowTurn: clickResult.nowTurn, // BoardInfoインスタンスから手番を取得して更新
     }, () => {
       // stateの更新が完了した後、WebSocketでサーバーに送信
       if (isConnected && this.subscription && clickResult.moved) { // 駒が動いた場合のみ送信
@@ -550,7 +552,7 @@ class Room extends React.Component {
 */
 
   render() {
-    const { boardInfo, gameInfo, moveHistory, currentPlayer, isConnected, isLoading, loadingMessage, chatMessages, currentChatMessage, isChatOpen, yourRole, enemyRole} = this.state;
+    const { boardInfo, gameInfo, moveHistory, nowTurn, isConnected, isLoading, loadingMessage, chatMessages, currentChatMessage, isChatOpen, yourRole, enemyRole} = this.state;
     const roomId = this.state.roomId; // renderメソッド内でstateからroomIdを取得
 
     //senteだったら"先手"に、goteだったら"後手"に
@@ -563,7 +565,8 @@ class Room extends React.Component {
     if (enemyRole === "sente") this.setState({enemyRole: "先手"});
     if (enemyRole === "gote") this.setState({enemyRole: "後手"});
 
-    console.log("boardInfo:"+JSON.stringify(boardInfo))
+    //console.log("boardInfo:"+JSON.stringify(boardInfo))
+    console.log("nowTurn:"+this.state.nowTurn)
 
     if (isLoading) { // ★ isLoading が true の間はローディング表示
       return (
@@ -726,7 +729,7 @@ class Room extends React.Component {
           {/* 現在の手番 */}
           <div className="mb-3">
             <span className="font-semibold">現在の手番: </span>
-            <span className="text-blue-600">{currentPlayer}</span>
+            <span className="text-blue-600">{nowTurn}</span>
           </div>
           {/* ゲーム情報 */}
           {Object.keys(gameInfo).length > 0 && (

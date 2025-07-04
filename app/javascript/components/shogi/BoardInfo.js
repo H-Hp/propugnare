@@ -51,7 +51,7 @@ class BoardInfo {
             this.board = this.deserializeBoard(defaultBoard);
             this.pieceStandNum = defaultPieceStandNum
             this.pieceStand = defaultPieceStand
-            this.turn = initialData.currentPlayer || "先手";
+            this.nowTurn = initialData.nowTurn || "先手";
         }else{//initialDataにデータが入っている場合
             //console.log("initialDataが空じゃない時:"+JSON.stringify(initialData.BoardInfo.board));
             //console.log("initialDataが空じゃない時:");
@@ -63,7 +63,7 @@ class BoardInfo {
 
             // pieceStand のデシリアライズ
             this.pieceStand = this.deserializePieceStand(initialData.BoardInfo.pieceStand || defaultPieceStand);
-            this.turn = initialData.BoardInfo.currentPlayer || "先手";
+            this.nowTurn = initialData.BoardInfo.nowTurn || "先手";
         }
         //console.log("this.board:"+JSON.stringify(this.board));
         //this.board = this.deserializeBoard(initialData.board || defaultBoard);
@@ -122,7 +122,9 @@ class BoardInfo {
         };*/
     }
 
-    boardClick(i, j) {
+    //boardClick(i, j) {
+    boardClick(i, j,yourRole) {
+        console.log("boardClickのyourRole:"+yourRole)
         if (this.selection.state) {//何らかの駒が選択されている状態の場合
             //console.log(`this.board[i][j].getPiece()：${this.board[i][j].getPiece()}`)
             if (this.selection.boardSelectInfo[i][j] !== "配置可能") {//クリックされたマスが移動先として不適切であれば
@@ -131,7 +133,7 @@ class BoardInfo {
             let myPiece;
             if (this.selection.pieceStandPiece.name) {// 持ち駒が選択されている場合 (駒を打つ)
                 myPiece = this.selection.pieceStandPiece;// 持ち駒を移動する駒(myPiece)にする
-                this.pieceStandNum[this.turn][myPiece.name] -= 1;// 持ち駒の数を減らす
+                this.pieceStandNum[this.nowTurn][myPiece.name] -= 1;// 持ち駒の数を減らす
                 this.makePieceStand();// 持ち駒台の表示を更新
             } else {// 盤上の駒が選択されている場合 (駒を動かす)
                 myPiece = this.board[this.selection.before_i][this.selection.before_j]; // 選択していた盤上の駒(myPiece)にする
@@ -155,7 +157,8 @@ class BoardInfo {
             }
                 
             this.board[i][j] = myPiece;// 駒を新しいマスに配置
-            this.turn = this.turn === "先手" ? "後手" : "先手";
+            this.nowTurn = this.nowTurn === "先手" ? "後手" : "先手";
+            console.log("boardClickのthis.nowTurn:"+this.nowTurn)
             //return true; // コマが動いた
             return {
                 //newBoardState: this.getBoardState(), // 変更後の盤面状態を返す
@@ -165,11 +168,11 @@ class BoardInfo {
                 pieceStand: this.pieceStand,
                 //moveDetails: this.board[i][j]
                 move: this.board[i][j],
-                currentPlayer: this.turn
+                nowTurn: this.nowTurn,
             };
 
         } else {// 何も駒が選択されていない状態の場合 (駒を選択する)
-            if (this.turn !== this.board[i][j].owner) {
+            if (this.nowTurn !== this.board[i][j].owner) {
                 return;
             }
             this.selection.isNow = true;
@@ -191,7 +194,7 @@ class BoardInfo {
                 pieceStandNum: this.pieceStandNum,
                 pieceStand: this.pieceStand,
                 move: this.board[i][j],
-                currentPlayer: this.turn
+                nowTurn: this.nowTurn
             };
         }
     }
@@ -201,8 +204,8 @@ class BoardInfo {
         for (let l = 0; l < piece.dx.length; l++) {// 駒の移動方向のリストを反復
             let y = i;
             let x = j;
-            y += this.turn === "先手" ? piece.dy[l] : -piece.dy[l];// 駒の向きに応じて移動方向を調整
-            x += this.turn === "先手" ? piece.dx[l] : -piece.dx[l];
+            y += this.nowTurn === "先手" ? piece.dy[l] : -piece.dy[l];// 駒の向きに応じて移動方向を調整
+            x += this.nowTurn === "先手" ? piece.dx[l] : -piece.dx[l];
             if (0 <= y && y <= 8 && 0 <= x && x <= 8) {// 盤面内に収まるかチェック
                 return true;// 少なくとも一つ動けるマスが見つかれば true を返す
             }
@@ -236,8 +239,8 @@ class BoardInfo {
             let y = i;
             let x = j;
             for (let _ = 0; _ < piece.dk[l]; _++) {
-                y += this.turn === "先手" ? piece.dy[l] : -piece.dy[l];
-                x += this.turn === "先手" ? piece.dx[l] : -piece.dx[l];
+                y += this.nowTurn === "先手" ? piece.dy[l] : -piece.dy[l];
+                x += this.nowTurn === "先手" ? piece.dx[l] : -piece.dx[l];
                 if (y < 0 || y > 8 || x < 0 || x > 8 || this.board[y][x].owner === piece.owner) {
                     break;
                 }
@@ -251,7 +254,7 @@ class BoardInfo {
     }
 
     pieceStandClick(piece) {
-        if (this.selection.state || this.turn !== piece.owner) {//既に駒が選択されているか、自分の持ち駒でなければ
+        if (this.selection.state || this.nowTurn !== piece.owner) {//既に駒が選択されているか、自分の持ち駒でなければ
             return;//何もせず終了
         }
         this.selection.isNow = true; //選択状態に入る
@@ -263,24 +266,24 @@ class BoardInfo {
             "後手": Array(9).fill("未選択")
         };
         const i = this.pieceStand[piece.owner].findIndex(p => p.name === piece.name);// クリックされた持ち駒が駒台のどこにあるか
-        this.selection.pieceStandSelectInfo[this.turn][i] = "選択状態";// その駒を「選択状態」とマーク
+        this.selection.pieceStandSelectInfo[this.nowTurn][i] = "選択状態";// その駒を「選択状態」とマーク
         this.checkCanPutPieceStand(piece);//持ち駒を打てるマスを計算してハイライト表示するロジックを呼び出す
     }
 
     //持ち駒の枚数（pieceStandNum）に基づいて、実際に表示する持ち駒の配列（pieceStand）を生成するメソッド
     makePieceStand() {
         let myPieceStand = [];
-        const myPieceStandNum = this.pieceStandNum[this.turn];// 現在の手番の持ち駒枚数を取得
+        const myPieceStandNum = this.pieceStandNum[this.nowTurn];// 現在の手番の持ち駒枚数を取得
         //console.log("makePieceStandのmyPieceStandNum"+JSON.stringify(myPieceStandNum))
         for (let name in myPieceStandNum) {// 各駒の名前について
             if (myPieceStandNum[name] > 0) {// 1枚でも持っていれば
-                myPieceStand.push(Piece.getPieceByName(name, this.turn));// その駒のインスタンスを追加
+                myPieceStand.push(Piece.getPieceByName(name, this.nowTurn));// その駒のインスタンスを追加
             }
         }
         while (myPieceStand.length < 9) {// 持ち駒が9枚に満たない場合
             myPieceStand.push(new Blank());// 空白駒で埋める (表示上の調整)
         }
-        this.pieceStand[this.turn] = myPieceStand;// 持ち駒台の配列を更新
+        this.pieceStand[this.nowTurn] = myPieceStand;// 持ち駒台の配列を更新
     }
 
     //持ち駒（piece）を盤面に打つことができる合法なマスを計算し、this.selection.boardSelectInfoに"配置可能"としてマークするメソッドです。二歩、打ち歩詰め、行き所のない駒のルールを考慮しています。
@@ -397,7 +400,7 @@ class BoardInfo {
             };
         }
         return {
-            turn: this.turn,
+            nowTurn: this.nowTurn,
             board: serializedBoard,
             selection: serializedSelection,
             pieceStandNum: JSON.parse(JSON.stringify(this.pieceStandNum)), // 駒台の数はそのまま送れる・駒台の数はそのままコピー
