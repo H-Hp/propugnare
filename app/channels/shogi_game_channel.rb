@@ -4,7 +4,7 @@ class ShogiGameChannel < ApplicationCable::Channel
     # 部屋番号をパラメータから取得 (例: /cable?room_id=123)
     @room_id = params[:room_id]
     #@game_id = params[:id]
-    @game_id = 2
+    @game_id = params[:room_id]
     reject unless @room_id.present? # 部屋番号がない場合は購読を拒否
 
     #redis_key = "shogi_game:#{@game_id}"
@@ -21,7 +21,7 @@ class ShogiGameChannel < ApplicationCable::Channel
     #start_rabbitmq_subscription(@room_id)
   end
 
-  # 購読解除（unsubscribe）時に呼び出される・ャンネルがサブスクリプション解除された際の処理
+  # 購読解除（unsubscribe）時に呼び出される・チャンネルがサブスクリプション解除された際の処理
   def unsubscribed
     # チャンネルがサブスクリプション解除された際の処理
     #stop_rabbitmq_subscription # RabbitMQの購読を停止
@@ -45,13 +45,7 @@ class ShogiGameChannel < ApplicationCable::Channel
     $redis.set(redis_key, new_board_data.to_json)#Redisに値をセット
     
     #WebSocketで配信
-    ActionCable.server.broadcast(
-      "shogi_game_room_#{@room_id}",
-      {
-        data_type: "board_update",
-        new_board_data: new_board_data
-      }
-    )
+    ActionCable.server.broadcast("shogi_game_room_#{@room_id}",{data_type: "board_update",new_board_data: new_board_data})
     
     Rails.logger.info "room_id に対応する move_data を受信しました： #{@room_id}: #{move_data}"
 
@@ -82,13 +76,7 @@ class ShogiGameChannel < ApplicationCable::Channel
       updated_redis_stored_data=chat_data
     end
     # 取得したデータをクライアントにブロードキャスト
-    ActionCable.server.broadcast(
-      "shogi_game_room_#{room_id}",
-      {
-        data_type: "chat_update",
-        chat_data: updated_redis_stored_data
-      }
-    )
+    ActionCable.server.broadcast( "shogi_game_room_#{room_id}",{ data_type: "chat_update", chat_data: updated_redis_stored_data})
   end
 
   private
@@ -123,8 +111,8 @@ class ShogiGameChannel < ApplicationCable::Channel
     Rails.logger.info "WebSocket初期読み込みrequest_initial_board_state: room_id:#{room_id}・game_id:#{game_id}"
 
     #@redis = $redis # config/initializers/redis.rb で設定したグローバル変数
-    redis_key = "shogi_game:#{game_id}"
-    redis_chat_key = "shogi_game_chat:#{game_id}"
+    redis_key = "shogi_game:#{room_id}"
+    redis_chat_key = "shogi_game_chat:#{room_id}"
 
     redis_stored_board_data=""
     if $redis.exists?(redis_key)

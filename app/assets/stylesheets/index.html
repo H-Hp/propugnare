@@ -1,0 +1,82 @@
+<script src="https://cdn.tailwindcss.com"></script>
+<!--<div class="flex h-screen gap-8 px-4">
+  <div class="flex-1 bg-gray-100 p-4">左</div>
+
+  <div class="min-w-[441px] bg-gray-200 p-4">中央</div>
+
+  <div class="flex-1 bg-gray-100 p-4">右</div>
+</div>
+
+<body class="h-screen flex flex-col">
+  <header class="h-16 bg-blue-600 text-white flex items-center px-4">
+    <h1 class="text-xl font-bold">Shogi Game</h1>
+  </header>
+
+  <main class="flex-1 flex gap-8 px-4 py-4 overflow-hidden">
+    <div class="flex-1 bg-gray-100 p-4 overflow-auto">左</div>
+
+    <div class="min-w-[441px] bg-gray-200 p-4 overflow-auto">中央</div>
+
+    <div class="flex-1 bg-gray-100 p-4 overflow-auto">右</div>
+  </main>
+</body>
+-->
+
+<body>
+  <header>
+    Shogi Game
+  </header>
+
+  <main>
+    <div class="column">左</div>
+    <div class="column center">中央（min-width: 441px）</div>
+    <div class="column">右</div>
+  </main>
+</body>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      height: 64px;
+      background-color: #2563eb; /* Tailwind's blue-600 */
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      font-size: 1.25rem;
+      font-weight: bold;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      gap: 2rem;
+      padding: 1rem;
+      overflow: hidden;
+    }
+
+    .column {
+      background-color: #f3f4f6; /* Tailwind's gray-100 */
+      padding: 1rem;
+      overflow: auto;
+      flex: 1;
+    }
+
+    .center {
+      background-color: #e5e7eb; /* Tailwind's gray-200 */
+      min-width: 441px;
+    }
+  </style>
+

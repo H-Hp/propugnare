@@ -1,12 +1,6 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <%= stylesheet_link_tag 'shogi', media: 'all' %>
 
-
-
-
-
-<%#= react_component("Shogi", { gameId: @game_id }) %>
-
 <!--
 react-rails というGemが提供するヘルパーメソッド react_component
 shogi/indexはコンポーネント名でもいい・例えばShogiとか
@@ -15,48 +9,4 @@ shogi/indexはコンポーネント名でもいい・例えばShogiとか
 <%#= react_component("shogi/index", {gameId: @game_id}, { prerender: false }) %>
 <%= react_component("shogi/index", {gameId: @game_id}) %>
 
-<div id="game-container" data-game-id="<%= @game_id %>" data-room-id="<%= @room_id %>">
-
-
-<div class="room-id" id="room-id">
-  部屋番号<%= @room_id %>
-  あなたは<%= @your_sente_gote %>
-  あなたは<%= @opponent_identifier %>
-  
-</div>
-
-
-<div class="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-  <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg text-center">
-    <h1 class="text-4xl font-extrabold text-indigo-700 mb-6">対戦部屋 <%= params[:id] %></h1>
-    <% if @player_role == 'sente' %>
-      <p class="text-2xl font-bold text-green-600 mb-4 animate-fade-in">あなたは先手番です。</p>
-      <p class="text-gray-700 text-lg">駒を動かして対局を開始してください。</p>
-    <% elsif @player_role == 'gote' %>
-      <p class="text-2xl font-bold text-red-600 mb-4 animate-fade-in">あなたは後手番です。</p>
-      <p class="text-gray-700 text-lg">相手の指し手を待ってください。</p>
-    <% else %>
-      <p class="text-2xl font-bold text-gray-500 mb-4">あなたの役割は不明です。</p>
-    <% end %>
-    <div class="mt-8">
-      <%# ここに将棋盤やチャットなどのゲームUIを配置します %>
-      <div class="bg-gray-200 h-96 w-full rounded-lg flex items-center justify-center text-gray-500">
-        （将棋盤のプレースホルダー）
-      </div>
-    </div>
-
-    <a href="/" class="mt-8 inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
-      ロビーに戻る
-    </a>
-  </div>
-</div>
-
-<style>
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-in {
-  animation: fadeIn 0.8s ease-out forwards;
-}
-</style>
+<div id="game-container" data-game-id="<%= @game_id %>" data-room-id="<%= @room_id %>" data-your-role="<%= @your_role %>"  data-enemy-role="<%= @enemy_role %>">

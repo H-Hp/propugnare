@@ -116,7 +116,10 @@ class Room extends React.Component {
     const element = document.querySelector('#game-container');
     const gameId = element.dataset.gameId;// #data-game-id属性からゲームIDを取得
     const roomId = element.dataset.roomId;// #data-game-id属性からゲームIDを取得
-    console.log(`gameId:${gameId}・roomId:${roomId}`)
+    const yourRole = element.dataset.yourRole;
+    const enemyRole = element.dataset.enemyRole;
+    
+    //console.log(`gameId:${gameId}・roomId:${roomId}`)
 
     //const new_boardInfo= new BoardInfo();
     //console.log(`new BoardInfo()：${new BoardInfo()}`)
@@ -131,6 +134,8 @@ class Room extends React.Component {
       isConnected: false,
       gameId: gameId,
       roomId: roomId, // ルームIDもstateで管理
+      yourRole: yourRole,
+      enemyRole: enemyRole,
       isLoading: true,//ローディング状態
       loadingMessage: "データを読み込み中...", //ローディングメッセージ
       chatMessages: [], // 新しいstate: チャットメッセージを格納する配列
@@ -153,7 +158,7 @@ class Room extends React.Component {
   // コンポーネントがアンマウントされる前に実行される（クリーンアップ）
   componentWillUnmount() {
     if (this.subscription) {
-      console.log(`ShogiGameChannelからroom_idでの購読を解除する: ${this.state.roomId}`);
+      //console.log(`ShogiGameChannelからroom_idでの購読を解除する: ${this.state.roomId}`);
       this.subscription.unsubscribe();
       this.subscription = null;
     }
@@ -170,7 +175,7 @@ class Room extends React.Component {
     }
 
     this.setState({ roomId }); // ルームIDをstateに保存 
-    console.log(`ShogiGameChannelにroom_idでサブスクライブしようとしています: ${roomId}`);
+    //console.log(`ShogiGameChannelにroom_idでサブスクライブしようとしています: ${roomId}`);
 
     this.subscription = consumer.subscriptions.create(
       { channel: "ShogiGameChannel", room_id: roomId },
@@ -201,7 +206,7 @@ class Room extends React.Component {
           this.setState({ isConnected: false });
         },
         received: (data) => {
-          console.log(`room_id のデータを取得しました。 ${roomId}:`, data);
+          //console.log(`room_id のデータを取得しました。 ${roomId}:`, data);
           // サーバーから受信したデータでstateを更新
           /*this.setState(prevState => ({
             boardInfo: data.boardInfo || prevState.boardInfo, // 盤面更新
@@ -243,7 +248,7 @@ class Room extends React.Component {
             //console.log(`Received ${data.data_type} for reconstruction:`, boardDataFromServer);
             //console.log(`boardDataFromServer: ${JSON.stringify(boardDataFromServer)}`);
             if (boardDataFromServer) {
-              // ★ サーバーから受け取ったデータ（プレーンオブジェクト）を引数に渡し、新しいBoardInfoインスタンスを生成
+              //サーバーから受け取ったデータ（プレーンオブジェクト）を引数に渡し、新しいBoardInfoインスタンスを生成
               const newBoardInfoInstance = new BoardInfo(boardDataFromServer);
               //console.log(`newBoardInfoInstance: ${JSON.stringify(newBoardInfoInstance)}`);
               this.setState({
@@ -259,7 +264,7 @@ class Room extends React.Component {
             }
             
 
-            this.setState({ isLoading: false, loadingMessage: "" });//ローディングを終了
+            //this.setState({ isLoading: false, loadingMessage: "" });//ローディングを終了
           }else if(data.data_type=="board_update"){
             //console.log(`data： ${JSON.stringify(data)}`);
             //const boardDataFromServer = data.BoardInfo; // サーバーから来たプレーンなデータ
@@ -270,7 +275,7 @@ class Room extends React.Component {
             
             if (boardDataFromServer) {
               //console.log(`wwwwww： ${JSON.stringify(boardDataFromServer)}`);
-              // ★ サーバーから受け取ったデータ（プレーンオブジェクト）を引数に渡し、新しいBoardInfoインスタンスを生成
+              //サーバーから受け取ったデータ（プレーンオブジェクト）を引数に渡し、新しいBoardInfoインスタンスを生成
               const newBoardInfoInstance = new BoardInfo(boardDataFromServer);
               this.setState({
                 boardInfo: newBoardInfoInstance,
@@ -290,24 +295,24 @@ class Room extends React.Component {
             let NewBoardInfo=Object.assign(new BoardInfo(), data.BoardInfo);//data.BoardInfo を受け取った後、それを BoardInfo クラスのインスタンスに「復元」する必要があります    
             this.setState({ boardInfo: NewBoardInfo });
             this.setState({ currentPlayer: data.currentPlayer });*/
-            this.setState({ isLoading: false, loadingMessage: "" });//ローディングを終了
+            //this.setState({ isLoading: false, loadingMessage: "" });//ローディングを終了
             
           }else if(data.data_type=="already_redis_stored_chat_data" || data.data_type=="chat_update"){
             if (data.data_type=="already_redis_stored_chat_data"){ 
               this.setState({ isLoading: false, loadingMessage: "" });//ローディングを終了 
             }
-            console.log(`data.chat_data:`, data.chat_data);
+            //console.log(`data.chat_data:`, data.chat_data);
             //if (data.data_type=="already_redis_stored_chat_data"){ 
             if (Array.isArray(data.chat_data)) {//配列かどうかチェック
               //最初はdata.chat_dataが"aaa"みたいに配列になっていないので配列に変換してchatMessageに入れる
               this.setState({ chatMessages: [data.chat_data] }, () => {
-                  console.log("state 更新後:", this.state.chatMessages);
+                  //console.log("state 更新後:", this.state.chatMessages);
               });
             }else{
               //this.setState({ chatMessages: data.redis_stored_chat_data });
               //this.setState({ chatMessages: data.chat_data });//非同期だから即時反映されない
               this.setState({ chatMessages: data.chat_data }, () => {
-                console.log("state 更新後:", this.state.chatMessages);
+                //console.log("state 更新後:", this.state.chatMessages);
               });
             }
             //console.log(`this.state.chatMessages：`, this.state.chatMessages);
@@ -329,8 +334,8 @@ class Room extends React.Component {
         //sendMove: (move) => {
         //board_update: (move) => {
         board_update: (boardData,move) => {
-          console.log("board_updateメソッド");
-          console.log(`this.state.currentPlayer:${this.state.currentPlayer}`);
+          //console.log("board_updateメソッド");
+          //console.log(`this.state.currentPlayer:${this.state.currentPlayer}`);
           //console.log(`boardData：${JSON.stringify(boardData)}`);
           //this.perform('receive', { move: move ,currentPlayer: currentPlayer }); // サーバーの receive メソッドを呼び出す
           //this.subscription.perform('receive', { 
@@ -356,7 +361,7 @@ class Room extends React.Component {
         // サーバーにメッセージを送信するためのカスタムメソッド
         //sendChatMessage: function(message) { 
         sendChatMessage: (chat_data)=> {//
-          console.log(`sendChatMessageメソッド・chat_data:${chat_data}`);
+          //console.log(`sendChatMessageメソッド・chat_data:${chat_data}`);
           this.subscription.perform('chat_broadcast_and_store', { 
             chat_data: chat_data,
             room_id: this.state.roomId,
@@ -371,59 +376,34 @@ class Room extends React.Component {
     const nextBoardInfo = this.state.boardInfo;// 現在のboardInfoの状態を取得
     if (nextBoardInfo.selection.isNow) {// 既に何か選択されている状態の場合
       nextBoardInfo.selection.isNow = false;// 選択状態を解除
-
-
-    } else {
-      nextBoardInfo.selection = new Selection();//selectionオブジェクトを初期状態に戻す (新しいSelectionインスタンスを作成)
-
-          /*//Redisにデータ登録して/WebSoketでブロードキャスト
-          if(this.state.currentPlayer==="先手"){
-            this.setState({currentPlayer: "後手"});
-          }else if(this.state.currentPlayer==="後手"){
-            this.setState({currentPlayer: "先手"});
-          }
-          //this.subscription.sendMove(nextBoardInfo);
-          this.subscription.board_update({from: "5g", to: "5f"});
-          */
+    } else {//何も選択されてない状態の場合
+      nextBoardInfo.selection = new Selection();//selectionオブジェクトを初期状態に戻す (新しいSelectionインスタンスを作成し、選択状態を完全に初期化する)
     }
-    //盤面情報の更新
-    this.setState({boardInfo: nextBoardInfo});
-
-
+    this.setState({boardInfo: nextBoardInfo});//盤面情報の更新
   }
 
-  boardClick(i, j) {
+  /*boardClick(i, j) {
     console.log(`boardClickメソッド・i,j：${i},${j}`);
-    
-    
-    this.state.boardInfo.boardClick(i, j);
-    //const moved = this.state.boardInfo.boardClick(i, j);
-    /*console.log(`こまがうごいた：${moved}`);
-    if (moved) {//trueかfalse
-        // WebSocketへの登録処理
-        this.subscription.board_update({from: "5g", to: "5f"});
-    }
-    */
-  }
+    this.state.boardInfo.boardClick(i, j);//BoardInfoクラスのboardClick(i, j)を呼び出すだけで、選択／移動のロジックはBoardInfo側に一任
+  }*/
 
+  //ユーザーが盤面上のi行、j列をクリックしたときに呼ばれるメソッド
   handleBoardClick(i, j) {
     const { boardInfo, isConnected } = this.state;
+    const clickResult = boardInfo.boardClick(i, j);// BoardInfoインスタンスのboardClickメソッドを呼び出す・この呼び出しで boardInfo インスタンス内部の状態が更新される・戻り値clickResultに移動情報などがまとまっている
 
-    // BoardInfoインスタンスの boardClick メソッドを呼び出す
-    // この呼び出しで boardInfo インスタンス内部の状態が更新される
-    const clickResult = boardInfo.boardClick(i, j);
-    //console.log(`clickResult：${JSON.stringify(clickResult)}`);
-
-    //console.log(`clickResult.BoardInfo：${JSON.stringify(clickResult.BoardInfo)}`);
-    //console.log(`clickResult.move：${JSON.stringify(clickResult.move)}`);
-    //console.log(`clickResult.currentPlayer：${JSON.stringify(clickResult.currentPlayer)}`);
-
+    //新しいボードデータ作るためのデータを作成
     const game_data = {
       move:          clickResult.move,
       BoardInfo:     clickResult.BoardInfo,
+      pieceStandNum: clickResult.pieceStandNum,
+      pieceStand: clickResult.pieceStand,
       currentPlayer: clickResult.currentPlayer
     };
+
     //console.log(`clickResultから作ったgame_data：${JSON.stringify(game_data)}`);
+    //console.log(`ああああclickResult.pieceStandNum: ${JSON.stringify(clickResult.pieceStandNum)}`);
+    //console.log(`ううううああああclickResult.pieceStand：${JSON.stringify(clickResult.pieceStand)}`);
 
     // clickResult.newBoardState には、boardClick 後の BoardInfo 内部の最新状態が返される
     // これを基に、新しい BoardInfo インスタンスを生成して React の state を更新する
@@ -443,9 +423,9 @@ class Room extends React.Component {
     }, () => {
       // stateの更新が完了した後、WebSocketでサーバーに送信
       if (isConnected && this.subscription && clickResult.moved) { // 駒が動いた場合のみ送信
-        console.log(`こまがうごいた`);
+        //console.log(`こまがうごいた`);
         //console.log("盤面状態が変更されました。サーバーに送信します。", newBoardInfoInstance.getBoardState());
-        // ★ getBoardState() を呼び出し、サーバーに送るためにプレーンなオブジェクトに変換
+        //getBoardState() を呼び出し、サーバーに送るためにプレーンなオブジェクトに変換
         this.subscription.board_update(
           //newBoardInfoInstance.getBoardState(),
           newBoardInfoInstance,
@@ -460,18 +440,6 @@ class Room extends React.Component {
   pieceStandClick(piece) {
     this.state.boardInfo.pieceStandClick(piece);
   }
-
-  handleMove = () => {
-    if (this.subscription) {
-      //this.subscription.sendMove({ from: "7g", to: "7f" });
-      //this.subscription.board_update({ from: "7g", to: "7f" });
-    } else {
-      console.warn("subscription がまだ確立されていません");
-    }
-  };
-
-
-
 
   deleteData = async () => { // async/await を使用
     const { roomId } = this.state; // stateからroomIdを取得
@@ -489,7 +457,6 @@ class Room extends React.Component {
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken
-          // 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content, // 必要に応じて
         },
         //body: JSON.stringify({ game_id: 12345 })
       });
@@ -518,6 +485,7 @@ class Room extends React.Component {
     }
   };
 
+  /*
   renderDataDisplay = () => {
     const { boardInfo } = this.state;
     if (!boardInfo || Object.keys(boardInfo).length === 0) { // boardStateが空オブジェクトの場合も考慮
@@ -530,13 +498,13 @@ class Room extends React.Component {
     // 盤面データが存在する場合のレンダリングロジック（ここでは省略）
     return null;
   };
+*/
 
-
-  // チャット入力フィールドの値が変更された時に state を更新
+  //チャット入力フィールドの値が変更された時にstateを更新
   handleChatInputChange(event) {
     this.setState({ currentChatMessage: event.target.value });
   }
-  // チャットフォームが送信された時（「送信」ボタンクリックまたはEnterキー）
+  //チャットフォームが送信された時（「送信」ボタンクリックまたはEnterキー）
   handleChatSubmit(event) {
     event.preventDefault(); // フォームのデフォルト送信（ページリロード）を防止
     const { currentChatMessage } = this.state;
@@ -553,7 +521,7 @@ class Room extends React.Component {
       alert("チャットサーバーに接続されていません。");
     }
   }
-    //チャットの開閉を切り替えるメソッド
+  //チャットの開閉の表示を切り替えるメソッド
   toggleChat() {
     this.setState(prevState => ({
       isChatOpen: !prevState.isChatOpen // 現在の状態を反転させる
@@ -582,8 +550,20 @@ class Room extends React.Component {
 */
 
   render() {
-    const { boardInfo, gameInfo, moveHistory, currentPlayer, isConnected, isLoading, loadingMessage, chatMessages, currentChatMessage, isChatOpen} = this.state;
+    const { boardInfo, gameInfo, moveHistory, currentPlayer, isConnected, isLoading, loadingMessage, chatMessages, currentChatMessage, isChatOpen, yourRole, enemyRole} = this.state;
     const roomId = this.state.roomId; // renderメソッド内でstateからroomIdを取得
+
+    //senteだったら"先手"に、goteだったら"後手"に
+    //yourRole = yourRole === "sente" ? "先手" : yourRole === "gote" ? "後手" : yourRole;
+    //enemyRole = enemyRole === "sente" ? "先手" : enemyRole === "gote" ? "後手" : enemyRole;
+    //let board_data=this.state.boardInfo.board
+    if (yourRole === "sente") this.setState({yourRole:"先手"});
+    //if (yourRole === "gote") this.setState({yourRole:"後手"}); board_data=this.state.boardInfo.board.reverse();console.log("ah:"+board_data)
+    if (yourRole === "gote") this.setState({yourRole:"後手"});
+    if (enemyRole === "sente") this.setState({enemyRole: "先手"});
+    if (enemyRole === "gote") this.setState({enemyRole: "後手"});
+
+    console.log("boardInfo:"+JSON.stringify(boardInfo))
 
     if (isLoading) { // ★ isLoading が true の間はローディング表示
       return (
@@ -595,7 +575,6 @@ class Room extends React.Component {
     }
     return (
       <>
-      <Header/>
 
         {/*<div id="chat-zone">
           <div id="chat-messages"></div>
@@ -617,77 +596,117 @@ class Room extends React.Component {
             <button type="submit" className="chat-button">Send</button>
           </form>
         </div>*/}
-              <div className="game-and-chat-container">
-        {/* ... (ShogiBoardなどのゲームUI) */}
 
-        <div
-          className={`chat-container ${isChatOpen ? '' : 'closed'}`} // ★ isChatOpen の状態に応じてクラスを適用
-        >
+        <div className="main-container ">
+          <div className="menu-container column">
+            <div className="menu-div">
+              メニュー
+              あなたは{yourRole}
 
-          <div id="chat-messages" className="chat-messages">
-            {/*{chatMessages.map((msg, index) => (*/}
-          {/*(chatMessages || []).map((msg, index) => ( */ }
-          {Array.isArray(chatMessages) && chatMessages.map((msg, index) => (
-              <div key={index} className="chat-message">{msg}</div>
-            ))}
+              <div>
+                <h2>10:00</h2>
+                
+              </div>
+
+              <div>
+                <h2>10:00</h2>
+              </div>
+            </div>
+              
           </div>
-          <form id="chat-form" className="chat-form" onSubmit={this.handleChatSubmit}>
-            <input
-              type="text"
-              id="chat-input"
-              placeholder="Type a message..."
-              className="chat-input"
-              value={currentChatMessage}
-              onChange={this.handleChatInputChange}
-            />
-            {/*<button type="submit" className="chat-button">Send</button>*/}
-          </form>
+          <div className="game-container column" onClick={() => this.canselSelection()}>
+            <div className="game-board"
+                style={ yourRole === "後手" || yourRole === "gote"
+                    ? { transform: "rotate(180deg)" }//後手なら回転させる
+                    : undefined
+                  }
+            >
+              {/*<PieceStand
+                pieceStand={this.state.boardInfo.pieceStand["後手"]}
+                pieceStandNum={this.state.boardInfo.pieceStandNum["後手"]}
+                pieceStandSelectInfo={this.state.boardInfo.selection.pieceStandSelectInfo["後手"]}
+                onClick={(i) => this.pieceStandClick(this.state.boardInfo.pieceStand["後手"][i])}
+              />
+              <br />
+              <Board
+                board={this.state.boardInfo.board}
+                boardSelectInfo={this.state.boardInfo.selection.boardSelectInfo}
+                onClick={(i, j) => this.handleBoardClick(i, j)}
+              />
+              <Board
+                board={board_data}
+                boardSelectInfo={this.state.boardInfo.selection.boardSelectInfo}
+                onClick={(i, j) => this.handleBoardClick(i, j)}
+              />
+              <br />
+              <PieceStand
+                pieceStand={this.state.boardInfo.pieceStand["先手"]}
+                pieceStandNum={this.state.boardInfo.pieceStandNum["先手"]}
+                pieceStandSelectInfo={this.state.boardInfo.selection.pieceStandSelectInfo["先手"]}
+                onClick={(i) => this.pieceStandClick(this.state.boardInfo.pieceStand["先手"][i])}
+              />
+              */}
+              {/*onClick={(i, j) => this.boardClick(i, j)} */}
+              <PieceStand
+                pieceStand={this.state.boardInfo.pieceStand[enemyRole]}
+                pieceStandNum={this.state.boardInfo.pieceStandNum[enemyRole]}
+                pieceStandSelectInfo={this.state.boardInfo.selection.pieceStandSelectInfo[enemyRole]}
+                onClick={(i) => this.pieceStandClick(this.state.boardInfo.pieceStand[enemyRole][i])}
+              />
+              <br />
+              <Board
+                board={this.state.boardInfo.board}
+                boardSelectInfo={this.state.boardInfo.selection.boardSelectInfo}
+                onClick={(i, j) => this.handleBoardClick(i, j)}
 
-          
-        </div>
-        {/* ★ 開閉ボタン */}
-          <button
-            className="chat-toggle-button"
-            onClick={this.toggleChat} // クリックで開閉メソッドを呼び出す
-            aria-expanded={isChatOpen} // アクセシビリティのため
-            aria-controls="chat-messages-container" // 対象となるコンテナのID (chat-containerにIDを追加する場合)
-          >
-            {isChatOpen ? '>' : '<'} {/* isChatOpen の状態に応じてボタンのテキストを切り替える */}
-          </button>
-      </div>
+              />
+              <br />
+              <PieceStand
+                pieceStand={this.state.boardInfo.pieceStand[yourRole]}
+                pieceStandNum={this.state.boardInfo.pieceStandNum[yourRole]}
+                pieceStandSelectInfo={this.state.boardInfo.selection.pieceStandSelectInfo[yourRole]}
+                onClick={(i) => this.pieceStandClick(this.state.boardInfo.pieceStand[yourRole][i])}
+              />
 
-        <div className="game" onClick={() => this.canselSelection()}>
-          <div className="game-board">
-            <PieceStand
-              pieceStand={this.state.boardInfo.pieceStand["後手"]}
-              pieceStandNum={this.state.boardInfo.pieceStandNum["後手"]}
-              pieceStandSelectInfo={this.state.boardInfo.selection.pieceStandSelectInfo["後手"]}
-              onClick={(i) => this.pieceStandClick(this.state.boardInfo.pieceStand["後手"][i])}
-            />
-            <br />
-            <Board
-              board={this.state.boardInfo.board}
-              boardSelectInfo={this.state.boardInfo.selection.boardSelectInfo}
-              onClick={(i, j) => this.handleBoardClick(i, j)}
-            />
-            {/*onClick={(i, j) => this.boardClick(i, j)} */}
-            <br />
-            <PieceStand
-              pieceStand={this.state.boardInfo.pieceStand["先手"]}
-              pieceStandNum={this.state.boardInfo.pieceStandNum["先手"]}
-              pieceStandSelectInfo={this.state.boardInfo.selection.pieceStandSelectInfo["先手"]}
-              onClick={(i) => this.pieceStandClick(this.state.boardInfo.pieceStand["先手"][i])}
-            />
+            </div>
           </div>
+
+          <div className="chat-and-setting-container column">
+            <div className="setting-container column">
+                aa
+            </div>
+            <div className={`chat-container ${isChatOpen ? '' : 'closed'}`} > {/* isChatOpen の状態に応じてクラスを適用 */}
+              <div id="chat-messages" className="chat-messages">
+                {Array.isArray(chatMessages) && chatMessages.map((msg, index) => (
+                    <div key={index} className="chat-message">{msg}</div>
+                ))}
+              </div>
+              <form id="chat-form" className="chat-form" onSubmit={this.handleChatSubmit}>
+                <input
+                  type="text"
+                  id="chat-input"
+                  placeholder="Type a message..."
+                  className="chat-input"
+                  value={currentChatMessage}
+                  onChange={this.handleChatInputChange}
+                />
+                {/*<button type="submit" className="chat-button">Send</button>*/}
+              </form>
+            </div>
+            {/* 開閉ボタン */}
+              <button
+                className="chat-toggle-button"
+                onClick={this.toggleChat} // クリックで開閉メソッドを呼び出す
+                aria-expanded={isChatOpen} // アクセシビリティのため
+                aria-controls="chat-messages-container" // 対象となるコンテナのID (chat-containerにIDを追加する場合)
+              >
+                {isChatOpen ? '>' : '<'} {/* isChatOpen の状態に応じてボタンのテキストを切り替える */}
+              </button>
+            </div>
         </div>
 
 
         <div className="bg-gray-100 p-4 rounded-lg">
-          <button
-            onClick={this.handleMove}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-            指し手を送信
-          </button>
           <button
             onClick={this.deleteData}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
@@ -755,7 +774,7 @@ class Room extends React.Component {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* データ表示エリア */}
               <div>
-                {this.renderDataDisplay()}
+                {/*{this.renderDataDisplay()} */ }
               </div>
             </div>
           </div>

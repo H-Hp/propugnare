@@ -4,12 +4,12 @@ import ReactDOM from 'react-dom/client';
 const Header = ({ logoPath }) => {
   return (
     <header className="bg-blue-600 text-white">
-      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
         {/* ロゴ部分：クリックでホームへ（"/"） */}
         <a href="/" className="flex items-center">
           {/* Rails から渡されたロゴ画像のパスで画像表示 */}
           <img src={logoPath} alt="Shogi Logo" className="h-8 mr-2" />
-          <span className="font-bold text-xl">Shogi Game</span>
+          <span className="font-bold text-xs">Shogi Game</span>
         </a>
         {/* ナビゲーション（必要に応じて編集） */}
         <nav>

@@ -1,8 +1,91 @@
 
+* {
+  box-sizing: border-box;
+}
 
-body {
+/*body {
   font: 14px "Century Gothic", Futura, sans-serif;
-  margin: 20px;
+  margin:0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}*/
+  /*height: 100vh;*/
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  height: 64px;
+  background-color: #2563eb; /* Tailwind's blue-600 */
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+}
+
+.main-container{
+  flex: 1;
+  display: flex; /* 横並びにする */
+  gap: 0.5rem; /* 任意：間隔をあける */
+  padding: 0.1rem;
+  overflow: hidden;
+}
+.column {
+  /*background-color: #f3f4f6; */ /* Tailwind's gray-100 */
+  padding: 0.3rem;
+  overflow: auto;
+  flex: 1;
+}
+.game-container {
+  /*display: flex;
+  flex-direction: row;
+  justify-content: center*/
+  min-width: 550px;
+}
+.menu-container {
+  width: 25%;
+}
+.menu-div{
+  background-color: white;
+  padding: 3px;
+  height: 800px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+.chat-and-setting-container{
+  display: flex;
+  flex-direction: column;
+  background-color: none;
+  gap: 20px;
+}
+.chat-container {
+  bottom: 0px;
+  right: 0px;
+  z-index: 1000; 
+
+  width: 25vw;   /* ビューポートの幅の20% */
+  height: 50vh;  /* ビューポートの高さの50% */
+
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  background-color: #f9f9f9;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out; /* アニメーションを追加 */
+}
+.setting-container{
+  background-color: #f9f9f9;
+  width: 25vw;   /* ビューポートの幅の20% */
+  height: 50vh;  /* ビューポートの高さの50% */
+  border: 1px solid #ccc;
+  border-radius: 8px;
 }
 
 .board-row:after {
@@ -41,11 +124,6 @@ body {
   background: #ddd;
 }
 
-.game {
-  display: flex;
-  flex-direction: row;
-  justify-content: center
-}
 
 #未選択.square {
   background: rgba(0, 0, 0, .5);
@@ -71,8 +149,6 @@ img {
 img#後手 {
   transform: scale(-1, -1);
 }
-
-
 
 
 /* 共通ボタンスタイル（見やすく、大きく、白文字） */
@@ -129,30 +205,7 @@ img#後手 {
 
 
 /*チャット*/
-/* chat-container */
-.chat-container {
-  /* 配置の基準をビューポートにする */
-  position: fixed;
-  bottom: 0px;  /* 画面下端から20px上 */
-  right: 0px;   /* 画面右端から20px左 */
-  z-index: 1000; /* 他の要素の上に表示されるようにする (必要に応じて調整) */
 
-  /* サイズ設定 */
-  width: 35vw;   /* ビューポートの幅の20% */
-  height: 50vh;  /* ビューポートの高さの50% */
-
-  /* その他デザイン（以前のものを維持） */
-  display: flex;
-  flex-direction: column;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  overflow: hidden;
-  font-family: Arial, sans-serif;
-  background-color: #f9f9f9;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-
-  transition: transform 0.3s ease-out, opacity 0.3s ease-out; /* アニメーションを追加 */
-}
 /* chat-messages */
 .chat-messages {
   flex-grow: 1;
@@ -161,7 +214,7 @@ img#後手 {
   background-color: #eef1f5;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 1px;
 }
 /* chat-form */
 .chat-form {
@@ -176,7 +229,7 @@ img#後手 {
   padding: 10px 12px;
   border: 1px solid #c9c9c9;
   border-radius: 20px;
-  font-size: 1rem;
+  font-size: 0.2rem;
   margin-right: 10px;
   outline: none;
 }
@@ -240,4 +293,14 @@ img#後手 {
     /* chat-containerの幅(20vw)からボタンの幅(40px)を引いて、右端からの位置を計算 */
     /*right: calc(20vw + 20px);*/
     right: calc(20vw + 20px);
+}
+
+
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out forwards;
 }

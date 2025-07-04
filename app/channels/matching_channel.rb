@@ -28,14 +28,11 @@ class MatchingChannel < ApplicationCable::Channel
     if $redis.lrange(MATCHING_QUEUE_KEY, 0, -1).any? { |json| JSON.parse(json).symbolize_keys[:identifier] == identifier }
       ActionCable.server.broadcast("matching_status", { status: 'in_progress', message: 'マッチング待機中です...' })
     end
-
   end
 
+  #クライアントが切断された場合の処理・例えばマッチングキューから削除する
   def unsubscribed
     #Rails.logger.info "MatchingStatusChannel unsubscribed by #{connection.identifier}"
-
-    # クライアントが切断された場合の処理
-    # 例えばマッチングキューから削除する
     
     # 確実な削除のため、一度キューをすべて取得し、該当要素を除外して再登録する
     all_queue_items = $redis.lrange(MATCHING_QUEUE_KEY, 0, -1).map { |json| JSON.parse(json).symbolize_keys }

@@ -5,7 +5,10 @@ class BoardInfo {
 
     // initialDataがない場合は、デフォルトの初期盤面を生成
     constructor(initialData = {}) {
-        // デフォルトの初期盤面データ
+        //console.log("initialData:"+JSON.stringify(initialData))
+        //console.log("King:"+King)
+        //console.log("Rook:"+Rook)
+        // デフォルトの初期配置の配列
         const defaultBoard = [
             [new Lance("後手"), new Knight("後手"), new SilverGeneral("後手"), new GoldGeneral("後手"), new King("後手"), new GoldGeneral("後手"), new SilverGeneral("後手"), new Knight("後手"), new Lance("後手")],
             [new Blank(), new Rook("後手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Bishop("後手"), new Blank()],
@@ -26,6 +29,8 @@ class BoardInfo {
             "先手": [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
             "後手": [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()]
         };
+        //console.log("defaultPieceStandNum:"+JSON.parse(JSON.stringify(defaultPieceStandNum)))
+        //console.log("defaultPieceStand:"+JSON.parse(JSON.stringify(defaultPieceStand)))
 
 
 
@@ -40,21 +45,32 @@ class BoardInfo {
         //console.log("defaultBoard:"+JSON.stringify(defaultBoard))
         //console.log("initialData:"+JSON.stringify(initialData))
 
-        
-        if (Object.keys(initialData).length === 0) {// 初期値（空オブジェクト）のとき
+        // 初期値とRedisから取得したデータ構造がなぜかちょっと違うから分岐する(initialData.BoardInfo.boardで取得できるのがRedisのデータで、initialData.currentPlayerなどでアクセスするのが初期データ)
+        if (Object.keys(initialData).length === 0) {
             //console.log("initialDataが空の時");
             this.board = this.deserializeBoard(defaultBoard);
+            this.pieceStandNum = defaultPieceStandNum
+            this.pieceStand = defaultPieceStand
+            this.turn = initialData.currentPlayer || "先手";
         }else{//initialDataにデータが入っている場合
             //console.log("initialDataが空じゃない時:"+JSON.stringify(initialData.BoardInfo.board));
             //console.log("initialDataが空じゃない時:");
             //const boardData = initialData.BoardInfo.board;
             this.board = this.deserializeBoard(initialData.BoardInfo.board);
+
+            // pieceStandNum は通常プレーンなデータなので、ディープコピーでOK
+            this.pieceStandNum = initialData.BoardInfo.pieceStandNum ? JSON.parse(JSON.stringify(initialData.BoardInfo.pieceStandNum)) : defaultPieceStandNum;
+
+            // pieceStand のデシリアライズ
+            this.pieceStand = this.deserializePieceStand(initialData.BoardInfo.pieceStand || defaultPieceStand);
+            this.turn = initialData.BoardInfo.currentPlayer || "先手";
         }
+        //console.log("this.board:"+JSON.stringify(this.board));
         //this.board = this.deserializeBoard(initialData.board || defaultBoard);
         //this.board = this.deserializeBoard(initialData.BoardInfo || defaultBoard);
         //this.board = this.deserializeBoard(initialData.BoardInfo.board || defaultBoard);
         //this.turn = initialData.turn || "先手";
-        this.turn = initialData.currentPlayer || "先手";
+        
 
         // selection の復元
         // JSON.parse(JSON.stringify())でディープコピーし、必要に応じて駒を再構築
@@ -66,10 +82,14 @@ class BoardInfo {
         }
 
         // pieceStandNum は通常プレーンなデータなので、ディープコピーでOK
-        this.pieceStandNum = initialData.pieceStandNum ? JSON.parse(JSON.stringify(initialData.pieceStandNum)) : defaultPieceStandNum;
+//消した        this.pieceStandNum = initialData.pieceStandNum ? JSON.parse(JSON.stringify(initialData.pieceStandNum)) : defaultPieceStandNum;
 
         // pieceStand のデシリアライズ
-        this.pieceStand = this.deserializePieceStand(initialData.pieceStand || defaultPieceStand);
+ //消した       this.pieceStand = this.deserializePieceStand(initialData.pieceStand || defaultPieceStand);
+
+        //console.log("initialData:"+JSON.stringify(initialData))
+        //console.log("initialData.pieceStandNum:"+JSON.stringify(initialData.pieceStandNum));
+        //console.log("initialData.pieceStand:"+JSON.stringify(initialData.pieceStand));
 
         // メソッドのバインド (必要に応じて)
         this.boardClick = this.boardClick.bind(this);
@@ -103,47 +123,52 @@ class BoardInfo {
     }
 
     boardClick(i, j) {
-        if (this.selection.state) {
+        if (this.selection.state) {//何らかの駒が選択されている状態の場合
             //console.log(`this.board[i][j].getPiece()：${this.board[i][j].getPiece()}`)
-            if (this.selection.boardSelectInfo[i][j] !== "配置可能") {
+            if (this.selection.boardSelectInfo[i][j] !== "配置可能") {//クリックされたマスが移動先として不適切であれば
                 return;
             }
             let myPiece;
-            if (this.selection.pieceStandPiece.name) {
-                myPiece = this.selection.pieceStandPiece;
-                this.pieceStandNum[this.turn][myPiece.name] -= 1;
-                this.makePieceStand();
-            } else {
-                myPiece = this.board[this.selection.before_i][this.selection.before_j];
-                this.board[this.selection.before_i][this.selection.before_j] = new Blank();
-                let yourPiece = this.board[i][j];
-                if (yourPiece.name) {
-                    if (yourPiece.getPiece()) {
+            if (this.selection.pieceStandPiece.name) {// 持ち駒が選択されている場合 (駒を打つ)
+                myPiece = this.selection.pieceStandPiece;// 持ち駒を移動する駒(myPiece)にする
+                this.pieceStandNum[this.turn][myPiece.name] -= 1;// 持ち駒の数を減らす
+                this.makePieceStand();// 持ち駒台の表示を更新
+            } else {// 盤上の駒が選択されている場合 (駒を動かす)
+                myPiece = this.board[this.selection.before_i][this.selection.before_j]; // 選択していた盤上の駒(myPiece)にする
+                this.board[this.selection.before_i][this.selection.before_j] = new Blank();// 元のマスを空白にする
+                let yourPiece = this.board[i][j];// 移動先にあった駒をyourPieceにする
+                if (yourPiece.name) { // 移動先に相手の駒があった場合 (駒を取る)
+                    if (yourPiece.getPiece()) {// 成駒だった場合、元の駒に戻す
                         yourPiece = yourPiece.getPiece();
                     }
-                    this.pieceStandNum[myPiece.owner][yourPiece.name] += 1;
-                    this.makePieceStand();
+                    
+                    this.pieceStandNum[myPiece.owner][yourPiece.name] += 1;// 持ち駒として追加
+                    //console.log("持ち駒として追加・this.pieceStandNum:"+JSON.stringify(this.pieceStandNum))
+                    this.makePieceStand();// 持ち駒台の表示を更新
                 }
-                if (this.existCanMove(i, j, myPiece)) {
-                    myPiece = this.checkPromote(myPiece, i, this.selection.before_i);
-                } else {
-                    myPiece = myPiece.getPromotedPiece();
+                // 成りの判定と処理
+                if (this.existCanMove(i, j, myPiece)) {// その駒がまだ動ける場合（成りを選択可能）
+                    myPiece = this.checkPromote(myPiece, i, this.selection.before_i);// 成りを確認
+                } else {// その駒がもう動けない場合（強制的に成る）
+                    myPiece = myPiece.getPromotedPiece();// 強制的に成る
                 }
             }
                 
-            this.board[i][j] = myPiece;
+            this.board[i][j] = myPiece;// 駒を新しいマスに配置
             this.turn = this.turn === "先手" ? "後手" : "先手";
             //return true; // コマが動いた
             return {
                 //newBoardState: this.getBoardState(), // 変更後の盤面状態を返す
                 BoardInfo: this.getBoardState(), // 変更後の盤面状態を返す
                 moved: true,// 駒が動いた場合
+                pieceStandNum: this.pieceStandNum,
+                pieceStand: this.pieceStand,
                 //moveDetails: this.board[i][j]
                 move: this.board[i][j],
                 currentPlayer: this.turn
             };
 
-        } else {
+        } else {// 何も駒が選択されていない状態の場合 (駒を選択する)
             if (this.turn !== this.board[i][j].owner) {
                 return;
             }
@@ -163,43 +188,48 @@ class BoardInfo {
                 BoardInfo: this.getBoardState(), // 変更後の盤面状態を返す
                 moved: false,// 駒が動いた場合
                 //moveDetails: this.board[i][j]
+                pieceStandNum: this.pieceStandNum,
+                pieceStand: this.pieceStand,
                 move: this.board[i][j],
                 currentPlayer: this.turn
             };
         }
     }
 
+    //与えられた駒（piece）が、現在の盤面上の位置(i, j)から、将棋のルール上、動けるマスが少なくとも一つ存在するかをチェックします。これは主に、駒を打つ際の「行き所のない駒（例: 端に歩を打つと動けなくなる）」のチェックや、成りの判定（成らなくてもまだ動けるか）に使われます。
     existCanMove(i, j, piece) {
-        for (let l = 0; l < piece.dx.length; l++) {
+        for (let l = 0; l < piece.dx.length; l++) {// 駒の移動方向のリストを反復
             let y = i;
             let x = j;
-            y += this.turn === "先手" ? piece.dy[l] : -piece.dy[l];
+            y += this.turn === "先手" ? piece.dy[l] : -piece.dy[l];// 駒の向きに応じて移動方向を調整
             x += this.turn === "先手" ? piece.dx[l] : -piece.dx[l];
-            if (0 <= y && y <= 8 && 0 <= x && x <= 8) {
-                return true;
+            if (0 <= y && y <= 8 && 0 <= x && x <= 8) {// 盤面内に収まるかチェック
+                return true;// 少なくとも一つ動けるマスが見つかれば true を返す
             }
         }
-        return false;
+        return false;// 全ての方向を試しても動けるマスがなければ false
     }
 
+    //駒が成れる条件を満たしている場合、ユーザーに成るか否かを確認し、その結果に基づいて成った駒のインスタンスを返すメソッド
     checkPromote(piece, i, before_i) {
         //console.dir("checkPromoteのpromotedPieceCandidate: "+JSON.stringify(piece.getPromotedPiece()));
-        console.log(`piece：${JSON.stringify(piece)}`);
-        console.log(`typeof piece.getPromotedPiece：${typeof piece.getPromotedPiece}`);
-
-        if (!piece.getPromotedPiece()) {
-            return piece;
+        //console.log(`piece：${JSON.stringify(piece)}`);
+        //console.log(`typeof piece.getPromotedPiece：${typeof piece.getPromotedPiece}`);
+        if (!piece.getPromotedPiece()) {// 成れる駒でなければ
+            return piece;// そのまま返す
         }
-        const promoteAreaMinY = piece.owner === "先手" ? 0 : 6;
+        const promoteAreaMinY = piece.owner === "先手" ? 0 : 6;// 成りゾーンのY座標範囲
         const promoteAreaMaxY = piece.owner === "先手" ? 2 : 8;
+        // 成りゾーンに到達した、または成りゾーンから移動した（通過した）場合
         if ((promoteAreaMinY <= i && i <= promoteAreaMaxY) || (promoteAreaMinY <= before_i && before_i <= promoteAreaMaxY)) {
-            if (window.confirm('成りますか？')) {
-                return piece.getPromotedPiece()
+            if (window.confirm('成りますか？')) {// ユーザーに確認
+                return piece.getPromotedPiece()// 成った駒のインスタンスを返す
             }
         }
-        return piece;
+        return piece;// 成らない場合、元の駒のインスタンスを返す
     }
 
+    //盤面の(i, j)に存在する駒（piece = this.board[i][j]）が移動できる全てのマスを計算し、this.selection.boardSelectInfoに"配置可能"としてマークするメソッド
     checkCanPutBoard(i, j) {
         const piece = this.board[i][j];
         for (let l = 0; l < piece.dx.length; l++) {
@@ -221,125 +251,124 @@ class BoardInfo {
     }
 
     pieceStandClick(piece) {
-        if (this.selection.state || this.turn !== piece.owner) {
-            return;
+        if (this.selection.state || this.turn !== piece.owner) {//既に駒が選択されているか、自分の持ち駒でなければ
+            return;//何もせず終了
         }
-        this.selection.isNow = true;
+        this.selection.isNow = true; //選択状態に入る
         this.selection.state = true;
-        this.selection.boardSelectInfo = JSON.parse(JSON.stringify((new Array(9)).fill((new Array(9)).fill("未選択"))));
-        this.selection.pieceStandPiece = piece;
-        this.selection.pieceStandSelectInfo = {
+        this.selection.boardSelectInfo = JSON.parse(JSON.stringify((new Array(9)).fill((new Array(9)).fill("未選択"))));//盤面選択情報をリセット
+        this.selection.pieceStandPiece = piece;// 選択中の駒を持ち駒として設定
+        this.selection.pieceStandSelectInfo = {// 持ち駒台の選択情報をリセット
             "先手": Array(9).fill("未選択"),
             "後手": Array(9).fill("未選択")
         };
-        const i = this.pieceStand[piece.owner].findIndex(p => p.name === piece.name);
-        this.selection.pieceStandSelectInfo[this.turn][i] = "選択状態";
-        this.checkCanPutPieceStand(piece);
+        const i = this.pieceStand[piece.owner].findIndex(p => p.name === piece.name);// クリックされた持ち駒が駒台のどこにあるか
+        this.selection.pieceStandSelectInfo[this.turn][i] = "選択状態";// その駒を「選択状態」とマーク
+        this.checkCanPutPieceStand(piece);//持ち駒を打てるマスを計算してハイライト表示するロジックを呼び出す
     }
 
+    //持ち駒の枚数（pieceStandNum）に基づいて、実際に表示する持ち駒の配列（pieceStand）を生成するメソッド
     makePieceStand() {
         let myPieceStand = [];
-        const myPieceStandNum = this.pieceStandNum[this.turn];
-        for (let name in myPieceStandNum) {
-            if (myPieceStandNum[name] > 0) {
-                myPieceStand.push(Piece.getPieceByName(name, this.turn));
+        const myPieceStandNum = this.pieceStandNum[this.turn];// 現在の手番の持ち駒枚数を取得
+        //console.log("makePieceStandのmyPieceStandNum"+JSON.stringify(myPieceStandNum))
+        for (let name in myPieceStandNum) {// 各駒の名前について
+            if (myPieceStandNum[name] > 0) {// 1枚でも持っていれば
+                myPieceStand.push(Piece.getPieceByName(name, this.turn));// その駒のインスタンスを追加
             }
         }
-        while (myPieceStand.length < 9) {
-            myPieceStand.push(new Blank());
+        while (myPieceStand.length < 9) {// 持ち駒が9枚に満たない場合
+            myPieceStand.push(new Blank());// 空白駒で埋める (表示上の調整)
         }
-        this.pieceStand[this.turn] = myPieceStand;
+        this.pieceStand[this.turn] = myPieceStand;// 持ち駒台の配列を更新
     }
 
+    //持ち駒（piece）を盤面に打つことができる合法なマスを計算し、this.selection.boardSelectInfoに"配置可能"としてマークするメソッドです。二歩、打ち歩詰め、行き所のない駒のルールを考慮しています。
     checkCanPutPieceStand(piece) {
-        let pawnColMemo = Array(9).fill(true);
-        if (piece.name === "歩") {
-            for (let i = 0; i < 9; i++) {
-                for (let j = 0; j < 9; j++) {
-                    if (this.board[i][j].name === "歩" && this.board[i][j].owner === piece.owner) {
-                        pawnColMemo[j] = false;
+        let pawnColMemo = Array(9).fill(true);// 各列に歩を打てるかどうかのメモ（最初は全てtrue）
+        if (piece.name === "歩") {// 持ち駒が「歩」の場合のみ、二歩のチェックを行う
+            for (let i = 0; i < 9; i++) {// 盤面の行 (0-8) を走査
+                for (let j = 0; j < 9; j++) {// 盤面の列 (0-8) を走査
+                    if (this.board[i][j].name === "歩" && this.board[i][j].owner === piece.owner) {// 現在のマスに「歩」があり、かつその「歩」が今打とうとしている駒と同じ持ち主の場合
+                        pawnColMemo[j] = false;// その列 (j) にはもう歩を打てない（二歩になるため）
                     }
                 }
             }
         }
-        for (let i = 0; i < 9; i++) {
-            for (let j = 0; j < 9; j++) {
+        for (let i = 0; i < 9; i++) {// 盤面の行 (0-8) を走査
+            for (let j = 0; j < 9; j++) {// 盤面の列 (0-8) を走査
+                // 以下の3つの条件がすべて真の場合、そのマスは駒を打てるマスである
+                // 1.そのマスが空マスであること（他の駒がない）
+                // 2.その駒をそこに打った場合、その後の手で移動可能であること（打ち歩詰め、行き所のない駒の判定）
+                // 3.(「歩」の場合のみ) その列に二歩にならないこと
                 if (!this.board[i][j].owner && this.existCanMove(i, j, piece) && pawnColMemo[j]) {
-                    this.selection.boardSelectInfo[i][j] = "配置可能";
+                    this.selection.boardSelectInfo[i][j] = "配置可能";// そのマスを「配置可能」としてマーク
                 }
             }
         }
     }
 
-
-
-
-    //新規追加した処理
-    // 盤面上の駒をクラスインスタンスに再構築するヘルパーメソッド
+    //将棋盤は9x9の二次元配列で表現されており、それぞれのマスにある駒のデータ（owner, name）を対応するPieceクラスのインスタンスへ復元する・盤面上の駒をクラスのインスタンスに復元する(デシリアライズする)
     deserializeBoard(boardData) {
-        if (!Array.isArray(boardData)) {
-            console.warn("deserializeBoard: received boardData is not an array. Initializing with empty board.", boardData);
+        if (!Array.isArray(boardData)) { //配列でない場合は警告を出して空の盤面を返す
+            console.warn("deserializeBoard: 受信したboardDataが配列ではありません。空のボードで初期化しています。", boardData);
+            //長さ9の配列を作り、各要素をnullで埋める。→ その後、mapで各null要素を、長さ9の配列（各要素はBlankの新しいインスタンス）に変換する。→ これにより、9x9の空の盤面が生成される。
             return Array(9).fill(null).map(() => Array(9).fill(new Blank()));
         }
-        return boardData.map(row => {
-            if (!Array.isArray(row)) {
-                console.warn("deserializeBoard: received row is not an array. Initializing with empty row.", row);
-                return Array(9).fill(new Blank());
+        return boardData.map(row => {//受け取ったboardDataの各行を処理
+            if (!Array.isArray(row)) { //各行が配列でない場合も警告を出して空の盤面を返す
+                console.warn("deserializeBoard: 受け取った行が配列ではありません。空の行で初期化しています。", row);
+                return Array(9).fill(new Blank());// その行をBlankの行で埋める
             }
-            return row.map(pieceData => {
-                return this.deserializePiece(pieceData);
+            return row.map(pieceData => { // 各行の各駒データ（pieceData）を変換//各駒データをdeserializePieceでインスタンスに変換
+                return this.deserializePiece(pieceData);//deserializePieceを使って駒インスタンスに変換
             });
         });
     }
 
-    // 駒台の駒をクラスインスタンスに再構築するヘルパーメソッド
+    //JSON形式で受け取った持ち駒台のデータを、Pieceクラスのインスタンスを含む持ち駒台のオブジェクトに再構築する(デシリアライズする)
     deserializePieceStand(pieceStandData) {
-        if (!pieceStandData) {
-            return { "先手": Array(9).fill({}), "後手": Array(9).fill({}) };
+        if (!pieceStandData) {//データが存在しない(nullやundefined)場合
+            return { "先手": Array(9).fill({}), "後手": Array(9).fill({}) };//空の持ち駒台オブジェクト（先手・後手それぞれ空の配列）を返す
         }
-
-        const deserializedStand = {};
-        for (const owner in pieceStandData) {
-            if (pieceStandData.hasOwnProperty(owner)) {
-                if (Array.isArray(pieceStandData[owner])) {
-                    deserializedStand[owner] = pieceStandData[owner].map(pieceDataItem => {
-                        return this.deserializePiece(pieceDataItem);
+        const deserializedStand = {};//空のオブジェクトを作成し、ここに復元された持ち駒データを格納していく
+        for (const owner in pieceStandData) {//pieceStandDataオブジェクトの各プロパティ（"先手"、"後手"）をループ
+            if (pieceStandData.hasOwnProperty(owner)) {// オブジェクト自身のプロパティのみを処理
+                if (Array.isArray(pieceStandData[owner])) {// 各プレイヤーの持ち駒配列が配列かチェック
+                    deserializedStand[owner] = pieceStandData[owner].map(pieceDataItem => {//各プレイヤーの持ち駒配列に対してmap()を使用し、それぞれの駒データ(pieceDataItem)をdeserializePieceで駒インスタンスに変換します。
+                        return this.deserializePiece(pieceDataItem);//各駒データをdeserializePieceでインスタンスに変換
                     });
-                } else {
-                    console.warn(`deserializePieceStand: pieceStandData[${owner}] is not an array. Initializing with empty stand.`);
-                    deserializedStand[owner] = Array(9).fill({});
+                } else {// 配列でない場合は警告
+                    console.warn(`deserializePieceStand: pieceStandData[${owner}] は配列ではありません。空のスタンドで初期化しています。`);
+                    deserializedStand[owner] = Array(9).fill({});//空配列を返して安全に動作継続
                 }
             }
         }
-        return deserializedStand;
+        return deserializedStand;// 再構築された持ち駒台オブジェクトを返す
     }
 
-    // 個々の駒データをクラスインスタンスに変換する汎用ヘルパー
+    //個々の駒のデータ（{ name: "歩", owner: "先手" }のようなプレーンなオブジェクト）を受け取り、対応するPieceクラスのインスタンスを生成して返します。
     deserializePiece(pieceData) {
-        if (!pieceData || !pieceData.name || !pieceData.owner) {
+        if (!pieceData || !pieceData.name || !pieceData.owner) {//データが不完全な場合はBlankを返す
             return new Blank();
         }
-
-        switch (pieceData.name) {
+        switch (pieceData.name) {// 駒の名前（nameプロパティ）に基づいて適切なクラスのインスタンスを生成
             case "竜": return new PromotedRook(pieceData.owner);
             case "馬": return new PromotedBishop(pieceData.owner);
             case "成銀": return new PromotedSilverGeneral(pieceData.owner);
             case "成桂": return new PromotedKnight(pieceData.owner);
             case "成香": return new PromotedLance(pieceData.owner);
             case "と": return new PromotedPawn(pieceData.owner);
-            case null: return new Blank();
+            case null: return new Blank();// null の名前も Blank として処理
             default:
-                const pieceInstance = Piece.getPieceByName(pieceData.name, pieceData.owner);
-                return pieceInstance || new Blank();
+                const pieceInstance = Piece.getPieceByName(pieceData.name, pieceData.owner);// Pieceクラスのヘルパーで非成駒を生成
+                return pieceInstance || new Blank();// 見つからなければ Blank
         }
     }
 
-
-
-    // ... (getBoardState およびその他のゲームロジックメソッド)
-    // 例えば、getBoardState メソッドは、現在の BoardInfo インスタンスの状態を
-    // サーバーに送るためのプレーンなオブジェクト形式で返すようにします
+    //現在のBoardInfoインスタンスの全ての状態を、サーバーに送信したり、ローカルストレージに保存したりできるプレーンなJavaScriptオブジェクト形式に変換して返す(シリアライズする)
     getBoardState() {
+        // 盤面の駒をシリアライズ (ownerとnameだけを抽出)
         // 各駒インスタンスをプレーンなオブジェクトに変換して返す
         const serializedBoard = this.board.map(row =>
             row.map(piece => ({
@@ -349,7 +378,7 @@ class BoardInfo {
                 // 必要であればここに含める
             }))
         );
-
+        // 持ち駒台の駒をシリアライズ (ownerとnameだけを抽出)
         const serializedPieceStand = {};
         for (const owner in this.pieceStand) {
             serializedPieceStand[owner] = this.pieceStand[owner].map(piece => ({
@@ -357,7 +386,7 @@ class BoardInfo {
                 name: piece.name
             }));
         }
-
+        // selectionオブジェクトもシリアライズ (深いコピーを作成し、pieceStandPieceがあればそれもシリアライズ)
         // selectionもそのまま送るか、必要な情報だけ抽出して送る
         const serializedSelection = JSON.parse(JSON.stringify(this.selection));
         // selection.pieceStandPiece にインスタンスが入っている場合、これもシリアライズ
@@ -367,17 +396,14 @@ class BoardInfo {
                 name: serializedSelection.pieceStandPiece.name
             };
         }
-
-
         return {
             turn: this.turn,
             board: serializedBoard,
             selection: serializedSelection,
-            pieceStandNum: JSON.parse(JSON.stringify(this.pieceStandNum)), // 駒台の数はそのまま送れる
+            pieceStandNum: JSON.parse(JSON.stringify(this.pieceStandNum)), // 駒台の数はそのまま送れる・駒台の数はそのままコピー
             pieceStand: serializedPieceStand,
         };
     }
-    //新規追加ここまで
 }
 
 class Selection {

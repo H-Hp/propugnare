@@ -169,7 +169,6 @@ class MatchingController < ApplicationController
     user_identifier = session.renew #セッション中のデータは保持しつつ、新しいセッションIDを発行
 
     # ユーザーにマッチングキャンセルをブロードキャスト
-    #ActionCable.server.broadcast("matching_status_#{user_identifier}", { status: 'canceled', message: 'マッチングをキャンセルしました。' })
     ActionCable.server.broadcast("matching_status", { status: 'canceled', message: 'マッチングをキャンセルしました。' })
 
     render json: { status: 'canceled', message: 'マッチングをキャンセルしました。' }
