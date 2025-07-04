@@ -393,50 +393,59 @@ class Room extends React.Component {
     //const clickResult = boardInfo.boardClick(i, j);// BoardInfoインスタンスのboardClickメソッドを呼び出す・この呼び出しで boardInfo インスタンス内部の状態が更新される・戻り値clickResultに移動情報などがまとまっている
     const { boardInfo, isConnected, yourRole } = this.state;
     const clickResult = boardInfo.boardClick(i, j,yourRole);// BoardInfoインスタンスのboardClickメソッドを呼び出す・この呼び出しで boardInfo インスタンス内部の状態が更新される・戻り値clickResultに移動情報などがまとまっている
+    //console.log(`clickResult：${JSON.stringify(clickResult)}`);
+    //if(!clickResult){
+    if(clickResult!==undefined){//自分の手番じゃなかったり、クリックされたマスが移動先として不適切だったり、クリックされた駒が自分の手番の駒でなければ
+      console.log(`clickResultがundefinedじゃない・clickResult:${JSON.stringify(clickResult)}`);
 
-    //新しいボードデータ作るためのデータを作成
-    const game_data = {
-      move:          clickResult.move,
-      BoardInfo:     clickResult.BoardInfo,
-      pieceStandNum: clickResult.pieceStandNum,
-      pieceStand: clickResult.pieceStand,
-      nowTurn: clickResult.nowTurn
-    };
-    console.log(`clickResultのnowTurn：${JSON.stringify(clickResult.nowTurn)}`);
-    //console.log(`clickResultから作ったgame_data：${JSON.stringify(game_data)}`);
-    //console.log(`ああああclickResult.pieceStandNum: ${JSON.stringify(clickResult.pieceStandNum)}`);
-    //console.log(`ううううああああclickResult.pieceStand：${JSON.stringify(clickResult.pieceStand)}`);
+      //新しいボードデータ作るためのデータを作成
+      const game_data = {
+        move:          clickResult.move,
+        BoardInfo:     clickResult.BoardInfo,
+        pieceStandNum: clickResult.pieceStandNum,
+        pieceStand: clickResult.pieceStand,
+        nowTurn: clickResult.nowTurn
+      };
+      console.log(`clickResultのnowTurn：${JSON.stringify(clickResult.nowTurn)}`);
+      //console.log(`clickResultから作ったgame_data：${JSON.stringify(game_data)}`);
+      //console.log(`ああああclickResult.pieceStandNum: ${JSON.stringify(clickResult.pieceStandNum)}`);
+      //console.log(`ううううああああclickResult.pieceStand：${JSON.stringify(clickResult.pieceStand)}`);
 
-    // clickResult.newBoardState には、boardClick 後の BoardInfo 内部の最新状態が返される
-    // これを基に、新しい BoardInfo インスタンスを生成して React の state を更新する
-    
-    //const newBoardInfoInstance = new BoardInfo(clickResult.newBoardState);
-    //const newBoardInfoInstance = new BoardInfo(clickResult.BoardInfo);
-    const newBoardInfoInstance = new BoardInfo(game_data);
-    //const newBoardInfoInstance = new BoardInfo(clickResult.board);
-    
-    //console.log(`newBoardInfoInstance：${JSON.stringify(newBoardInfoInstance)}`);
-    //console.log(`clickResult.moved${clickResult.moved}`);
+      // clickResult.newBoardState には、boardClick 後の BoardInfo 内部の最新状態が返される
+      // これを基に、新しい BoardInfo インスタンスを生成して React の state を更新する
+      
+      //const newBoardInfoInstance = new BoardInfo(clickResult.newBoardState);
+      //const newBoardInfoInstance = new BoardInfo(clickResult.BoardInfo);
+      const newBoardInfoInstance = new BoardInfo(game_data);
+      //const newBoardInfoInstance = new BoardInfo(clickResult.board);
+      
+      //console.log(`newBoardInfoInstance：${JSON.stringify(newBoardInfoInstance)}`);
+      //console.log(`clickResult.moved${clickResult.moved}`);
 
-    this.setState({
-      boardInfo: newBoardInfoInstance, // 新しいインスタンスでstateを更新
-      //currentPlayer: newBoardInfoInstance.turn, // BoardInfoインスタンスから手番を取得して更新
-      nowTurn: clickResult.nowTurn, // BoardInfoインスタンスから手番を取得して更新
-    }, () => {
-      // stateの更新が完了した後、WebSocketでサーバーに送信
-      if (isConnected && this.subscription && clickResult.moved) { // 駒が動いた場合のみ送信
-        //console.log(`こまがうごいた`);
-        //console.log("盤面状態が変更されました。サーバーに送信します。", newBoardInfoInstance.getBoardState());
-        //getBoardState() を呼び出し、サーバーに送るためにプレーンなオブジェクトに変換
-        this.subscription.board_update(
-          //newBoardInfoInstance.getBoardState(),
-          newBoardInfoInstance,
-          clickResult.moveDetails
-        );
-      } else if (clickResult.moved) {
-        console.warn("WebSocket接続が確立されていないため、盤面更新を送信できません。");
-      }
-    });
+      this.setState({
+        boardInfo: newBoardInfoInstance, // 新しいインスタンスでstateを更新
+        //currentPlayer: newBoardInfoInstance.turn, // BoardInfoインスタンスから手番を取得して更新
+        nowTurn: clickResult.nowTurn, // BoardInfoインスタンスから手番を取得して更新
+      }, () => {
+        // stateの更新が完了した後、WebSocketでサーバーに送信
+        if (isConnected && this.subscription && clickResult.moved) { // 駒が動いた場合のみ送信
+          //console.log(`こまがうごいた`);
+          //console.log("盤面状態が変更されました。サーバーに送信します。", newBoardInfoInstance.getBoardState());
+          //getBoardState() を呼び出し、サーバーに送るためにプレーンなオブジェクトに変換
+          this.subscription.board_update(
+            //newBoardInfoInstance.getBoardState(),
+            newBoardInfoInstance,
+            clickResult.moveDetails
+          );
+        } else if (clickResult.moved) {
+          console.warn("WebSocket接続が確立されていないため、盤面更新を送信できません。");
+        }
+      });
+
+    //}else if(clickResult){
+    }else{
+      console.log(`clickResultがundefined・clickResult:${JSON.stringify(clickResult)}`);
+    }
   }
 
   pieceStandClick(piece) {

@@ -125,6 +125,11 @@ class BoardInfo {
     //boardClick(i, j) {
     boardClick(i, j,yourRole) {
         console.log("boardClickのyourRole:"+yourRole)
+        if(yourRole!==this.nowTurn){//自分のターンじゃなければ操作できないように
+            console.log("自分のターンじゃないので操作はできない")
+            return
+        }
+            
         if (this.selection.state) {//何らかの駒が選択されている状態の場合
             //console.log(`this.board[i][j].getPiece()：${this.board[i][j].getPiece()}`)
             if (this.selection.boardSelectInfo[i][j] !== "配置可能") {//クリックされたマスが移動先として不適切であれば
@@ -164,36 +169,37 @@ class BoardInfo {
                 //newBoardState: this.getBoardState(), // 変更後の盤面状態を返す
                 BoardInfo: this.getBoardState(), // 変更後の盤面状態を返す
                 moved: true,// 駒が動いた場合
+                move: this.board[i][j],
                 pieceStandNum: this.pieceStandNum,
                 pieceStand: this.pieceStand,
                 //moveDetails: this.board[i][j]
-                move: this.board[i][j],
                 nowTurn: this.nowTurn,
             };
 
         } else {// 何も駒が選択されていない状態の場合 (駒を選択する)
-            if (this.nowTurn !== this.board[i][j].owner) {
-                return;
+            if (this.nowTurn !== this.board[i][j].owner) {// クリックされた駒が自分の手番の駒でなければ
+                return;// 何もせず処理を終了
             }
-            this.selection.isNow = true;
+            this.selection.isNow = true;// 選択状態に入る
             this.selection.state = true;
-            this.selection.before_i = i;
+            this.selection.before_i = i;// 選択した駒の元位置を記憶
             this.selection.before_j = j;
+            // 盤面と持ち駒台の選択情報を初期化
             this.selection.boardSelectInfo = JSON.parse(JSON.stringify((new Array(9)).fill((new Array(9)).fill("未選択"))));
             this.selection.pieceStandSelectInfo = {
                 "先手": Array(9).fill("未選択"),
                 "後手": Array(9).fill("未選択")
             };
-            this.selection.boardSelectInfo[i][j] = "選択状態";
-            this.checkCanPutBoard(i, j);
+            this.selection.boardSelectInfo[i][j] = "選択状態";// 選択したマスを「選択状態」とマーク
+            this.checkCanPutBoard(i, j);// 移動可能マスをハイライト表示するロジックを呼び出す
             return {
                 //newBoardState: this.getBoardState(), // 変更後の盤面状態を返す
                 BoardInfo: this.getBoardState(), // 変更後の盤面状態を返す
                 moved: false,// 駒が動いた場合
+                move: this.selection.boardSelectInfo[i][j],
                 //moveDetails: this.board[i][j]
                 pieceStandNum: this.pieceStandNum,
                 pieceStand: this.pieceStand,
-                move: this.board[i][j],
                 nowTurn: this.nowTurn
             };
         }
