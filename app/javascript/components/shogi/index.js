@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 //import './index.css';
-import imgKing from "./img/玉.png";
+/*import imgKing from "./img/玉.png";
 import imgRook from "./img/飛.png";
 import imgBishop from "./img/角.png";
 import imgGoldGeneral from "./img/金.png";
@@ -14,7 +14,22 @@ import imgPromotedBishop from "./img/馬.png";
 import imgPromotedSilverGeneral from "./img/成銀.png";
 import imgPromotedKnight from "./img/成桂.png";
 import imgPromotedLance from "./img/成香.png";
-import imgPromotedPawn from "./img/と.png";
+import imgPromotedPawn from "./img/と.png";*/
+import imgKing from "./img/black_king.png";
+import imgGyoku from "./img/black_king2.png"; // 玉の駒としてblack_king2.pngを使用
+import imgRook from "./img/black_rook.png";
+import imgBishop from "./img/black_bishop.png";
+import imgGoldGeneral from "./img/black_gold.png";
+import imgSilverGeneral from "./img/black_silver.png";
+import imgKnight from "./img/black_knight.png";
+import imgLance from "./img/black_lance.png";
+import imgPawn from "./img/black_pawn.png";
+import imgPromotedRook from "./img/black_dragon.png"; // 竜に対応
+import imgPromotedBishop from "./img/black_horse.png"; // 馬に対応
+import imgPromotedSilverGeneral from "./img/black_prom_silver.png";
+import imgPromotedKnight from "./img/black_prom_knight.png";
+import imgPromotedLance from "./img/black_prom_lance.png";
+import imgPromotedPawn from "./img/black_prom_pawn.png";
 import { BoardInfo, Selection } from './BoardInfo';
 
 import Header from '../Header';
@@ -23,7 +38,8 @@ import Header from '../Header';
 import consumer from '../../channels/consumer'; // Action Cableのconsumerをインポート
 
 const imgByName = {
-  "玉": imgKing,
+  "王": imgKing,
+  "玉": imgGyoku,
   "飛": imgRook,
   "角": imgBishop,
   "金": imgGoldGeneral,
@@ -259,7 +275,7 @@ class Room extends React.Component {
                 loadingMessage: "",
                 //hasReceivedInitialData: true,
               }, () => {
-                //console.log(`BoardInfo instance reconstructed:`, this.state.boardInfo);
+                console.log(`BoardInfo instance reconstructed:`, this.state.boardInfo);
               });
             }
             
@@ -396,7 +412,7 @@ class Room extends React.Component {
     //console.log(`clickResult：${JSON.stringify(clickResult)}`);
     //if(!clickResult){
     if(clickResult!==undefined){//自分の手番じゃなかったり、クリックされたマスが移動先として不適切だったり、クリックされた駒が自分の手番の駒でなければ
-      console.log(`clickResultがundefinedじゃない・clickResult:${JSON.stringify(clickResult)}`);
+      //console.log(`clickResultがundefinedじゃない・clickResult:${JSON.stringify(clickResult)}`);
 
       //新しいボードデータ作るためのデータを作成
       const game_data = {
@@ -406,7 +422,7 @@ class Room extends React.Component {
         pieceStand: clickResult.pieceStand,
         nowTurn: clickResult.nowTurn
       };
-      console.log(`clickResultのnowTurn：${JSON.stringify(clickResult.nowTurn)}`);
+      //console.log(`clickResultのnowTurn：${JSON.stringify(clickResult.nowTurn)}`);
       //console.log(`clickResultから作ったgame_data：${JSON.stringify(game_data)}`);
       //console.log(`ああああclickResult.pieceStandNum: ${JSON.stringify(clickResult.pieceStandNum)}`);
       //console.log(`ううううああああclickResult.pieceStand：${JSON.stringify(clickResult.pieceStand)}`);

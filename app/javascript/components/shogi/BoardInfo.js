@@ -1,16 +1,16 @@
 //import { Piece, Blank, King, Rook, Bishop, GoldGeneral, SilverGeneral, Knight, Lance, Pawn } from './Pieces';
-import { Piece, Blank, King, Rook, Bishop, GoldGeneral, SilverGeneral, Knight, Lance, Pawn, PromotedRook,PromotedBishop,PromotedSilverGeneral,PromotedKnight,PromotedLance,PromotedPawn } from './Pieces';
+import { Piece, Blank, King, Gyoku, Rook, Bishop, GoldGeneral, SilverGeneral, Knight, Lance, Pawn, PromotedRook,PromotedBishop,PromotedSilverGeneral,PromotedKnight,PromotedLance,PromotedPawn } from './Pieces';
 
 class BoardInfo {
 
     // initialDataがない場合は、デフォルトの初期盤面を生成
     constructor(initialData = {}) {
         //console.log("initialData:"+JSON.stringify(initialData))
-        //console.log("King:"+King)
+        console.log("King:"+JSON.stringify(new King("後手")))
         //console.log("Rook:"+Rook)
         // デフォルトの初期配置の配列
         const defaultBoard = [
-            [new Lance("後手"), new Knight("後手"), new SilverGeneral("後手"), new GoldGeneral("後手"), new King("後手"), new GoldGeneral("後手"), new SilverGeneral("後手"), new Knight("後手"), new Lance("後手")],
+            [new Lance("後手"), new Knight("後手"), new SilverGeneral("後手"), new GoldGeneral("後手"), new Gyoku("後手"), new GoldGeneral("後手"), new SilverGeneral("後手"), new Knight("後手"), new Lance("後手")],
             [new Blank(), new Rook("後手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Bishop("後手"), new Blank()],
             [new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手")],
             [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
@@ -31,6 +31,7 @@ class BoardInfo {
         };
         //console.log("defaultPieceStandNum:"+JSON.parse(JSON.stringify(defaultPieceStandNum)))
         //console.log("defaultPieceStand:"+JSON.parse(JSON.stringify(defaultPieceStand)))
+        //console.log("defaultBoard:"+JSON.stringify(defaultBoard))
 
 
 
@@ -49,6 +50,7 @@ class BoardInfo {
         if (Object.keys(initialData).length === 0) {
             //console.log("initialDataが空の時");
             this.board = this.deserializeBoard(defaultBoard);
+            console.log("this.board:"+JSON.stringify(this.board))
             this.pieceStandNum = defaultPieceStandNum
             this.pieceStand = defaultPieceStand
             this.nowTurn = initialData.nowTurn || "先手";
@@ -357,6 +359,7 @@ class BoardInfo {
 
     //個々の駒のデータ（{ name: "歩", owner: "先手" }のようなプレーンなオブジェクト）を受け取り、対応するPieceクラスのインスタンスを生成して返します。
     deserializePiece(pieceData) {
+        console.log("pieceData:"+JSON.stringify(pieceData))
         if (!pieceData || !pieceData.name || !pieceData.owner) {//データが不完全な場合はBlankを返す
             return new Blank();
         }
@@ -369,7 +372,10 @@ class BoardInfo {
             case "と": return new PromotedPawn(pieceData.owner);
             case null: return new Blank();// null の名前も Blank として処理
             default:
+                console.log("pieceData.name:"+JSON.stringify(pieceData.name))
+                console.log("pieceData.owner:"+JSON.stringify(pieceData.owner))
                 const pieceInstance = Piece.getPieceByName(pieceData.name, pieceData.owner);// Pieceクラスのヘルパーで非成駒を生成
+                console.log("pieceInstance:"+JSON.stringify(pieceInstance))
                 return pieceInstance || new Blank();// 見つからなければ Blank
         }
     }

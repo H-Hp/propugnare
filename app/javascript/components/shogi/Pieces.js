@@ -30,8 +30,12 @@ class Piece {// 駒の基底クラス
               return new Lance(owner);
           case "歩":
               return new Pawn(owner);
-          //default:return null;
-          default: return new Blank();
+          case "王":
+              return new Gyoku(owner);
+          case "玉":
+              return new King(owner);
+          default:return null;
+          //default: return new Blank();
       }
   }
 }
@@ -49,6 +53,13 @@ dk: その方向に何マス動けるか（1は1マス、10はどこまでも）
 */
 
 class King extends Piece {
+  name = "王";
+  dx = [-1, -1, -1, 0, 1, 1, 1, 0];// 8方向に1マスずつ
+  dy = [-1, 0, 1, 1, 1, 0, -1, -1];
+  dk = [1, 1, 1, 1, 1, 1, 1, 1];
+}
+
+class Gyoku extends Piece {
   name = "玉";
   dx = [-1, -1, -1, 0, 1, 1, 1, 0];// 8方向に1マスずつ
   dy = [-1, 0, 1, 1, 1, 0, -1, -1];
@@ -188,4 +199,4 @@ class PromotedPawn extends Piece {
 
 //export文: 他のJavaScriptファイルからこれらのクラスをインポートして利用できるようにする。これにより別のファイルで import { King, Rook } from './piece_classes.js'; のように記述して利用できる
 //export { Piece, Blank, King, Rook, Bishop, GoldGeneral, SilverGeneral, Knight, Lance, Pawn};
-export { Piece, Blank, King, Rook, Bishop, GoldGeneral, SilverGeneral, Knight, Lance, Pawn, PromotedRook,PromotedBishop,PromotedSilverGeneral,PromotedKnight,PromotedLance,PromotedPawn};
+export { Piece, Blank, King, Gyoku, Rook, Bishop, GoldGeneral, SilverGeneral, Knight, Lance, Pawn, PromotedRook,PromotedBishop,PromotedSilverGeneral,PromotedKnight,PromotedLance,PromotedPawn};
