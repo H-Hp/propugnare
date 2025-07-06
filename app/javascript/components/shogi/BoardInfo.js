@@ -6,7 +6,7 @@ class BoardInfo {
     // initialDataがない場合は、デフォルトの初期盤面を生成
     constructor(initialData = {}) {
         //console.log("initialData:"+JSON.stringify(initialData))
-        console.log("King:"+JSON.stringify(new King("後手")))
+        //console.log("King:"+JSON.stringify(new King("後手")))
         //console.log("Rook:"+Rook)
         // デフォルトの初期配置の配列
         const defaultBoard = [
@@ -50,7 +50,7 @@ class BoardInfo {
         if (Object.keys(initialData).length === 0) {
             //console.log("initialDataが空の時");
             this.board = this.deserializeBoard(defaultBoard);
-            console.log("this.board:"+JSON.stringify(this.board))
+            //console.log("this.board:"+JSON.stringify(this.board))
             this.pieceStandNum = defaultPieceStandNum
             this.pieceStand = defaultPieceStand
             this.nowTurn = initialData.nowTurn || "先手";
@@ -100,6 +100,7 @@ class BoardInfo {
         this.checkPromote = this.checkPromote.bind(this);
         //this.canPromote = this.canPromote.bind(this);
         this.getBoardState = this.getBoardState.bind(this);
+        this.convertToShogiAddress = this.convertToShogiAddress.bind(this);
         
         /*this.turn = "先手";
         this.board = [[new Lance("後手"), new Knight("後手"), new SilverGeneral("後手"), new GoldGeneral("後手"), new King("後手"), new GoldGeneral("後手"), new SilverGeneral("後手"), new Knight("後手"), new Lance("後手")],
@@ -125,9 +126,9 @@ class BoardInfo {
 
     //boardClick(i, j) {
     boardClick(i, j,yourRole) {
-        console.log("boardClickのyourRole:"+yourRole)
+        //console.log("boardClickのyourRole:"+yourRole)
         if(yourRole!==this.nowTurn){//自分のターンじゃなければ操作できないように
-            console.log("自分のターンじゃないので操作はできない")
+            //console.log("自分のターンじゃないので操作はできない")
             return
         }
             
@@ -157,23 +158,26 @@ class BoardInfo {
                 // 成りの判定と処理
                 if (this.existCanMove(i, j, myPiece)) {// その駒がまだ動ける場合（成りを選択可能）
                     myPiece = this.checkPromote(myPiece, i, this.selection.before_i);// 成りを確認
+                    console.log("i:"+i+"・j:"+j)
                 } else {// その駒がもう動けない場合（強制的に成る）
                     myPiece = myPiece.getPromotedPiece();// 強制的に成る
                 }
             }
-                
+            const ShogiAddress = this.convertToShogiAddress(i, j)
             this.board[i][j] = myPiece;// 駒を新しいマスに配置
             this.nowTurn = this.nowTurn === "先手" ? "後手" : "先手";
-            console.log("boardClickのthis.nowTurn:"+this.nowTurn)
+            //console.log("boardClickのthis.nowTurn:"+this.nowTurn)
+            //console.log("this.board[i][j]:"+JSON.stringify(this.board[i][j]))
+            //console.log("this.selection.before_i:"+JSON.stringify(this.selection.before_i))
+            //console.log("this.selection.before_j:"+JSON.stringify(this.selection.before_j))
             //return true; // コマが動いた
             return {
                 //newBoardState: this.getBoardState(), // 変更後の盤面状態を返す
                 BoardInfo: this.getBoardState(), // 変更後の盤面状態を返す
-                moved: true,// 駒が動いた場合
-                move: this.board[i][j],
+                moved_check: true,// 駒が動いた場合
+                moveDetails: this.nowTurn+ShogiAddress+myPiece.name,
                 pieceStandNum: this.pieceStandNum,
                 pieceStand: this.pieceStand,
-                //moveDetails: this.board[i][j]
                 nowTurn: this.nowTurn,
             };
 
@@ -196,9 +200,8 @@ class BoardInfo {
             return {
                 //newBoardState: this.getBoardState(), // 変更後の盤面状態を返す
                 BoardInfo: this.getBoardState(), // 変更後の盤面状態を返す
-                moved: false,// 駒が動いた場合
-                move: this.selection.boardSelectInfo[i][j],
-                //moveDetails: this.board[i][j]
+                moved_check: false,// 駒が動いた場合
+                moveDetails: "select",
                 pieceStandNum: this.pieceStandNum,
                 pieceStand: this.pieceStand,
                 nowTurn: this.nowTurn
@@ -318,6 +321,27 @@ class BoardInfo {
         }
     }
 
+    /**
+     * 与えられた (i, j) 座標を将棋の盤面の住所形式（例: "7六", "1一"）に変換します。
+     * 左上が (0,0)、右下が (8,8) と仮定します。
+     *
+     * @param {number} i - 行のインデックス (0-8)。
+     * @param {number} j - 列のインデックス (0-8)。
+     * @returns {string} 将棋の盤面の住所形式の文字列。
+     */
+     convertToShogiAddress(i, j) {
+        // 筋（列）の変換: j=0 が 9筋、j=8 が 1筋
+        // 9 - j で計算できます。（例: j=0 -> 9, j=8 -> 1）
+        const suji = 9 - j; 
+
+        // 段（行）の変換: i=0 が 一段、i=8 が 九段
+        // 日本語の段の文字に変換します。
+        const danChars = ["一", "二", "三", "四", "五", "六", "七", "八", "九"];
+        const dan = danChars[i];
+
+        return `${suji}${dan}`;
+    }
+
     //将棋盤は9x9の二次元配列で表現されており、それぞれのマスにある駒のデータ（owner, name）を対応するPieceクラスのインスタンスへ復元する・盤面上の駒をクラスのインスタンスに復元する(デシリアライズする)
     deserializeBoard(boardData) {
         if (!Array.isArray(boardData)) { //配列でない場合は警告を出して空の盤面を返す
@@ -359,7 +383,7 @@ class BoardInfo {
 
     //個々の駒のデータ（{ name: "歩", owner: "先手" }のようなプレーンなオブジェクト）を受け取り、対応するPieceクラスのインスタンスを生成して返します。
     deserializePiece(pieceData) {
-        console.log("pieceData:"+JSON.stringify(pieceData))
+        //console.log("pieceData:"+JSON.stringify(pieceData))
         if (!pieceData || !pieceData.name || !pieceData.owner) {//データが不完全な場合はBlankを返す
             return new Blank();
         }
@@ -372,10 +396,10 @@ class BoardInfo {
             case "と": return new PromotedPawn(pieceData.owner);
             case null: return new Blank();// null の名前も Blank として処理
             default:
-                console.log("pieceData.name:"+JSON.stringify(pieceData.name))
-                console.log("pieceData.owner:"+JSON.stringify(pieceData.owner))
+                //console.log("pieceData.name:"+JSON.stringify(pieceData.name))
+                //console.log("pieceData.owner:"+JSON.stringify(pieceData.owner))
                 const pieceInstance = Piece.getPieceByName(pieceData.name, pieceData.owner);// Pieceクラスのヘルパーで非成駒を生成
-                console.log("pieceInstance:"+JSON.stringify(pieceInstance))
+                //console.log("pieceInstance:"+JSON.stringify(pieceInstance))
                 return pieceInstance || new Blank();// 見つからなければ Blank
         }
     }

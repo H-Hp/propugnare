@@ -238,6 +238,7 @@ class Room extends React.Component {
             return
           }else if(data.data_type=="already_redis_stored_board_data"){
             //console.log(`wwwwwwwdataあ: ${JSON.stringify(data.redis_stored_board_data)}`);
+            //console.log(`wwwwwwwdataあ: ${JSON.stringify(data)}`);
             
             data=JSON.parse(data.redis_stored_board_data);
             //console.log(`dataあ: ${JSON.stringify(data)}`);
@@ -257,20 +258,36 @@ class Room extends React.Component {
             
             //this.setState({ boardInfo: NewBoardInfo });
             //this.setState({ currentPlayer: data.currentPlayer });
+
+            //moveHistory取得
+            //const innerData =  JSON.parse(data.redis_stored_board_data);// 外側の JSON をパース
+            let moveHistory_redis = data.moveHistory; //moveHistoryを取り出し ["後手8六と"]
+            moveHistory_redis = moveHistory_redis.filter(Boolean); //空文字列の要素を除去する (先頭のカンマによる空要素のため)
+            /*console.log(`moveHistory_redis: ${moveHistory_redis}`);
+            console.log(typeof moveHistory_redis);
+            console.log(Array.isArray(moveHistory_redis)); // trueなら配列
+            console.log(moveHistory_redis); // 出力: ["後手8五と", "先手2五と"]
+            moveHistory_redis.forEach((move, index) => {
+                console.log(`履歴 ${index + 1}: ${move}`);
+            });
+            */
             
             //const boardDataFromServer = data.BoardInfo; // サーバーから来たプレーンなデータ
             //const boardDataFromServer = data.BoardInfo.board; // サーバーから来たプレーンなデータ
             const boardDataFromServer = data;
             //console.log(`Received ${data.data_type} for reconstruction:`, boardDataFromServer);
             //console.log(`boardDataFromServer: ${JSON.stringify(boardDataFromServer)}`);
+
             if (boardDataFromServer) {
               //サーバーから受け取ったデータ（プレーンオブジェクト）を引数に渡し、新しいBoardInfoインスタンスを生成
               const newBoardInfoInstance = new BoardInfo(boardDataFromServer);
+
               //console.log(`newBoardInfoInstance: ${JSON.stringify(newBoardInfoInstance)}`);
               this.setState({
                 boardInfo: newBoardInfoInstance,
                 nowTurn: newBoardInfoInstance.nowTurn, // BoardInfoのturnをstateに反映
-                // selection, pieceStandNum, pieceStand は newBoardInfoInstance 内に保持される
+                moveHistory: moveHistory_redis,
+                //moveHistory: [],
                 isLoading: false,
                 loadingMessage: "",
                 //hasReceivedInitialData: true,
@@ -282,6 +299,7 @@ class Room extends React.Component {
 
             //this.setState({ isLoading: false, loadingMessage: "" });//ローディングを終了
           }else if(data.data_type=="board_update"){
+
             //console.log(`data： ${JSON.stringify(data)}`);
             //const boardDataFromServer = data.BoardInfo; // サーバーから来たプレーンなデータ
             const boardDataFromServer = data.new_board_data; // サーバーから来たプレーンなデータ
@@ -289,12 +307,33 @@ class Room extends React.Component {
             //console.log(`data_type： ${JSON.stringify(data.data_type)}`);
             //console.log(`data.new_board_data： ${JSON.stringify(data.new_board_data)}`);
             
+            //moveHistory取得
+            let moveHistory_redis = boardDataFromServer.moveHistory; //moveHistoryを取り出し ["後手8六と"]
+            //let moveHistory_redis = data.moveHistory; //moveHistoryを取り出し ["後手8六と"]
+            //console.log(`moveHistory_redis: ${moveHistory_redis}`);
+            //console.log(`moveHistory_redis: ${moveHistory_redis}`);
+            //console.log(typeof moveHistory_redis);
+            //console.log(Array.isArray(moveHistory_redis)); // trueなら配列
+            moveHistory_redis = moveHistory_redis.filter(Boolean); //空文字列の要素を除去する (先頭のカンマによる空要素のため)
+            //console.log(moveHistory_redis); // 出力: ["後手8五と", "先手2五と"]
+            //moveHistory_redis.forEach((move, index) => {
+            //    console.log(`n履歴 ${index + 1}: ${move}`);
+            //});
+
+
             if (boardDataFromServer) {
               //console.log(`wwwwww： ${JSON.stringify(boardDataFromServer)}`);
               //サーバーから受け取ったデータ（プレーンオブジェクト）を引数に渡し、新しいBoardInfoインスタンスを生成
               const newBoardInfoInstance = new BoardInfo(boardDataFromServer);
+              //console.log(`newBoardInfoInstance.moveHistory: ${JSON.stringify(newBoardInfoInstance.moveHistory)}`);
+
               this.setState({
+              //this.setState(prevState => ({
                 boardInfo: newBoardInfoInstance,
+                //moveHistory: [...prevState.moveHistory, newBoardInfoInstance.moveDetails],
+                //moveHistory: [moveHistory_redis],
+                moveHistory: moveHistory_redis,
+                //moveHistory: [],
                 //currentPlayer: newBoardInfoInstance.turn, // BoardInfoのturnをstateに反映
                 nowTurn: newBoardInfoInstance.nowTurn, // BoardInfoのturnをstateに反映
                 // selection, pieceStandNum, pieceStand は newBoardInfoInstance 内に保持される
@@ -305,6 +344,8 @@ class Room extends React.Component {
                 //console.log(`BoardInfo instance reconstructed:`, this.state.boardInfo);
               });
             }
+
+            //console.log(`ボード更新後のthis.state.moveHistory: ${this.state.moveHistory}`);
 
             //data=JSON.parse(data.new_board_data);
             /*data=data.new_board_data;
@@ -349,7 +390,7 @@ class Room extends React.Component {
         // クライアントからサーバーにメッセージを送るメソッド
         //sendMove: (move) => {
         //board_update: (move) => {
-        board_update: (boardData,move) => {
+        board_update: (boardData,moveDetails) => {
           //console.log("board_updateメソッド");
           //console.log(`this.state.currentPlayer:${this.state.currentPlayer}`);
           //console.log(`boardData：${JSON.stringify(boardData)}`);
@@ -363,10 +404,12 @@ class Room extends React.Component {
             game_id: this.state.gameId
           });
           */
+         //console.log(`登録前のthis.state.moveHistory:${this.state.moveHistory}`);
 
           // ここで boardData は getBoardState() から返されるプレーンなオブジェクトであることを想定
           this.subscription.perform('board_broadcast_and_store', { 
-            move: move, 
+            moveHistory: this.state.moveHistory, 
+            //moveHistory: [], 
             BoardInfo: boardData,
             nowTurn: this.state.nowTurn,
             room_id: this.state.roomId,
@@ -411,18 +454,19 @@ class Room extends React.Component {
     const clickResult = boardInfo.boardClick(i, j,yourRole);// BoardInfoインスタンスのboardClickメソッドを呼び出す・この呼び出しで boardInfo インスタンス内部の状態が更新される・戻り値clickResultに移動情報などがまとまっている
     //console.log(`clickResult：${JSON.stringify(clickResult)}`);
     //if(!clickResult){
-    if(clickResult!==undefined){//自分の手番じゃなかったり、クリックされたマスが移動先として不適切だったり、クリックされた駒が自分の手番の駒でなければ
+    if(clickResult!==undefined && clickResult.moved_check){//自分の手番じゃなかったり、クリックされたマスが移動先として不適切だったり、クリックされた駒が自分の手番の駒でなければ
       //console.log(`clickResultがundefinedじゃない・clickResult:${JSON.stringify(clickResult)}`);
 
       //新しいボードデータ作るためのデータを作成
       const game_data = {
-        move:          clickResult.move,
-        BoardInfo:     clickResult.BoardInfo,
+        moveDetails: clickResult.moveDetails,
+        BoardInfo: clickResult.BoardInfo,
         pieceStandNum: clickResult.pieceStandNum,
         pieceStand: clickResult.pieceStand,
         nowTurn: clickResult.nowTurn
       };
       //console.log(`clickResultのnowTurn：${JSON.stringify(clickResult.nowTurn)}`);
+      //console.log(`moveDetails${JSON.stringify(clickResult.moveDetails)}`);
       //console.log(`clickResultから作ったgame_data：${JSON.stringify(game_data)}`);
       //console.log(`ああああclickResult.pieceStandNum: ${JSON.stringify(clickResult.pieceStandNum)}`);
       //console.log(`ううううああああclickResult.pieceStand：${JSON.stringify(clickResult.pieceStand)}`);
@@ -438,13 +482,35 @@ class Room extends React.Component {
       //console.log(`newBoardInfoInstance：${JSON.stringify(newBoardInfoInstance)}`);
       //console.log(`clickResult.moved${clickResult.moved}`);
 
-      this.setState({
+      this.setState(prevState => {
+        let newMoveHistory;
+
+        if (prevState.moveHistory === undefined) { // prevState.moveHistory が undefined なら、新しい配列を作成して最初の要素として clickResult.moveDetails を入れる
+            newMoveHistory = [clickResult.moveDetails];
+        } else {
+            // そうでなければ、既存の配列に clickResult.moveDetails を追加する
+            newMoveHistory = [...prevState.moveHistory, clickResult.moveDetails];
+        }
+
+        return {
+            boardInfo: newBoardInfoInstance, // 新しいインスタンスでstateを更新
+            moveHistory: newMoveHistory,     // 修正した moveHistory
+            nowTurn: clickResult.nowTurn,    // BoardInfoインスタンスから手番を取得して更新
+        };
+      /*this.setState(prevState => ({//引数prevStateは更新前の this.state
+      //this.setState({
         boardInfo: newBoardInfoInstance, // 新しいインスタンスでstateを更新
         //currentPlayer: newBoardInfoInstance.turn, // BoardInfoインスタンスから手番を取得して更新
+        //moveHistory: this.state.moveHistory+"+"+clickResult.moveDetails,
+        //...[配列] で各要素を展開・ || [] で未定義なら空配列を代替・clickResult.moveDetailsを末尾に追加
+        moveHistory: [...prevState.moveHistory || [], clickResult.moveDetails],
         nowTurn: clickResult.nowTurn, // BoardInfoインスタンスから手番を取得して更新
+        */
+      //}), () => {
       }, () => {
+        //console.log("moveHistory:"+this.state.moveHistory[0])
         // stateの更新が完了した後、WebSocketでサーバーに送信
-        if (isConnected && this.subscription && clickResult.moved) { // 駒が動いた場合のみ送信
+        if (isConnected && this.subscription && clickResult.moved_check) { // 駒が動いた場合のみ送信
           //console.log(`こまがうごいた`);
           //console.log("盤面状態が変更されました。サーバーに送信します。", newBoardInfoInstance.getBoardState());
           //getBoardState() を呼び出し、サーバーに送るためにプレーンなオブジェクトに変換
@@ -453,10 +519,11 @@ class Room extends React.Component {
             newBoardInfoInstance,
             clickResult.moveDetails
           );
-        } else if (clickResult.moved) {
+        } else if (clickResult.moved_check) {
           console.warn("WebSocket接続が確立されていないため、盤面更新を送信できません。");
         }
       });
+      //};
 
     //}else if(clickResult){
     }else{
@@ -591,7 +658,7 @@ class Room extends React.Component {
     if (enemyRole === "gote") this.setState({enemyRole: "後手"});
 
     //console.log("boardInfo:"+JSON.stringify(boardInfo))
-    console.log("nowTurn:"+this.state.nowTurn)
+    //console.log("nowTurn:"+this.state.nowTurn)
 
     if (isLoading) { // ★ isLoading が true の間はローディング表示
       return (
@@ -628,7 +695,6 @@ class Room extends React.Component {
         <div className="main-container ">
           <div className="menu-container column">
             <div className="menu-div">
-              メニュー
               あなたは{yourRole}
 
               <div>
@@ -638,6 +704,12 @@ class Room extends React.Component {
 
               <div>
                 <h2>10:00</h2>
+              </div>
+
+              <div className="h-1/4 overflow-y-auto">
+                  {moveHistory.map((move, index) => (
+                    <p key={index}>{index + 1}: {move}</p>
+                  ))}
               </div>
 
               <div 
