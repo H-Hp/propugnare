@@ -157,6 +157,9 @@ class Room extends React.Component {
       chatMessages: [], // 新しいstate: チャットメッセージを格納する配列
       currentChatMessage: '', // 新しいstate: 現在入力中のチャットメッセージ
       isChatOpen: true, //チャットが開いているかどうか
+      isCheck: false, // 王手状態を結果に追加
+      isCheckmate: false ,// 詰み状態
+      winner: "yet" 
     };
     this.subscription = null; // Action Cableのサブスクリプションをインスタンス変数で保持
 
@@ -250,7 +253,7 @@ class Room extends React.Component {
             //data.BoardInfo を受け取った後、それを BoardInfo クラスのインスタンスに「復元」する必要があります・Object.assign()では、オブジェクトのプロパティ（データ）はコピーされますが、メソッドやprototypeチェーンは正しく復元されません。そのため、getPromotedPiece()などのメソッドが利用できなくなります。
             //let NewBoardInfo=Object.assign(new BoardInfo(), data.BoardInfo);
             
-            // ★ ここが最も重要：受信したデータをデシリアライズしてクラスインスタンスを再構築
+            //ここが最も重要：受信したデータをデシリアライズしてクラスインスタンスを再構築
             //let NewBoardInfo = this.deserializeBoard(data.BoardInfo);
 
             //console.dir(`NewBoardInfo: ${ NewBoardInfo}`);
@@ -292,7 +295,7 @@ class Room extends React.Component {
                 loadingMessage: "",
                 //hasReceivedInitialData: true,
               }, () => {
-                console.log(`BoardInfo instance reconstructed:`, this.state.boardInfo);
+                //console.log(`BoardInfo instance reconstructed:`, this.state.boardInfo);
               });
             }
             
@@ -463,7 +466,10 @@ class Room extends React.Component {
         BoardInfo: clickResult.BoardInfo,
         pieceStandNum: clickResult.pieceStandNum,
         pieceStand: clickResult.pieceStand,
-        nowTurn: clickResult.nowTurn
+        nowTurn: clickResult.nowTurn,
+        isCheck: clickResult.isCheck, // 王手状態を結果に追加
+        isCheckmate: clickResult.isCheckmate ,// 詰み状態
+        winner: clickResult.winner
       };
       //console.log(`clickResultのnowTurn：${JSON.stringify(clickResult.nowTurn)}`);
       //console.log(`moveDetails${JSON.stringify(clickResult.moveDetails)}`);
@@ -496,6 +502,9 @@ class Room extends React.Component {
             boardInfo: newBoardInfoInstance, // 新しいインスタンスでstateを更新
             moveHistory: newMoveHistory,     // 修正した moveHistory
             nowTurn: clickResult.nowTurn,    // BoardInfoインスタンスから手番を取得して更新
+            isCheck: clickResult.isCheck, // 王手状態を結果に追加
+            isCheckmate: clickResult.isCheckmate, // 詰み状態
+            winner: clickResult.winner,
         };
       /*this.setState(prevState => ({//引数prevStateは更新前の this.state
       //this.setState({
@@ -508,6 +517,13 @@ class Room extends React.Component {
         */
       //}), () => {
       }, () => {
+
+        //勝敗がついてたらデータ消す
+        if(clickResult.isCheckmate){
+          console.log("勝敗がついているからデータ消す")
+          this.deleteData();
+        }
+
         //console.log("moveHistory:"+this.state.moveHistory[0])
         // stateの更新が完了した後、WebSocketでサーバーに送信
         if (isConnected && this.subscription && clickResult.moved_check) { // 駒が動いた場合のみ送信
@@ -527,7 +543,7 @@ class Room extends React.Component {
 
     //}else if(clickResult){
     }else{
-      console.log(`clickResultがundefined・clickResult:${JSON.stringify(clickResult)}`);
+      //console.log(`clickResultがundefined・clickResult:${JSON.stringify(clickResult)}`);
     }
   }
 
@@ -536,6 +552,7 @@ class Room extends React.Component {
   }
 
   deleteData = async () => { // async/await を使用
+    console.log('データを削除する');
     const { roomId } = this.state; // stateからroomIdを取得
     if (!roomId) {
       alert("ルームIDが不明です。");
@@ -621,6 +638,11 @@ class Room extends React.Component {
       isChatOpen: !prevState.isChatOpen // 現在の状態を反転させる
     }));
   }
+
+  rematch(){
+    console.log("再戦する");
+  }
+
   /*
   // チャット入力フィールドの値が変わったとき
   handleChatInputChange(event) {
@@ -644,7 +666,7 @@ class Room extends React.Component {
 */
 
   render() {
-    const { boardInfo, gameInfo, moveHistory, nowTurn, isConnected, isLoading, loadingMessage, chatMessages, currentChatMessage, isChatOpen, yourRole, enemyRole} = this.state;
+    const { boardInfo, gameInfo, moveHistory, nowTurn, isConnected, isLoading, loadingMessage, chatMessages, currentChatMessage, isChatOpen, yourRole, enemyRole, isCheck, isCheckmate,winner} = this.state;
     const roomId = this.state.roomId; // renderメソッド内でstateからroomIdを取得
 
     //senteだったら"先手"に、goteだったら"後手"に
@@ -697,9 +719,22 @@ class Room extends React.Component {
             <div className="menu-div">
               あなたは{yourRole}
 
+              {isCheckmate && ( //勝敗に決着が着いたら
+                <div>
+                  {yourRole === winner ? (
+                    <p>あなたが勝者です</p>
+                  ) : (
+                    <p>勝者は{winner}です</p>
+                  )}
+                  <button onClick={() => this.rematch()}>再対戦する</button>
+                  <a href="/">
+                    <button>ロビーに戻る</button>
+                  </a>
+                </div>
+              )}
+
               <div>
                 <h2>10:00</h2>
-                
               </div>
 
               <div>
@@ -832,40 +867,6 @@ class Room extends React.Component {
               {isConnected ? '接続中' : '未接続'}
             </span>
           </div>
-          {/* 現在の手番 */}
-          <div className="mb-3">
-            <span className="font-semibold">現在の手番: </span>
-            <span className="text-blue-600">{nowTurn}</span>
-          </div>
-          {/* ゲーム情報 */}
-          {Object.keys(gameInfo).length > 0 && (
-            <div className="mb-3">
-              <span className="font-semibold">ゲーム情報:</span>
-              <details className="mt-1">
-                <summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-800">詳細を表示</summary>
-                <pre className="bg-white p-2 rounded text-xs mt-1 overflow-auto">
-                  {JSON.stringify(gameInfo, null, 2)}
-                </pre>
-              </details>
-            </div>
-          )}
-          {/* 指し手履歴 */}
-         {/* {moveHistory.length > 0 && (*/}
-            <div className="mb-3">
-              <span className="font-semibold">指し手履歴:</span>
-              <details className="mt-1">
-                <summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-800">詳細を表示</summary>
-                <div className="bg-white p-2 rounded max-h-32 overflow-y-auto mt-1">
-                  {JSON.stringify(moveHistory, null, 2)}
-                  {/*{moveHistory.map((move, index) => (
-                    <div key={index} className="text-sm">
-                      {index + 1}. {JSON.stringify(move)}
-                    </div>
-                  ))}*/}
-                </div>
-              </details>
-            </div>
-          {/* )} */}
           {/* 生データ表示 */}
           <div className="mb-3">
             <span className="font-semibold">盤面データ:</span>
@@ -877,15 +878,6 @@ class Room extends React.Component {
                 {boardInfo ? JSON.stringify(boardInfo, null, 2) : '盤面データなし'}
               </pre>
             </details>
-          </div>
-
-          <div className="max-w-6xl mx-auto p-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* データ表示エリア */}
-              <div>
-                {/*{this.renderDataDisplay()} */ }
-              </div>
-            </div>
           </div>
         </div>
       </>

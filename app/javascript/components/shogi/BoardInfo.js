@@ -2,7 +2,6 @@
 import { Piece, Blank, King, Gyoku, Rook, Bishop, GoldGeneral, SilverGeneral, Knight, Lance, Pawn, PromotedRook,PromotedBishop,PromotedSilverGeneral,PromotedKnight,PromotedLance,PromotedPawn } from './Pieces';
 
 class BoardInfo {
-
     // initialDataがない場合は、デフォルトの初期盤面を生成
     constructor(initialData = {}) {
         //console.log("initialData:"+JSON.stringify(initialData))
@@ -32,8 +31,6 @@ class BoardInfo {
         //console.log("defaultPieceStandNum:"+JSON.parse(JSON.stringify(defaultPieceStandNum)))
         //console.log("defaultPieceStand:"+JSON.parse(JSON.stringify(defaultPieceStand)))
         //console.log("defaultBoard:"+JSON.stringify(defaultBoard))
-
-
 
         // initialData.board が存在しない、または配列でない場合はデフォルトボードを使用
         // 存在する場合はデシリアライズして復元
@@ -67,7 +64,34 @@ class BoardInfo {
             this.pieceStand = this.deserializePieceStand(initialData.BoardInfo.pieceStand || defaultPieceStand);
             this.nowTurn = initialData.BoardInfo.nowTurn || "先手";
         }
-        //console.log("this.board:"+JSON.stringify(this.board));
+
+
+        //詰み処理のため一時的に追加
+        //コマ動かして詰み・持ち駒打って詰み
+        /*this.board = [
+            [new Blank(), new Blank(), new Blank(), new Blank(), new King("後手"), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Bishop("後手"), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new GoldGeneral("先手"), new GoldGeneral("先手"), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Rook("後手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手")],
+            //[new Blank(), new Bishop("先手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Rook("先手"), new Blank()],
+            [new Blank(), new Bishop("先手"), new Blank(), new Blank(), new SilverGeneral("後手"), new Blank(), new Blank(), new Rook("先手"), new Blank()],
+            [new Lance("先手"), new Knight("先手"), new SilverGeneral("先手"), new GoldGeneral("先手"), new King("先手"), new GoldGeneral("先手"), new SilverGeneral("先手"), new Knight("先手"), new Lance("先手")]
+        ];
+        this.nowTurn = "先手";
+        this.selection  = new Selection();
+        this.pieceStandNum = {
+            "先手": { "歩": 0, "香": 0, "桂": 1, "銀": 0, "金": 1, "角": 0, "飛": 0 },
+            "後手": { "歩": 0, "香": 0, "桂": 0, "銀": 0, "金": 1, "角": 0, "飛": 0 }
+        };
+        this.pieceStand = {
+            "先手": [new GoldGeneral("先手"), new Knight("先手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            "後手": [new GoldGeneral("後手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()]
+        };
+        */
+
         //this.board = this.deserializeBoard(initialData.board || defaultBoard);
         //this.board = this.deserializeBoard(initialData.BoardInfo || defaultBoard);
         //this.board = this.deserializeBoard(initialData.BoardInfo.board || defaultBoard);
@@ -101,6 +125,12 @@ class BoardInfo {
         //this.canPromote = this.canPromote.bind(this);
         this.getBoardState = this.getBoardState.bind(this);
         this.convertToShogiAddress = this.convertToShogiAddress.bind(this);
+        this.CreateEasyBoard= this.CreateEasyBoard.bind(this);
+
+        //見やすいボード情報を作る
+        //const EasyBoard = this.CreateEasyBoard(this.board)
+        //console.log("EasyBoard:"+JSON.stringify(EasyBoard));
+        //console.log("EasyBoard:\n"+this.CreateEasyBoard(this.board));
         
         /*this.turn = "先手";
         this.board = [[new Lance("後手"), new Knight("後手"), new SilverGeneral("後手"), new GoldGeneral("後手"), new King("後手"), new GoldGeneral("後手"), new SilverGeneral("後手"), new Knight("後手"), new Lance("後手")],
@@ -138,14 +168,18 @@ class BoardInfo {
                 return;
             }
             let myPiece;
+            let yourPiece;
+            const originalBoardState = JSON.parse(JSON.stringify(this.board)); // 元に戻すために文字列で保持
+
             if (this.selection.pieceStandPiece.name) {// 持ち駒が選択されている場合 (駒を打つ)
                 myPiece = this.selection.pieceStandPiece;// 持ち駒を移動する駒(myPiece)にする
                 this.pieceStandNum[this.nowTurn][myPiece.name] -= 1;// 持ち駒の数を減らす
                 this.makePieceStand();// 持ち駒台の表示を更新
+                this.board[i][j] = myPiece; // 駒を新しいマスに配置
             } else {// 盤上の駒が選択されている場合 (駒を動かす)
                 myPiece = this.board[this.selection.before_i][this.selection.before_j]; // 選択していた盤上の駒(myPiece)にする
                 this.board[this.selection.before_i][this.selection.before_j] = new Blank();// 元のマスを空白にする
-                let yourPiece = this.board[i][j];// 移動先にあった駒をyourPieceにする
+                yourPiece = this.board[i][j];// 移動先にあった駒をyourPieceにする
                 if (yourPiece.name) { // 移動先に相手の駒があった場合 (駒を取る)
                     if (yourPiece.getPiece()) {// 成駒だった場合、元の駒に戻す
                         yourPiece = yourPiece.getPiece();
@@ -158,28 +192,106 @@ class BoardInfo {
                 // 成りの判定と処理
                 if (this.existCanMove(i, j, myPiece)) {// その駒がまだ動ける場合（成りを選択可能）
                     myPiece = this.checkPromote(myPiece, i, this.selection.before_i);// 成りを確認
-                    console.log("i:"+i+"・j:"+j)
+                    //console.log("i:"+i+"・j:"+j)
                 } else {// その駒がもう動けない場合（強制的に成る）
                     myPiece = myPiece.getPromotedPiece();// 強制的に成る
                 }
+                this.board[i][j] = myPiece;// 駒を新しいマスに配置
             }
+            
             const ShogiAddress = this.convertToShogiAddress(i, j)
-            this.board[i][j] = myPiece;// 駒を新しいマスに配置
+            
+            //王手ここから
+            // 既存の駒移動/駒打ちのロジックが完了した後、
+            // myPiece を新しいマスに配置し、this.board が更新される直前または直後に
+
+            // ここで仮の盤面を作成し、移動後の自分の王が王手にならないかチェックする
+            // ※これは自殺手（自分が王手になる手）のチェックです。
+            const tempBoard = this.deserializeBoard(originalBoardState); // originalBoardState をデシリアライズして使用
+            //const tempBoard = this.deserializeBoard(originalBoardState); // originalBoardState をデシリアライズして使用
+
+            // 移動後の駒は、myPiece を使用する (myPiece はすでにインスタンスなので再生成不要)
+            tempBoard[i][j] = myPiece;
+            //console.log("1tempBoardのEasyBoard:\n"+this.CreateEasyBoard(tempBoard));
+            //console.log("tempBoardのmyPiece:"+JSON.stringify(myPiece))
+            //console.log("tempBoard[i][j]:"+JSON.stringify(tempBoard[i][j]))
+            if (!this.selection.pieceStandPiece.name) { // 盤上の駒を動かした場合
+                tempBoard[this.selection.before_i][this.selection.before_j] = new Blank();
+            }
+            //console.log("2tempBoardのEasyBoard:\n"+this.CreateEasyBoard(tempBoard));
+
+            // yourPiece も復元する必要がある
+            /*if (yourPiece && yourPiece.name) {
+                tempBoard[i][j] = Piece.getPieceByName(yourPiece.name, yourPiece.owner);
+            }
+            console.log("3tempBoardのEasyBoard:\n"+this.CreateEasyBoard(tempBoard));
+            */
+
+            // 自分の玉が王手にならないことを確認 (このチェックは、駒を動かす前に実施すべきです。
+            // もしここで実施するなら、`this.board` を元の状態に戻すロジックが必要です。)
+            // 現在のコードでは、`boardClick` の冒頭で `originalBoardState` を取得し、
+            // その後 `this.board` を更新しています。
+            // 自殺手チェックは、**駒を動かす前に**、その手が合法手かどうかを判断する際に必要です。
+            // ここでは既に駒を動かしてしまっているので、この位置での自殺手チェックは適切ではありません。
+            // `getLegalMoves` の中でシミュレーション時にチェックされています。
+
+            // 自分の玉が王手にならないことを確認
+            //console.log("tempBoardのEasyBoard: \n"+this.CreateEasyBoard(tempBoard));
+
+            if (this.isKingInCheck(tempBoard, this.nowTurn)) {
+                // 盤面を元に戻す処理・元のマスに駒を戻し、取った駒も戻すか、 Blank にする
+                //console.log("tempBoard:"+tempBoard)
+                //console.log("this.nowTurn:"+this.nowTurn)
+
+                // 自分の玉が王手になる手は指せない (自殺手の禁止)
+                // 盤面を元に戻す
+                this.board[this.selection.before_i][this.selection.before_j] = myPiece; // 選択していた駒を元に戻す
+                this.board[i][j] = yourPiece; // 取った駒を元に戻す（またはBlank）
+                // 持ち駒を打った場合は、持ち駒の数を戻す
+                if (this.selection.pieceStandPiece.name) {
+                    this.pieceStandNum[this.nowTurn][myPiece.name] += 1;
+                    this.makePieceStand();
+                } else if (yourPiece.name) { // 駒を取った場合
+                     // 持ち駒から取った駒を元に戻す（myPiece.owner の持ち駒）
+                    this.pieceStandNum[myPiece.owner][yourPiece.name] -= 1;
+                    this.makePieceStand();
+                }
+
+                alert("自分の玉が王手です！");
+                return { moved_check: false,  }; // 駒は動かなかった
+            }
+
+            // 自分の玉が王手にならないことが確認できたら、手番を交代
+            const previousTurn = this.nowTurn; // 手番交代前の所有者を保持
             this.nowTurn = this.nowTurn === "先手" ? "後手" : "先手";
-            //console.log("boardClickのthis.nowTurn:"+this.nowTurn)
-            //console.log("this.board[i][j]:"+JSON.stringify(this.board[i][j]))
-            //console.log("this.selection.before_i:"+JSON.stringify(this.selection.before_i))
-            //console.log("this.selection.before_j:"+JSON.stringify(this.selection.before_j))
-            //return true; // コマが動いた
+            
+            // 相手（次の手番）が王手になっているかを確認
+            const isOpponentKingInCheck = this.isKingInCheck(this.board, this.nowTurn);
+            //alert("相手（次の手番）が王手になっているかを確認・isOpponentKingInCheck: "+isOpponentKingInCheck);
+
+            //相手（次の手番）の玉が王手になっているか、そして詰んでいるかを確認
+            const isOpponentKingInCheckmate = isOpponentKingInCheck && this.isCheckmate(this.board, this.nowTurn, this.pieceStandNum); // pieceStandNum を渡す
+            //alert("相手（次の手番）の玉が王手になっているか、そして詰んでいるかを確認・isOpponentKingInCheck: "+isOpponentKingInCheckmate);
+            console.log("相手（次の手番）の玉が王手になっているか、そして詰んでいるかを確認・isOpponentKingInCheck: "+isOpponentKingInCheckmate);
+            let winner = "yet"
+            console.log("board:\n"+this.CreateEasyBoard(this.board));
+            if(isOpponentKingInCheckmate){//決着が付いたら勝者の設定
+                winner=previousTurn
+            }
             return {
-                //newBoardState: this.getBoardState(), // 変更後の盤面状態を返す
-                BoardInfo: this.getBoardState(), // 変更後の盤面状態を返す
-                moved_check: true,// 駒が動いた場合
-                moveDetails: this.nowTurn+ShogiAddress+myPiece.name,
+                BoardInfo: this.getBoardState(),
+                moved_check: true,
+                moveDetails: previousTurn + ShogiAddress + myPiece.name, // 指した手は自分の手番で記録
                 pieceStandNum: this.pieceStandNum,
                 pieceStand: this.pieceStand,
                 nowTurn: this.nowTurn,
+                isCheck: isOpponentKingInCheck, // 王手状態を結果に追加
+                isCheckmate: isOpponentKingInCheckmate, // 詰み状態
+                winner: winner // 詰み状態
             };
+            //王手ここまで
+
+
 
         } else {// 何も駒が選択されていない状態の場合 (駒を選択する)
             if (this.nowTurn !== this.board[i][j].owner) {// クリックされた駒が自分の手番の駒でなければ
@@ -314,7 +426,8 @@ class BoardInfo {
                 // 1.そのマスが空マスであること（他の駒がない）
                 // 2.その駒をそこに打った場合、その後の手で移動可能であること（打ち歩詰め、行き所のない駒の判定）
                 // 3.(「歩」の場合のみ) その列に二歩にならないこと
-                if (!this.board[i][j].owner && this.existCanMove(i, j, piece) && pawnColMemo[j]) {
+                // isDroppable を使用して、より正確なチェックを行う
+                if (this.isDroppable(this.board, this.nowTurn, piece, i, j)) {
                     this.selection.boardSelectInfo[i][j] = "配置可能";// そのマスを「配置可能」としてマーク
                 }
             }
@@ -441,6 +554,335 @@ class BoardInfo {
             pieceStandNum: JSON.parse(JSON.stringify(this.pieceStandNum)), // 駒台の数はそのまま送れる・駒台の数はそのままコピー
             pieceStand: serializedPieceStand,
         };
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //王手の処理
+    /**
+     * 指定された盤面 (board) 上の特定の駒 (pieceI, pieceJ)が、どのマスに攻撃できるか（利きがあるか）を計算し、そのマスのリストを返します。
+     * このメソッドは、checkCanPutBoard とは異なり、state の更新を行いません。
+     *
+     * @param {Array<Array<Piece>>} currentBoard - 評価対象の盤面配列
+     * @param {string} pieceOwner - 攻撃側の駒の所有者 ("先手" または "後手")
+     * @param {number} pieceI - 攻撃側駒の現在の行インデックス
+     * @param {number} pieceJ - 攻撃側駒の現在の列インデックス
+     * @returns {Array<{i: number, j: number}>} 攻撃可能なマスの配列
+     */
+    getPieceAttackMoves(currentBoard, pieceOwner, pieceI, pieceJ) {
+        const piece = currentBoard[pieceI][pieceJ];//敵のコマオブジェクトを取得
+        //console.log(`piece : ${JSON.stringify(piece)}`);
+        if (!piece || !piece.name || piece.owner !== pieceOwner) {
+            console.log("駒がないか、所有者が異なる場合は空配列・piece："+piece)
+            return []; // 駒がないか、所有者が異なる場合は空配列
+        }
+
+        const attackMoves = [];
+
+        //敵の駒の持つ方向リスト（dx, dy, dk）をループする。たとえば角なら斜め4方向など
+        for (let l = 0; l < piece.dx.length; l++) {
+            let y = pieceI;
+            let x = pieceJ;
+            //その方向に何マス進めるか（dk[l]）回だけ繰り返す（例：香車なら10歩まで、金なら1歩だけ）
+            for (let _ = 0; _ < piece.dk[l]; _++) { // dk は移動できる歩数を表すと仮定
+                //「先手」と「後手」で進行方向が逆なので、dy/dx の符号を変えて進める
+                y += pieceOwner === "先手" ? piece.dy[l] : -piece.dy[l];
+                x += pieceOwner === "先手" ? piece.dx[l] : -piece.dx[l];
+
+                //盤面（9x9）から外れたらループ終了
+                if (y < 0 || y > 8 || x < 0 || x > 8) {
+                    break; // 盤面外に出たら終了
+                }
+
+                //console.log(`currentBoard[y][x] : ${JSON.stringify(currentBoard[y][x])}`);
+                //console.log(`y : ${y}`);
+                //console.log(`x : ${x}`);
+                if (currentBoard[y][x] === undefined) {
+                    break;
+                }
+                
+                //味方の駒があるマスには攻撃できない（移動できない）
+                //駒が空（Blank）だったり、名前がない（不正な駒）だったり、所有者が違う（例：「先手」のはずが「後手」）場合は、攻撃できないので空配列を返す。
+                if (currentBoard[y][x].owner === pieceOwner ) {
+                    break;
+                }
+
+                attackMoves.push({ i: y, j: x });
+
+                // 敵の駒を取ったら、それ以上は進めない（貫通しない）
+                if (currentBoard[y][x].name) { 
+                    break;
+                }
+            }
+        }
+        return attackMoves;
+    }
+
+    // B. `findKingPosition(owner)`: 特定の所有者の王の位置を見つける
+    /**
+     * 指定された所有者の王（玉）の位置を盤面から検索します。
+     * @param {string} owner - 検索する王の所有者 ("先手" または "後手")。
+     * @param {Array<Array<Piece>>} currentBoard - 検索対象の盤面配列 (オプション, デフォルトは this.board)。
+     * @returns {{i: number, j: number} | null} 王の位置の {i, j} オブジェクト、見つからなければ null。
+     */
+    findKingPosition(owner, currentBoard = this.board) {
+        for (let i = 0; i < 9; i++) {
+            for (let j = 0; j < 9; j++) {
+                const piece = currentBoard[i][j];
+                // King と Gyoku の両方をチェック（初期盤面でGyokuを使用しているため）
+                if (piece && (piece.name === "王" || piece.name === "玉") && piece.owner === owner) {
+                    return { i, j };
+                }
+            }
+        }
+        return null;
+    }
+
+
+    // C. `isKingInCheck(board, kingOwner)`: 特定の王が王手されているかを判定する
+    /**
+     * 指定された盤面 (board) 上で、特定の王 (kingOwner) が王手されているかを判定します。
+     * @param {Array<Array<Piece>>} currentBoard - 評価対象の盤面配列。
+     * @param {string} kingOwner - 王手されているかを確認する王の所有者 ("先手" または "後手")。
+     * @returns {boolean} 王手されている場合は true、そうでない場合は false。
+     */
+    isKingInCheck(currentBoard, kingOwner) {
+        const kingPos = this.findKingPosition(kingOwner, currentBoard);
+        if (!kingPos) {
+            // 王様が見つからない場合は王手ではない（またはゲーム終了状態）
+            //console.log("王様が見つからない場合は王手ではない（またはゲーム終了状態）")
+            return false; 
+        }
+
+        const opponentOwner = kingOwner === "先手" ? "後手" : "先手";//相手、敵対者
+        //console.log("相手、敵対者・opponentOwner："+opponentOwner)
+
+        // 相手の全ての駒を走査し、王に利きがあるかをチェック
+        for (let i = 0; i < 9; i++) {
+            for (let j = 0; j < 9; j++) {
+                const piece = currentBoard[i][j];
+                if (piece && piece.name && piece.owner === opponentOwner) {
+                    const attackMoves = this.getPieceAttackMoves(currentBoard, opponentOwner, i, j);
+                    // 攻撃可能なマスの中に王の位置が含まれているかをチェック
+                    if (attackMoves.some(move => move.i === kingPos.i && move.j === kingPos.j)) {
+                        //console.log("相手の全ての駒を走査した結果、攻撃可能なマスの中に王の位置が含まれている・王手がかかっている")
+                        return true; // 王手がかかっている
+                    }
+                }
+            }
+        }
+        return false; // 王手はかかっていない
+    }
+    //王手の処理ここまで
+
+
+    /**
+     * 持ち駒を盤面の指定されたマスに打てるかどうかを判定します。
+     * 二歩、行き所のない駒のルールを考慮します。打ち歩詰めは `isCheckmate` で最終的に判断されます。
+     * @param {Array<Array<Piece>>} currentBoard - 評価対象の盤面配列。
+     * @param {string} owner - 駒を打つ手番の所有者 ("先手" または "後手")。
+     * @param {Piece} piece - 打とうとしている持ち駒のインスタンス。
+     * @param {number} targetI - 打つ先の行インデックス。
+     * @param {number} targetJ - 打つ先の列インデックス。
+     * @returns {boolean} 持ち駒を打てる場合は true、そうでない場合は false。
+     */
+    isDroppable(currentBoard, owner, piece, targetI, targetJ) {
+        // 1. そのマスが空マスであること
+        if (currentBoard[targetI][targetJ].name) { // name があれば駒がある
+            return false;
+        }
+
+        // 2. 行き所のない駒にならないこと
+        let canMoveAfterDrop = false;
+        for (let l = 0; l < piece.dx.length; l++) {
+            let y = targetI;
+            let x = targetJ;
+            // 駒の向きに応じて移動方向を調整
+            y += owner === "先手" ? piece.dy[l] : -piece.dy[l];
+            x += owner === "先手" ? piece.dx[l] : -piece.dx[l];
+            if (0 <= y && y <= 8 && 0 <= x && x <= 8) {
+                canMoveAfterDrop = true;
+                break;
+            }
+        }
+        if (!canMoveAfterDrop) {
+            return false;
+        }
+
+        // 3. 二歩のチェック (歩の場合のみ)
+        if (piece.name === "歩") {
+            for (let i = 0; i < 9; i++) {
+                if (currentBoard[i][targetJ].name === "歩" && currentBoard[i][targetJ].owner === owner) {
+                    return false; // その列に既に自分の歩がある (二歩)
+                }
+            }
+        }
+
+        // 打ち歩詰めは、この `isDroppable` の中では直接判定しません。
+        // `getLegalMoves` が生成した手の中から、最終的に `isCheckmate` が判断します。
+
+        return true; // 上記のルールに違反しなければ打てる
+    }
+
+
+    //詰み・決着の処理ここから
+    /**
+     * 指定された盤面 (board) 上で、特定の所有者 (owner) が指せる全ての合法手のリストを生成します。
+     * 各手は、その手を指した後の盤面が自分の王にとって安全である (王手にならない) ことを確認します。
+     *
+     * @param {Array<Array<Piece>>} currentBoard - 評価対象の盤面配列。
+     * @param {string} owner - 合法手を検索する手番の所有者 ("先手" または "後手")。
+     * @param {Object} pieceStandNum - 現在の持ち駒の数 ({ "先手": { "歩": 1, ... }, "後手": { ... } })
+     * @returns {Array<{
+     * piece: Piece,      // 動かす駒のインスタンス
+     * fromI?: number,    // 動かす前の行 (盤上の駒の場合)
+     * fromJ?: number,    // 動かす前の列 (盤上の駒の場合)
+     * toI: number,       // 動かす先の行
+     * toJ: number,       // 動かす先の列
+     * isDrop: boolean,   // 持ち駒を打つ手かどうか
+     * promotedTo?: string // 成った場合の成駒の名前 (例: "竜")
+     * }>} 合法手のリスト。
+     */
+    getLegalMoves(currentBoard, owner, pieceStandNum) { // pieceStandNum を引数に追加
+        const legalMoves = [];
+
+        // 1. 盤上の駒の移動をシミュレーション
+        for (let i = 0; i < 9; i++) {
+            for (let j = 0; j < 9; j++) {
+                const piece = currentBoard[i][j];
+                //console.log("getLegalMovesのpiece:"+piece)
+                if (piece && piece.name && piece.owner === owner) {
+                    // その駒が移動できる全てのマス (通常の利き) を取得
+                    const possibleMoves = this.getPieceAttackMoves(currentBoard, owner, i, j);
+
+                    for (const move of possibleMoves) {
+                        const toI = move.i;
+                        const toJ = move.j;
+
+                        // --- 成らない場合（または成れない場合）のチェック ---
+                        const tempBoardNoPromote = this.deserializeBoard(JSON.parse(JSON.stringify(currentBoard))); // 新しい盤面をコピー
+                        const movingPieceNoPromote = Piece.getPieceByName(piece.name, piece.owner); // 元の駒のインスタンスを再生成
+
+                        tempBoardNoPromote[toI][toJ] = movingPieceNoPromote; // 駒を仮に移動
+                        tempBoardNoPromote[i][j] = new Blank(); // 元のマスを空白にする
+
+                        if (!this.isKingInCheck(tempBoardNoPromote, owner)) {
+                            legalMoves.push({
+                                piece: piece, // 元の駒の情報
+                                fromI: i, fromJ: j,
+                                toI: toI, toJ: toJ,
+                                isDrop: false
+                            });
+                        }
+
+                        // --- 成る選択肢がある場合、成った手も合法手として追加 ---
+                        const promoteAreaMinY = owner === "先手" ? 0 : 6;
+                        const promoteAreaMaxY = owner === "先手" ? 2 : 8;
+                        const canPromote = piece.getPromotedPiece(); // 成れる駒かどうか
+
+                        // 移動元または移動先が成りゾーンにある場合
+                        const inPromoteZone = (promoteAreaMinY <= toI && toI <= promoteAreaMaxY) || (promoteAreaMinY <= i && i <= promoteAreaMaxY);
+
+                        if (canPromote && inPromoteZone) {
+                            const promotedPiece = piece.getPromotedPiece(); // 成った駒のインスタンス（またはその名前）
+                            
+                            const tempBoardPromoted = this.deserializeBoard(JSON.parse(JSON.stringify(currentBoard))); // 新しい盤面をコピー
+                            const promotedPieceInstance = Piece.getPieceByName(promotedPiece.name, promotedPiece.owner); // 成った駒のインスタンスを再生成
+
+                            tempBoardPromoted[toI][toJ] = promotedPieceInstance; // 成った駒を仮に移動
+                            tempBoardPromoted[i][j] = new Blank(); // 元のマスを空白にする
+
+                            if (!this.isKingInCheck(tempBoardPromoted, owner)) {
+                                legalMoves.push({
+                                    piece: piece, // 元の駒の情報
+                                    fromI: i, fromJ: j,
+                                    toI: toI, toJ: toJ,
+                                    isDrop: false,
+                                    promotedTo: promotedPiece.name // 成った駒の名前
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. 持ち駒を打つ手をシミュレーション
+        for (const pieceName in pieceStandNum[owner]) { // pieceStandNum を引数として受け取るように変更
+            if (pieceStandNum[owner][pieceName] > 0) { // 持ち駒がある場合
+                const pieceInstance = Piece.getPieceByName(pieceName, owner); // 駒のインスタンスを取得
+
+                for (let i = 0; i < 9; i++) {
+                    for (let j = 0; j < 9; j++) {
+                        // 持ち駒を打てる通常の条件をチェック (二歩、行き所のない駒など)
+                        if (this.isDroppable(currentBoard, owner, pieceInstance, i, j)) {
+                            // 仮に駒を打った盤面を作成
+                            const tempBoard = this.deserializeBoard(JSON.parse(JSON.stringify(currentBoard)));
+                            tempBoard[i][j] = pieceInstance;
+
+                            // 打った後に自分の王が王手にならないかチェック
+                            if (!this.isKingInCheck(tempBoard, owner)) {
+                                legalMoves.push({
+                                    piece: pieceInstance,
+                                    toI: i, toJ: j,
+                                    isDrop: true
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return legalMoves;
+    }
+
+    /**
+     * 指定された盤面 (board) 上で、特定の王 (kingOwner) が詰んでいるかを判定します。
+     * 詰みとは、王が王手されており、かつ合法手が一つも存在しない状態を指します。
+     *
+     * @param {Array<Array<Piece>>} currentBoard - 評価対象の盤面配列。
+     * @param {string} kingOwner - 詰んでいるかを確認する王の所有者 ("先手" または "後手")。
+     * @param {Object} pieceStandNum - 現在の持ち駒の数 ({ "先手": { "歩": 1, ... }, "後手": { ... } })
+     * @returns {boolean} 詰んでいる場合は true、そうでない場合は false。
+     */
+    isCheckmate(currentBoard, kingOwner, pieceStandNum) { // pieceStandNum を引数に追加
+        // まず、王手されているかを確認
+        if (!this.isKingInCheck(currentBoard, kingOwner)) {
+            return false; // 王手されていなければ詰みではない
+        }
+
+        // 王手されている場合、合法手が一つも存在しないかを確認
+        const legalMoves = this.getLegalMoves(currentBoard, kingOwner, pieceStandNum); // pieceStandNum を渡す
+
+        // 打ち歩詰めは、getLegalMoves の中で自分の王が王手にならない手のみを返すため、
+        // ここで特別な処理は不要です。
+        // 打ち歩詰めは、相手の王を詰ませる手であって、自分の王の合法手とは直接関係ありません。
+
+        return legalMoves.length === 0; // 合法手が一つもなければ詰み
+    }
+    //詰み・決着の処理ここまで
+
+    //見やすいボード情報を作る
+    CreateEasyBoard(board){
+        //const newBoard = this.board.map(row =>
+        const newBoard = board.map(row =>
+            row.map(cell =>
+                cell && cell.name ? "「"+cell.owner+"の"+cell.name+"」" : "「　　　　」"
+            )
+        );
+        // []ごとに改行して表示
+        const EasyBoard = newBoard.map(row => row.join(", ")).join("\n");
+        return EasyBoard
     }
 }
 
