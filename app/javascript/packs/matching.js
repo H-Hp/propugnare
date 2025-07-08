@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const cancelMatchingButton = document.getElementById('cancelMatchingButton');
   const AllResetButton = document.getElementById('AllResetButton');
 
-  
   let matchingChannel = null; // Action Cable チャネルのインスタンスを保持
 
   let audioContext = null;
@@ -71,8 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
         identifier: identifier, // サーバーにidentifierを渡す
         room_id: "room_001",
         matching: "matching"
-      }, 
-      {
+      }, {
         connected() {
           console.log(`Action Cableが${identifier}のMatchingStatusChannelに接続されました`);
           // 接続時に、もし既にマッチ済みだったらリダイレクトを試みる
@@ -85,14 +83,20 @@ document.addEventListener('DOMContentLoaded', () => {
           // resetMatchingUI(); // ページリロード時に問題になる可能性があるので注意
         },
         received(data) {
-          console.log('Action Cableから受信:', data);
+          //console.log('Action Cableから受信:', data);
           if (data.status === 'matched') {
             handleMatchedAndStore(data.room_id, data.player_role);
             attemptRedirect(data.room_id);
+          }else if (data.status === 'user_added') {
+            document.querySelector('.matching_queue_length').innerHTML = data.matching_queue_length;//現在のマッチング人数を更新
+            console.log("ユーザーが追加された")
           } else if (data.status === 'canceled') {
             loadingMessage.textContent = data.message;
+            console.log("マッチング人数："+data.debug_data.matching_queue_length)
+            console.log("マッチングデータ："+data.debug_data.matching_queue_data)
             resetMatchingUI();
           } else if (data.status === 'in_progress') {
+            document.querySelector('.matching_queue_length').innerHTML = data.matching_queue_length;//現在のマッチング人数を更新
             // サーバー側で接続時にin_progressを送り返すようにした場合
             loadingMessage.textContent = data.message;
             startButton.disabled = true;
@@ -109,64 +113,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
   //ページロード時の初期処理
   async function initializeMatchingSystem() {
-    // HTMLに埋め込んだクライアントセッションIDを取得
-    const clientSessionIdMeta = document.querySelector('meta[name="client-session-id"]');
-    if (!clientSessionIdMeta) {
-      console.error("metaタグのclient-session-idが見つからないのでaction cableを購読できない");
-      return;
-    }
-    currentSessionId = clientSessionIdMeta.content;
+    const matchingDataElement = document.querySelector('#matching-data');
+    const currentSessionId = matchingDataElement.dataset.sessionId;
+    const matchingQueue = matchingDataElement.dataset.matchingQueue;
     localStorage.setItem(SESSION_ID_KEY, currentSessionId); // localStorageにも保存
+    console.log("matchingQueue:"+matchingQueue)
 
     subscribeToMatchingChannel(currentSessionId)// 取得したセッションIDで購読開始
     checkAndRedirectIfMatched(); // ロード時にマッチング済みかチェック
   }
-
-  
-  // マッチング情報の削除ボタン
-  AllResetButton.addEventListener('click', async () => {
-    // ローカルストレージのマッチング状態をクリア
-    localStorage.removeItem(MATCH_STATUS_KEY);
-    localStorage.removeItem(MATCH_ROOM_ID_KEY);
-    localStorage.removeItem(MATCH_PLAYER_ROLE_KEY);
-    localStorage.removeItem(SESSION_ID_KEY);
-    console.log("マッチング情報の全削除処理")
-    console.log("localStorage(MATCH_STATUS_KEY):"+localStorage.getItem(MATCH_STATUS_KEY));
-    console.log("localStorage(MATCH_ROOM_ID_KEY):"+localStorage.getItem(MATCH_ROOM_ID_KEY));
-    console.log("localStorage(MATCH_PLAYER_ROLE_KEY):"+localStorage.getItem(MATCH_PLAYER_ROLE_KEY));
-    console.log("localStorage(MATCH_PLAYER_ROLE_KEY):"+localStorage.getItem(SESSION_ID_KEY));
-
-    if (matchingChannel) {
-      matchingChannel.unsubscribe(); // チャネル購読解除
-      matchingChannel = null;
-    }
-    try {
-      const response = await fetch('/matching/all_delete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': getCsrfToken()
-        }
-      });
-      const data = await response.json();
-      console.log('マッチング情報を全部削除した:', data);
-      loadingMessage.textContent = data.message;
-      resetMatchingUI();
-    } catch (error) {
-      console.error('マッチングキャンセルエラー:', error);
-      loadingMessage.textContent = 'マッチングキャンセルに失敗しました。';
-      resetMatchingUI();
-    }
-
-    alert("セッションを削除してCSRFトークンも初期化されてしまうのでリロード")
-    location.reload();
-  });
 
 
 
   // マッチング開始ボタン
   startButton.addEventListener('click', async () => {
     setupAudio(); // ユーザー操作でオーディオを準備
+
+    const battle_type_radios = document.getElementsByName('battle_type');
+    let battle_type; 
+    for (const radio of battle_type_radios) {
+      if (radio.checked) {
+        battle_type = radio.value;
+        break;
+      }
+    }
+    console.log("battle_type:"+battle_type)
 
     // UIの状態を「マッチング中」に設定
     startButton.disabled = true;
@@ -182,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.removeItem(MATCH_PLAYER_ROLE_KEY);
     localStorage.removeItem(SESSION_ID_KEY);
 
-    console.log('getCsrfToken():'+getCsrfToken());
+    //console.log('getCsrfToken():'+getCsrfToken());
 
     try {
       // サーバーの /matching/start を叩く
@@ -192,20 +163,23 @@ document.addEventListener('DOMContentLoaded', () => {
           'Content-Type': 'application/json',
           //'X-CSRF-Token': //getCsrfToken()
           'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-        }
+        },
+        body: JSON.stringify({ battleType: battle_type })
       });
       const data = await response.json();//レスポンスを取得
       console.log('Matching start response:', data);
 
       if (data.status === 'in_progress') {
         localStorage.setItem(MATCH_STATUS_KEY, 'in_progress'); // 進行中状態を保存
+        document.querySelector('.matching_queue_length').innerHTML = data.matching_queue_length;//現在のマッチング人数を更新
+
         //console.log('redis_data:', data.redis_data);
         //console.log('sente_identifier:', data.redis_data.sente_identifier);
         //console.log('gote_identifier:', data.redis_data.gote_identifier);
         
         // in_progress のブロードキャストを待つ
       } else if (data.status === 'matched') {
-        console.log("data.player_role:"+data.player_role)
+        //console.log("data.player_role:"+data.player_role)
         // startを叩いた瞬間にマッチした場合
         handleMatchedAndStore(data.room_id, data.player_role);//マッチングが成立した際の共通処理
         attemptRedirect(data.room_id);//画面遷移を試みる
@@ -235,8 +209,8 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem(MATCH_PLAYER_ROLE_KEY, playerRole);
     localStorage.setItem(SESSION_ID_KEY, playerRole);
 
-    playNotificationSound();
-    flashPageTitle('マッチング！');
+    playNotificationSound();//通知音を再生
+    flashPageTitle('マッチング！');//ブラウザのタブタイトルを点滅させる
   }
 
   // 画面遷移を試みる関数
@@ -292,11 +266,51 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+
+  // マッチング情報の削除ボタン
+  AllResetButton.addEventListener('click', async () => {
+    // ローカルストレージのマッチング状態をクリア
+    localStorage.removeItem(MATCH_STATUS_KEY);
+    localStorage.removeItem(MATCH_ROOM_ID_KEY);
+    localStorage.removeItem(MATCH_PLAYER_ROLE_KEY);
+    localStorage.removeItem(SESSION_ID_KEY);
+    console.log("マッチング情報の全削除処理")
+    console.log("localStorage(MATCH_STATUS_KEY):"+localStorage.getItem(MATCH_STATUS_KEY));
+    console.log("localStorage(MATCH_ROOM_ID_KEY):"+localStorage.getItem(MATCH_ROOM_ID_KEY));
+    console.log("localStorage(MATCH_PLAYER_ROLE_KEY):"+localStorage.getItem(MATCH_PLAYER_ROLE_KEY));
+    console.log("localStorage(MATCH_PLAYER_ROLE_KEY):"+localStorage.getItem(SESSION_ID_KEY));
+
+    if (matchingChannel) {
+      matchingChannel.unsubscribe(); // チャネル購読解除
+      matchingChannel = null;
+    }
+    try {
+      const response = await fetch('/matching/all_delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCsrfToken()
+        }
+      });
+      const data = await response.json();
+      console.log('マッチング情報を全部削除した:', data);
+      loadingMessage.textContent = data.message;
+      resetMatchingUI();
+    } catch (error) {
+      console.error('マッチングキャンセルエラー:', error);
+      loadingMessage.textContent = 'マッチングキャンセルに失敗しました。';
+      resetMatchingUI();
+    }
+
+    alert("セッションを削除してCSRFトークンも初期化されてしまうのでリロード")
+    location.reload();
+  });
+
   //ページタイトル点滅関数
   let originalTitle = document.title;
   let titleInterval = null;
 
-  //ブラウザのタブタイトルを点滅させる機能を実装
+  //ブラウザのタブタイトルを点滅させる
   function flashPageTitle(message) {
     if (titleInterval) return;// 既に点滅中の場合は何もしない（重複実行防止）
     let isFlashing = false;// 点滅状態を管理するフラグ

@@ -22,6 +22,10 @@ class ShogiController < ApplicationController
       now_player=""
       your_user_agent=""
       your_session_id=""
+
+      battleType = room_game_data_json["battleType"]
+      Rails.logger.info "バトルタイプ: #{battleType}"
+
       # セッションIDがsenteかgoteかで分岐
       if current_session_id == room_game_data_json["sente_identifier"]
         @your_role = "sente"

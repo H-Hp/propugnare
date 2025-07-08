@@ -11,6 +11,9 @@ class MatchingController < ApplicationController
   #end
 
   def game_lobby_matching_board
+    #現在のマッチング待ち人数を確認・キューの長さを確認
+    @matching_queue_length = $redis.llen(MATCHING_QUEUE_KEY)
+    @matching_queue_data = $redis.lrange(MATCHING_QUEUE_KEY, 0, -1)# 既存のキューから全てのデータを取得
   end
 
   #このstartメソッドは、将棋のオンライン対戦における「マッチング機能」を実装しています。Redisのキューを使って2つのプレイヤーを待機させ、2人揃ったら対戦部屋を作成する仕組み
@@ -18,7 +21,10 @@ class MatchingController < ApplicationController
   def start
     #各ユーザーは自身のユニークな識別子を持つ
     user_identifier = session.id.to_s # 現在のセッションIDをユーザー識別子として使用
-    Rails.logger.info "user_identifier:#{user_identifier} "
+    #Rails.logger.info "user_identifier:#{user_identifier} "
+
+    battleType = params[:battleType]
+    Rails.logger.info "バトルタイプ:#{battleType} "
 
     #現在のユーザー情報をJSON文字列に変換する
     user_info_json = {
@@ -28,9 +34,9 @@ class MatchingController < ApplicationController
     }.to_json
     Rails.logger.info "アクセスしてきたユーザー情報・user_info_json:#{user_info_json} "
 
+    #すでにマッチング中かどうかチェックし、まだマッチングしてないならRedisキューに追加する
     #Redis のマッチング待ちキューからすでに登録されている全データを取得する・$redis.lrange(MATCHING_QUEUE_KEY, 0, -1)で、マッチングキュー内の全ユーザー情報（JSON文字列）を取得
     existing_queue = $redis.lrange(MATCHING_QUEUE_KEY, 0, -1)# 既存のキューから全てのデータを取得
-
     # identifier(セッションid)が重複しないようにユーザー情報を登録
     # 各JSON文字列をパースし、identifier部分だけを取り出す
     existing_identifiers = existing_queue.map do |json|
@@ -39,6 +45,8 @@ class MatchingController < ApplicationController
     # もし既存キュー内に、現在のuser_identifierが含まれていなければ、Redisキューに追加する
     unless existing_identifiers.include?(user_identifier)
       $redis.rpush(MATCHING_QUEUE_KEY, user_info_json)
+      matching_queue_length = $redis.llen(MATCHING_QUEUE_KEY)
+      ActionCable.server.broadcast("personal_notification_#{user_identifier}" ,{ status: 'user_added', matching_queue_length: matching_queue_length })
       Rails.logger.info "ユーザー#{user_info_json}をRedisキューに追加した。現在のキューの長さ: #{$redis.llen(MATCHING_QUEUE_KEY)}."
     else
       # 重複している場合は、ログにその旨を出力する
@@ -51,12 +59,12 @@ class MatchingController < ApplicationController
     # マッチングロジックを同期的に実行・ここでは、Redis操作がアトミックであることを利用して、複数リクエストが同時に来ても整合性を保つようにします。しかし、完全に競合状態を避けるにはRedisのLuaスクリプトがより適切です。
     
     #現在のマッチング待ち人数を確認・キューの長さを確認
-    queue_length = $redis.llen(MATCHING_QUEUE_KEY)
-    Rails.logger.info "現在のマッチング待ち人数(現在のRedisキューの長さ)：#{queue_length}"
+    @matching_queue_length = $redis.llen(MATCHING_QUEUE_KEY)
+    Rails.logger.info "現在のマッチング待ち人数(現在のRedisキューの長さ)：#{@matching_queue_length}"
 
     #キューの長さが2以上になると、「対戦相手が揃った」と判断してマッチング処理を進める
     #1人だけなら、クライアントへ 「in_progress」 を返して待機を継続させる
-    if queue_length >= 2
+    if @matching_queue_length >= 2
       # 2人のプレイヤーをキューから取り出す・先入れ先出し（FIFO） の順序で、待機キューの左端から2件をLPOPで取り出し
       player1_json = $redis.lpop(MATCHING_QUEUE_KEY)
       player2_json = $redis.lpop(MATCHING_QUEUE_KEY)
@@ -97,6 +105,7 @@ class MatchingController < ApplicationController
         sente_identifier: sente_identifier,
         gote_identifier: gote_identifier,
         status: 'active',
+        battleType: battleType,
         created_at: Time.current.to_i,
         player1_user_agent: player1_info[:user_agent],
         player2_user_agent: player2_info[:user_agent]
@@ -124,9 +133,8 @@ class MatchingController < ApplicationController
       render json: { status: 'matched', room_id: room_id, player_role: player_role_for_requester }
     else
       # 2人揃わなかった場合はマッチング待機中として応答・#Jsのマッチ開始イベントのfetch内のresponse.json()で取得
-      render json: { status: 'in_progress', message: '対戦相手を検索中です...' }
+      render json: { status: 'in_progress', message: '対戦相手を検索中です...', matching_queue_length: @matching_queue_length}
     end
-
   #Redisへの接続エラーなど、各種例外に対する処理
   rescue Redis::BaseConnectionError => e
     Rails.logger.error "MatchingController#startでのRedis接続エラー: #{e.message}"
@@ -166,12 +174,19 @@ class MatchingController < ApplicationController
       Rails.logger.info "ユーザー#{user_identifier}がキャンセル待ちのRedisキューに見つかりませんでした。"
     end
     
-    user_identifier = session.renew #セッション中のデータは保持しつつ、新しいセッションIDを発行
+    #user_identifier = session.renew #セッション中のデータは保持しつつ、新しいセッションIDを発行
+    # セッションを完全にリセット（セッションIDが変わり、既存データは全て消える）
+    reset_session
+
+    debug_data={
+      matching_queue_length: $redis.llen(MATCHING_QUEUE_KEY),
+      matching_queue_data: $redis.lrange(MATCHING_QUEUE_KEY, 0, -1)# 既存のキューから全てのデータを取得
+    }
 
     # ユーザーにマッチングキャンセルをブロードキャスト
-    ActionCable.server.broadcast("matching_status", { status: 'canceled', message: 'マッチングをキャンセルしました。' })
+    ActionCable.server.broadcast("matching_status", { status: 'canceled', message: 'マッチングをキャンセルしました。',debug_data: debug_data })
 
-    render json: { status: 'canceled', message: 'マッチングをキャンセルしました。' }
+    render json: { status: 'canceled', message: 'マッチングをキャンセルしました。' ,debug_data: debug_data}
   #Redisへの接続エラーなど、各種例外に対する処理
   rescue Redis::BaseConnectionError => e
     Rails.logger.error "MatchingController#cancelでのRedis接続エラー: #{e.message}"

@@ -14,8 +14,7 @@ class MatchingChannel < ApplicationCable::Channel
 
     Rails.logger.info "RoomChannelのdef subscribedのidentifier:#{identifier} "
 
-    # 接続時に、もしこのセッションがまだキューにいる場合は、
-    # 念のため 'in_progress' 状態をブロードキャストしてUIを更新する
+    # 接続時に、もしこのセッションがまだキューにいる場合は、念のため 'in_progress' 状態をブロードキャストしてUIを更新する
     #$redis.lrange(MATCHING_QUEUE_KEY, 0, -1)
       #MATCHING_QUEUE_KEY: マッチング待機ユーザーを管理するRedisキー
       #lrange(key, 0, -1): キューの全要素を取得

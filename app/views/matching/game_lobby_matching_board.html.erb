@@ -1,10 +1,8 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <%= javascript_pack_tag "matching", defer: true %>
-<meta name="client-session-id" content="<%= session.id.to_s %>">
+<meta id="matching-data" data-session-id="<%= session.id.to_s %>" data-matching-queue="<%= @matching_queue_data %>">
 <%= react_component("Header", { logoPath: asset_path("Logo.png") }) %>
 <%= stylesheet_link_tag 'game_lobby_matching_board', media: 'all' %>
-
-<h1>ゲームロビー</h1>
 
 <button id="AllResetButton" class="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-5 rounded-full text-base transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-300">
 マッチングデータを全部リセット
@@ -13,8 +11,11 @@
 <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 p-4">
   <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md text-center">
     <h1 class="text-3xl font-extrabold text-gray-800 mb-6">将棋対戦ロビー</h1>
-    <button id="startMatchingButton"
-            class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full text-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300">
+    <div>
+      <label><input type="radio" name="battle_type" value="10min" checked>10分切負け</label>
+      <!--<label><input type="radio" name="battle_type" value="10sec">10秒将棋</label>-->
+    </div>
+    <button id="startMatchingButton" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full text-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300">
       対戦相手を探す
     </button>
 
@@ -25,8 +26,9 @@
         <div class="absolute inset-0 border-4 border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
       </div>
       <p id="loadingMessage" class="text-blue-700 text-xl font-semibold">マッチング中です...</p>
-      <button id="cancelMatchingButton"
-              class="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-5 rounded-full text-base transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-300">
+      <p class="text-xl font-extrabold text-gray-800 mb-6"><span class="matching_queue_length"><%= @matching_queue_length %></span>人マッチング待機中 </p>
+
+      <button id="cancelMatchingButton" class="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-5 rounded-full text-base transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-300">
         キャンセル
       </button>
     </div>
@@ -34,14 +36,9 @@
     <%# マッチング完了時の表示 %>
     <div id="gameRoomLink" class="mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-lg shadow-inner text-center" style="display: none;">
       <p class="text-yellow-700 text-xl font-semibold mb-4">対戦相手が見つかりました！</p>
-      <a href="#" id="roomLink"
-         class="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full text-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300">
+      <a href="#" id="roomLink" class="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full text-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300">
         ゲームを開始する
       </a>
     </div>
   </div>
 </div>
-
-<style>
-
-</style>
