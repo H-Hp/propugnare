@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function attemptRedirect(roomId) {
     if (document.visibilityState === 'visible') {
       console.log("タブがアクティブなので、即座にリダイレクトします。");
-      window.location.href = `/shogi/${roomId}`;
+      //window.location.href = `/shogi/${roomId}`;
       stopFlashingPageTitle();
     } else {
       console.log("タブが非アクティブなので、アクティブ化を待ちます。");
@@ -340,6 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ロード時またはアクティブになったときにマッチング状態を確認しリダイレクト
   function checkAndRedirectIfMatched() {
     const matchedStatus = localStorage.getItem(MATCH_STATUS_KEY);
+    console.log("matchedStatus:"+matchedStatus);
     const roomId = localStorage.getItem(MATCH_ROOM_ID_KEY);
     const playerRole = localStorage.getItem(MATCH_PLAYER_ROLE_KEY);
     const sessionIdKey = localStorage.getItem(SESSION_ID_KEY);

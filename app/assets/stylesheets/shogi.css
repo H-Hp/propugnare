@@ -11,10 +11,19 @@
   flex-direction: column;
 }*/
   /*height: 100vh;*/
+* {
+  font-size: inherit;
+  /* フォントレンダリングを統一・Braveのレイアウト崩れ防止 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-variant-ligatures: none;
+}
 body, html {
   margin: 0;
   padding: 0;
   height: 100vh;
+  font-size: 16px; /* 基準サイズを明確に指定 */
   font-family: sans-serif;
   display: flex;
   flex-direction: column;
@@ -46,14 +55,20 @@ header {
   flex-direction: row;
   justify-content: center*/
   min-width: 550px;
+  display: flex;
+  justify-content: center; /* 水平中央 */
 }
 .menu-container {
-  width: 25%;
+  max-width: 20%;
+  /*max-height: 600px;
+  overflow-x: hidden;   
+  overflow-y: auto; 
+  white-space: nowrap;  */
 }
 .menu-div{
   background-color: white;
   padding: 3px;
-  height: 800px;
+  /*height: 800px;*/
   border: 1px solid #ccc;
   border-radius: 8px;
 }
@@ -62,13 +77,14 @@ header {
   flex-direction: column;
   background-color: none;
   gap: 20px;
+  max-width: 20%;
 }
 .chat-container {
   bottom: 0px;
   right: 0px;
   z-index: 1000; 
 
-  width: 25vw;   /* ビューポートの幅の20% */
+  /* width: 25vw;   ビューポートの幅の20% */
   height: 50vh;  /* ビューポートの高さの50% */
 
   border: 1px solid #ccc;
@@ -82,7 +98,7 @@ header {
 }
 .setting-container{
   background-color: #f9f9f9;
-  width: 25vw;   /* ビューポートの幅の20% */
+  /* width: 25vw;   ビューポートの幅の20% */
   height: 50vh;  /* ビューポートの高さの50% */
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -214,7 +230,12 @@ img#後手 {
   background-color: #eef1f5;
   display: flex;
   flex-direction: column;
+
+     justify-content: flex-end; /* 主軸（横方向）の終端に寄せる */
+    align-items: flex-end; /* 交差軸（縦方向）の終端に寄せる（右下隅にしたい場合） */
+
   gap: 1px;
+  max-height: 400px;
 }
 /* chat-form */
 .chat-form {
@@ -229,7 +250,7 @@ img#後手 {
   padding: 10px 12px;
   border: 1px solid #c9c9c9;
   border-radius: 20px;
-  font-size: 0.2rem;
+  font-size: 1.2rem;
   margin-right: 10px;
   outline: none;
 }
@@ -266,7 +287,7 @@ img#後手 {
 /* 開閉ボタンのスタイル */
 .chat-toggle-button {
   position: fixed; /* 画面に固定 */
-  bottom: 20px;    /* チャットコンテナと同じ高さ */
+  bottom: 30px;    /* チャットコンテナと同じ高さ */
   right: 20px;     /* チャットコンテナと同じ右端位置 */
   /* ここはチャットコンテナのrightと同じ位置に、ただしz-indexはチャットコンテナより高く*/
   /* もしくは、チャットコンテナのすぐ左に配置するように、rightを調整する */
@@ -292,7 +313,7 @@ img#後手 {
     /* チャットコンテナが開いている時はボタンをチャットコンテナの左端近くに */
     /* chat-containerの幅(20vw)からボタンの幅(40px)を引いて、右端からの位置を計算 */
     /*right: calc(20vw + 20px);*/
-    right: calc(20vw + 20px);
+    right: calc(0vw + 20px);
 }
 
 

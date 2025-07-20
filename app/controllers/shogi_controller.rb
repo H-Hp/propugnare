@@ -9,7 +9,6 @@ class ShogiController < ApplicationController
     if $redis.hget(GAME_ROOMS_HASH_KEY, @room_id).nil? # nil の場合、ゲームが終了している場合の処理
       redirect_to root_path
     else# データが存在する場合の処理
-
       #a=$redis.get(MATCHING_QUEUE_KEY)
       # 特定のroom_idのデータを取得
       room_game_data_json = $redis.hget(GAME_ROOMS_HASH_KEY, @room_id)
@@ -24,17 +23,21 @@ class ShogiController < ApplicationController
       your_session_id=""
 
       battleType = room_game_data_json["battleType"]
-      Rails.logger.info "バトルタイプ: #{battleType}"
+      #Rails.logger.info "バトルタイプ: #{battleType}"
 
       # セッションIDがsenteかgoteかで分岐
       if current_session_id == room_game_data_json["sente_identifier"]
-        @your_role = "sente"
-        @enemy_role = "gote"
+        #@your_role = "sente"
+        #@enemy_role = "gote"
+        @your_role = "先手"
+        @enemy_role = "後手"
         your_user_agent = room_game_data_json["player1_user_agent"]
         your_session_id = room_game_data_json["sente_identifier"]
       elsif current_session_id == room_game_data_json["gote_identifier"]
-        @your_role = "gote"
-        @enemy_role = "sente"
+        #@your_role = "gote"
+        #@enemy_role = "sente"
+        @your_role = "後手"
+        @enemy_role = "先手"
         your_user_agent = room_game_data_json["player2_user_agent"]
         your_session_id = room_game_data_json["gote_identifier"]
       else

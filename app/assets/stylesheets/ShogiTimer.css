@@ -1,0 +1,86 @@
+/* src/components/ShogiTimer/ShogiTimer.css */
+
+.shogi-timer-container {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box; /* paddingがwidthに影響しないように */
+    background-color: #f0f0f0; /* 背景色はApp.cssなどグローバルで管理することも多い */
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    margin: 20px; /* 他のコンテンツとの間に余白 */
+}
+
+.shogi-timer-container h1 {
+    color: #333;
+    margin-bottom: 25px;
+}
+
+.timer-display-area {
+    display: flex;
+    flex-direction: column;
+    gap: 50px;
+    margin-bottom: 30px;
+}
+
+.player-timer {
+    background-color: #fff;
+    border: 2px solid #ccc;
+    padding: 20px 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    text-align: center;
+    transition: all 0.3s ease-in-out; /* アクティブ時の変化を滑らかに */
+}
+
+.player-timer.active {
+    border-color: #007bff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transform: translateY(-5px); /* 少し浮き上がるような効果 */
+}
+
+.player-timer h2 {
+    margin-top: 0;
+    color: #333;
+    font-size: 0.7em;
+}
+
+.time {
+    font-size: 1em;
+    font-weight: bold;
+    color: #555; /* デフォルトの色 */
+    min-width: 150px; /* 表示が崩れないように */
+    transition: color 0.3s ease;
+}
+
+.timer-controls button {
+    padding: 10px 20px;
+    font-size: 1em;
+    margin: 5px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background-color: #28a745;
+    color: white;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.timer-controls button:hover {
+    opacity: 0.9;
+}
+
+.timer-controls button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.timer-controls button#resetBtn {
+    background-color: #dc3545;
+}
+.timer-controls button#resetBtn:hover {
+    background-color: #c82333;
+}

@@ -17,12 +17,18 @@ class ShogiGameChannel < ApplicationCable::Channel
     #最初のセットアップ
     init_state(@room_id,@game_id)
 
+    # 購読者カウントを増やす
+    increment_subscriber_count(@room_id)
+
     # RabbitMQから特定のルーティングキーのメッセージを購読する・これは通常、別途バックグラウンドジョブや常駐プロセスで行うべきだが、簡単化のため、このチャンネル内で購読処理を記述
     #start_rabbitmq_subscription(@room_id)
   end
 
   # 購読解除（unsubscribe）時に呼び出される・チャンネルがサブスクリプション解除された際の処理
   def unsubscribed
+    # 購読者カウントを減らす
+    decrement_subscriber_count(@room_id)
+
     # チャンネルがサブスクリプション解除された際の処理
     #stop_rabbitmq_subscription # RabbitMQの購読を停止
     Rails.logger.info "ShogiGameChannelからroom_idに関するサブスクリプションを解除: #{@room_id}"
@@ -35,8 +41,10 @@ class ShogiGameChannel < ApplicationCable::Channel
     boardInfo = data['BoardInfo']
     @room_id = data['room_id']
     @game_id = data['game_id']
-    redis_key = "shogi_game:#{@game_id}"
     new_board_data=data
+
+    redis_key = "shogi_game:#{@game_id}"
+    routing_key = "game.#{@room_id}.board_update"
 
     Rails.logger.info "Redisに値をセット・new_data： #{new_board_data}"
     Rails.logger.info "BoardInfo： #{boardInfo}"
@@ -50,8 +58,6 @@ class ShogiGameChannel < ApplicationCable::Channel
     Rails.logger.info "room_id に対応する moveHistory_data を受信しました： #{@room_id}: #{moveHistory_data}"
 
     new_board_state = { board: "新盤面情報のboadstate", moveHistory: moveHistory_data, nowTurn: nowTurn_data } # 実際はゲームロジックで生成
-
-    routing_key = "game.#{@room_id}.board_update"
   end
 
   def chat_broadcast_and_store(data)
@@ -79,7 +85,110 @@ class ShogiGameChannel < ApplicationCable::Channel
     ActionCable.server.broadcast( "shogi_game_room_#{room_id}",{ data_type: "chat_update", chat_data: updated_redis_stored_data})
   end
 
+
+  #再対戦のセットアップ
+  #def rematch_setup(data)
+  def rematch_setup(data)
+    puts "rematch_setup呼び出し: #{data}"
+    
+    your_role = data['yourRole']
+    room_id = data['room_id']
+    game_id = data['game_id']
+
+    #相手に再対戦の依頼が来ていると通知
+    # 後手のプレイヤーに再対戦の依頼が来たことを通知するメッセージをブロードキャスト
+    # 同じroom_idを購読している全てのクライアントに送る
+    ActionCable.server.broadcast(
+      "shogi_game_room_#{room_id}",{
+        data_type: 'rematch_request',
+        requester_role: your_role, # 誰がリクエストしたか
+        current_game_id: game_id,  # どのゲームからのリクエストか
+        message: "#{your_role} から再対戦の依頼が来ています。応じますか？"
+    })
+    
+    # 処理を続行
+  rescue => e
+    ActionCable.server.logger.error "rematch_setup error: #{e.message}"
+  end
+
+  def rematch_accept(data)
+    room_id = data['room_id']
+
+    redis_board_key = "shogi_game:#{@room_id}"
+    redis_chat_key = "shogi_game_chat:#{@room_id}"
+    #$redis.del(redis_board_key)
+    #$redis.del(redis_chat_key)
+
+    #先手と後手を入れ替える
+    #$redis.hdel(GAME_ROOMS_HASH_KEY, @room_id)#このroom_idに対応したゲームルームのデータを削除
+
+    ActionCable.server.broadcast("shogi_game_room_#{room_id}",{
+      data_type: "rematch_initialize"
+    })
+  end
+
+  def decline_rematch(data)
+    room_id = data['room_id']
+    #your_role = data['yourRole']
+
+    redis_board_key = "shogi_game:#{@room_id}"
+    redis_chat_key = "shogi_game_chat:#{@room_id}"
+    #$redis.del(redis_board_key)
+    #$redis.del(redis_chat_key)
+
+    #先手と後手を入れ替える
+    #$redis.hdel(GAME_ROOMS_HASH_KEY, @room_id)#このroom_idに対応したゲームルームのデータを削除
+
+    ActionCable.server.broadcast("shogi_game_room_#{room_id}",{
+      declined_role: data['yourRole'],#拒否を選択した人
+      data_type: "decline_rematch"
+    })
+  end
+
   private
+
+
+  #サブスクライバーを増やす
+  def increment_subscriber_count(room_id)
+    Rails.logger.info "サブスクライバーを増やす"
+    #$redis.current.incr("room_#{room_id}_subscribers")
+    $redis.incr("room_#{room_id}_subscribers")
+    Rails.logger.info "サブスクライバーを増やした"
+  end
+
+    #サブスクライバーを減らし、0人になったらデータ削除
+  def decrement_subscriber_count(room_id)
+    count = Redis.current.decr("room_#{room_id}_subscribers")
+    
+    #サブスクライバーが0になったらデータを削除
+    if count <= 0
+      Rails.logger.info "サブスクライバーが0になったからデータを削除"
+      cleanup_room_data(room_id)
+      Redis.current.del("room_#{room_id}_subscribers")
+    end
+  end
+
+  #データを削除
+  def cleanup_room_data(room_id)
+=begin
+    #データを削除
+    @room_id = room_id
+    redis_board_key = "shogi_game:#{@room_id}"
+    redis_chat_key = "shogi_game_chat:#{@room_id}"
+
+    begin
+      $redis.del(redis_board_key)
+      $redis.del(redis_chat_key)
+      $redis.hdel(GAME_ROOMS_HASH_KEY, @room_id)#このroom_idに対応したゲームルームのデータを削除
+    
+    # Redisからゲームデータを削除
+    Redis.current.del("game_state_#{room_id}")
+    Redis.current.del("game_moves_#{room_id}")
+=end
+    Rails.logger.info "Cleaned up data for room: #{room_id}"
+  end
+
+
 
   # RabbitMQ購読を管理するためのインスタンス変数
   @rabbitmq_consumer_thread = nil
@@ -108,7 +217,7 @@ class ShogiGameChannel < ApplicationCable::Channel
   #初期設定
   #def request_initial_board_state(room_id,game_id)
   def init_state(room_id,game_id)
-    Rails.logger.info "WebSocket初期読み込みrequest_initial_board_state: room_id:#{room_id}・game_id:#{game_id}"
+    #Rails.logger.info "WebSocket初期読み込みrequest_initial_board_state: room_id:#{room_id}・game_id:#{game_id}"
 
     #@redis = $redis # config/initializers/redis.rb で設定したグローバル変数
     redis_key = "shogi_game:#{room_id}"
@@ -123,24 +232,20 @@ class ShogiGameChannel < ApplicationCable::Channel
       #@game_data = JSON.parse(redis_stored_data)
       
       #@game_data = redis_stored_data
-      Rails.logger.info "Redisから取得: #{redis_stored_board_data}"
+      #Rails.logger.info "Redisから取得: #{redis_stored_board_data}"
 
       # 取得したデータをクライアントにブロードキャスト
       ActionCable.server.broadcast(
-        "shogi_game_room_#{room_id}",
-        {
+        "shogi_game_room_#{room_id}",{
           data_type: "already_redis_stored_board_data",
           redis_stored_board_data: redis_stored_board_data
-        }
-      )
+        })
     else
       # 取得したデータをクライアントにブロードキャスト
       ActionCable.server.broadcast(
-        "shogi_game_room_#{room_id}",
-        {
+        "shogi_game_room_#{room_id}",{
           data_type: "initialize"
-        }
-      )
+        })
     end
 
     if $redis.exists?(redis_chat_key)
@@ -158,6 +263,7 @@ class ShogiGameChannel < ApplicationCable::Channel
       )
     end
   end
+
 
   # RabbitMQの購読を開始する
   def start_rabbitmq_subscription(room_id)

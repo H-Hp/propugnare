@@ -1,5 +1,6 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <%= stylesheet_link_tag 'shogi', media: 'all' %>
+<%= stylesheet_link_tag 'ShogiTimer', media: 'all' %>
 
 <!--
 react-rails というGemが提供するヘルパーメソッド react_component
@@ -8,5 +9,4 @@ shogi/indexはコンポーネント名でもいい・例えばShogiとか
 3つ目の引数レンダリングオプション（例：prerender: falseはサーバーサイドレンダリングを無効にする）-->
 <%#= react_component("shogi/index", {gameId: @game_id}, { prerender: false }) %>
 <%= react_component("shogi/index", {gameId: @game_id}) %>
-
-<div id="game-container" data-game-id="<%= @game_id %>" data-room-id="<%= @room_id %>" data-your-role="<%= @your_role %>"  data-enemy-role="<%= @enemy_role %>">
+<div id="game-container" data-logo-path="<%= image_path('Logo.png') %>" data-game-id="<%= @game_id %>" data-room-id="<%= @room_id %>" data-your-role="<%= @your_role %>"  data-enemy-role="<%= @enemy_role %>">

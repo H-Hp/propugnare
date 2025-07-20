@@ -272,7 +272,7 @@ class BoardInfo {
             //相手（次の手番）の玉が王手になっているか、そして詰んでいるかを確認
             const isOpponentKingInCheckmate = isOpponentKingInCheck && this.isCheckmate(this.board, this.nowTurn, this.pieceStandNum); // pieceStandNum を渡す
             //alert("相手（次の手番）の玉が王手になっているか、そして詰んでいるかを確認・isOpponentKingInCheck: "+isOpponentKingInCheckmate);
-            console.log("相手（次の手番）の玉が王手になっているか、そして詰んでいるかを確認・isOpponentKingInCheck: "+isOpponentKingInCheckmate);
+            //console.log("相手（次の手番）の玉が王手になっているか、そして詰んでいるかを確認・isOpponentKingInCheck: "+isOpponentKingInCheckmate);
             let winner = "yet"
             console.log("board:\n"+this.CreateEasyBoard(this.board));
             if(isOpponentKingInCheckmate){//決着が付いたら勝者の設定
