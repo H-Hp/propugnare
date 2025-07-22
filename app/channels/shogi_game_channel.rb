@@ -12,7 +12,14 @@ class ShogiGameChannel < ApplicationCable::Channel
 
     # この接続を特定のストリーム（部屋）に紐付ける・Action Cableの概念で、特定のブロードキャストに対してリスナーになる
     stream_from "shogi_game_room_#{@room_id}"
-    Rails.logger.info "ShogiGameChannelにroom_idで登録: #{@room_id}"
+    #Rails.logger.info "ShogiGameChannelにroom_idで登録: #{@room_id}"
+
+    #残り時間
+    # Redisから現在のタイマー状態を読み込み、購読を開始したクライアントに送信・これにより、後から参加したクライアントも最新の状態を受け取れる
+    initial_timer_state = load_timer_from_redis(@room_id)
+    # Action Cableの`transmit`メソッドは、現在の購読者に直接メッセージを送る
+    transmit({ type: 'initial_timer_state', data: initial_timer_state })
+
 
     #最初のセットアップ
     init_state(@room_id,@game_id)
@@ -46,16 +53,16 @@ class ShogiGameChannel < ApplicationCable::Channel
     redis_key = "shogi_game:#{@game_id}"
     routing_key = "game.#{@room_id}.board_update"
 
-    Rails.logger.info "Redisに値をセット・new_data： #{new_board_data}"
-    Rails.logger.info "BoardInfo： #{boardInfo}"
-    Rails.logger.info "@room_id： #{@room_id}・@game_id： #{@game_id}・redis_key： #{redis_key}"
+    #Rails.logger.info "Redisに値をセット・new_data： #{new_board_data}"
+    #Rails.logger.info "BoardInfo： #{boardInfo}"
+    #Rails.logger.info "@room_id： #{@room_id}・@game_id： #{@game_id}・redis_key： #{redis_key}"
 
     $redis.set(redis_key, new_board_data.to_json)#Redisに値をセット
     
     #WebSocketで配信
     ActionCable.server.broadcast("shogi_game_room_#{@room_id}",{data_type: "board_update",new_board_data: new_board_data})
     
-    Rails.logger.info "room_id に対応する moveHistory_data を受信しました： #{@room_id}: #{moveHistory_data}"
+    #Rails.logger.info "room_id に対応する moveHistory_data を受信しました： #{@room_id}: #{moveHistory_data}"
 
     new_board_state = { board: "新盤面情報のboadstate", moveHistory: moveHistory_data, nowTurn: nowTurn_data } # 実際はゲームロジックで生成
   end
@@ -89,7 +96,7 @@ class ShogiGameChannel < ApplicationCable::Channel
   #再対戦のセットアップ
   #def rematch_setup(data)
   def rematch_setup(data)
-    puts "rematch_setup呼び出し: #{data}"
+    #puts "rematch_setup呼び出し: #{data}"
     
     your_role = data['yourRole']
     room_id = data['room_id']
@@ -116,8 +123,15 @@ class ShogiGameChannel < ApplicationCable::Channel
 
     redis_board_key = "shogi_game:#{@room_id}"
     redis_chat_key = "shogi_game_chat:#{@room_id}"
+    redis_timer_key = "game_timer:#{room_id}"
+    $redis.del(redis_timer_key, data.to_json)
     #$redis.del(redis_board_key)
     #$redis.del(redis_chat_key)
+
+    #残り時間
+    # Redisから現在のタイマー状態を読み込み、購読を開始したクライアントに送信・これにより、後から参加したクライアントも最新の状態を受け取れる
+    initial_timer_state = load_timer_from_redis(@room_id)
+    transmit({ type: 'initial_timer_state', data: initial_timer_state })# Action Cableの`transmit`メソッドは、現在の購読者に直接メッセージを送る
 
     #先手と後手を入れ替える
     #$redis.hdel(GAME_ROOMS_HASH_KEY, @room_id)#このroom_idに対応したゲームルームのデータを削除
@@ -145,6 +159,164 @@ class ShogiGameChannel < ApplicationCable::Channel
     })
   end
 
+
+  #残り時間
+  def toggle_timer(data)
+    Rails.logger.debug "Received toggle_timer data: #{data.inspect}"
+    server_timestamp = Time.now.to_i * 1000 # ミリ秒単位のUNIXタイムスタンプ
+
+    # ⭐ ここを修正: キーを文字列に統一する
+    timer_state = data.to_h.deep_merge({
+      "isPaused" => data["isPaused"], # または data[:isPaused] でも動くはずだが、確実なのは文字列
+      "senteTime" => data["senteTime"],
+      "goteTime" => data["goteTime"],
+      "activePlayer" => data["activePlayer"],
+      "lastUpdateTime" => server_timestamp # サーバー側で生成したタイムスタンプは上書き
+    })
+    # data["isPaused"] のように文字列でアクセスするか、
+    # data.symbolize_keys のように一旦シンボルに変換してからアクセスするか、
+    # いずれかの方法でデータを取り出す必要があります。
+    # `data.to_h` がすでに文字列キーのハッシュになっているので、文字列キーでアクセスするのが最も直接的です。
+
+    # 確認のため、再度ログ出力
+    Rails.logger.debug "toggle_timerの保存/ブロードキャスト前にマージされたタイマー状態: #{timer_state.inspect}"
+    save_timer_to_redis(@room_id, timer_state)
+    ActionCable.server.broadcast("shogi_game_room_#{@room_id}", { type: 'timer_toggled', data: timer_state })
+  end
+
+  # switch_turn メソッドも同様に修正
+  def switch_turn(data)
+    Rails.logger.debug "Received switch_turn data: #{data.inspect}"
+    server_timestamp = Time.now.to_i * 1000
+
+    timer_state = data.to_h.deep_merge({
+      "activePlayer" => data["activePlayer"],
+      "isPaused" => data["isPaused"],
+      "senteTime" => data["senteTime"],
+      "goteTime" => data["goteTime"],
+      "lastUpdateTime" => server_timestamp
+    })
+    Rails.logger.debug "switch_turnの保存/ブロードキャスト前にマージされたタイマー状態: #{timer_state.inspect}"
+    save_timer_to_redis(@room_id, timer_state)
+    ActionCable.server.broadcast("shogi_game_room_#{@room_id}", { type: 'turn_switched', data: timer_state })
+  end
+
+  # reset_timer メソッドも同様に修正
+  def reset_timer(data)
+    Rails.logger.debug "Received reset_timer data: #{data.inspect}"
+    server_timestamp = Time.now.to_i * 1000
+
+    timer_state = data.to_h.deep_merge({
+      "isPaused" => data["isPaused"],
+      "senteTime" => data["senteTime"],
+      "goteTime" => data["goteTime"],
+      "activePlayer" => data["activePlayer"],
+      "lastUpdateTime" => server_timestamp
+    })
+    Rails.logger.debug "reset_timerの保存/ブロードキャスト前にマージされたタイマー状態: #{timer_state.inspect}"
+    save_timer_to_redis(@room_id, timer_state)
+    ActionCable.server.broadcast("shogi_game_room_#{@room_id}", { type: 'timer_reset', data: timer_state })
+  end
+
+  # クライアントから手番交代リクエストを受け取る
+=begin
+  def switch_turn(data)
+    # data: { senteTime: ..., goteTime: ..., activePlayer: 'sente' | 'gote', isPaused: ..., lastUpdateTime: ... (これはクライアントのタイムスタンプ) }
+    # サーバー側で信頼できるタイムスタンプを生成
+    server_timestamp = Time.now.to_i * 1000 # ミリ秒単位のUNIXタイムスタンプ
+
+    # Redisにタイマー状態を保存
+    # クライアントから受け取った時間とサーバーのタイムスタンプを保存
+    # data.to_h はシンボルキーでない場合に必要
+    timer_state = data.to_h.deep_merge({
+      activePlayer: data[:activePlayer], # 新しい手番
+      isPaused: data[:isPaused],
+      senteTime: data[:senteTime],
+      goteTime: data[:goteTime],
+      lastUpdateTime: server_timestamp #サーバー側のタイムスタンプ
+    })
+    Rails.logger.info "switch_turnのtimer_state: #{timer_state}"
+    save_timer_to_redis(@room_id, timer_state)
+
+    # 他のクライアントに手番交代をブロードキャスト（サーバーのタイムスタンプを含める）
+    ActionCable.server.broadcast("shogi_game_room_#{@room_id}", { type: 'turn_switched', data: timer_state })
+  end
+
+  # toggle_timer, reset_timer も同様にサーバー側でタイムスタンプを付与する
+  def toggle_timer(data)
+    server_timestamp = Time.now.to_i * 1000
+    timer_state = data.to_h.deep_merge({
+      isPaused: data[:isPaused],
+      senteTime: data[:senteTime],
+      goteTime: data[:goteTime],
+      activePlayer: data[:activePlayer],
+      lastUpdateTime: server_timestamp
+    })
+    Rails.logger.info "toggle_timerのtimer_state: #{timer_state}"
+    save_timer_to_redis(@room_id, timer_state)
+    #ActionCable.server.broadcast("shogi_game_room_#{@room_id}", { type: 'timer_toggled', data: timer_state })
+  end
+
+  def reset_timer(data)
+    server_timestamp = Time.now.to_i * 1000
+    timer_state = data.to_h.deep_merge({
+      isPaused: data[:isPaused], # 通常はtrue
+      senteTime: data[:senteTime],
+      goteTime: data[:goteTime],
+      activePlayer: data[:activePlayer], # 通常はnull
+      lastUpdateTime: server_timestamp
+    })
+    Rails.logger.info "reset_timerのtimer_state: #{timer_state}"
+    save_timer_to_redis(@room_id, timer_state)
+    #ActionCable.server.broadcast("shogi_game_room_#{@room_id}", { type: 'timer_reset', data: timer_state })
+  end
+
+  # クライアントからタイマーの更新リクエストを受け取る
+  def update_timer(data)
+    Rails.logger.info "update_timer"
+    # data: { senteTime: 599000, goteTime: 599000, activePlayer: 'sente', isPaused: false, lastUpdateTime: Date.now() }
+    # Redisにタイマー状態を保存
+    save_timer_to_redis(@room_id, data)
+    # 同じゲームの他のクライアントに新しいタイマー状態をブロードキャスト
+    # Action Cableの`broadcast`メソッドは、指定されたストリームの全員にメッセージを送る
+    ActionCable.server.broadcast("shogi_game_room_#{@room_id}", { type: 'timer_updated', data: data })
+  end
+  # クライアントから手番交代リクエストを受け取る
+  def switch_turn(data)
+    Rails.logger.info "switch_turn"
+    # data: { activePlayer: 'sente' | 'gote', lastUpdateTime: Date.now() }
+    # Redisにアクティブプレイヤーと最終更新時間を保存
+    save_timer_to_redis(@room_id, data) # 時間も同時に更新されることを考慮
+
+    # 他のクライアントに手番交代をブロードキャスト
+    ActionCable.server.broadcast("shogi_game_room_#{@room_id}", { type: 'turn_switched', data: data })
+  end
+  # タイマー開始/一時停止のリクエスト
+  def toggle_timer(data)
+    Rails.logger.info "toggle_timer"
+    save_timer_to_redis(@room_id, data)
+    ActionCable.server.broadcast("shogi_game_room_#{@room_id}", { type: 'timer_toggled', data: data })
+  end
+  # タイマーリセットのリクエスト
+  def reset_timer(data)
+    Rails.logger.info "reset_timer"
+    save_timer_to_redis(@room_id, data)
+    ActionCable.server.broadcast("shogi_game_room_#{@room_id}", { type: 'timer_reset', data: data })
+  end
+=end
+  #残り時間
+
+  #ゲームセットのブロードキャスト
+  def game_set(data)
+    Rails.logger.info "game_set: #{data}"
+    ActionCable.server.broadcast("shogi_game_room_#{data['room_id']}", { 
+      data_type: 'game_set', 
+      winReason: data['winReason'],
+      winner: data['winner'],
+    })
+  end
+
+
   private
 
 
@@ -158,7 +330,7 @@ class ShogiGameChannel < ApplicationCable::Channel
 
     #サブスクライバーを減らし、0人になったらデータ削除
   def decrement_subscriber_count(room_id)
-    count = Redis.current.decr("room_#{room_id}_subscribers")
+    count = $redis.decr("room_#{room_id}_subscribers")
     
     #サブスクライバーが0になったらデータを削除
     if count <= 0
@@ -263,6 +435,168 @@ class ShogiGameChannel < ApplicationCable::Channel
       )
     end
   end
+
+
+  #残り時間
+  def load_timer_from_redis(room_id)
+    key = "game_timer:#{room_id}"
+    json_data = $redis.get(key)
+    if json_data.present?
+      parsed_data = JSON.parse(json_data)
+      Rails.logger.info "load_timer_from_redis: #{parsed_data}"
+
+      # Redisに保存されているデータにlastUpdateTimeが欠けている場合に備える
+      parsed_data["lastUpdateTime"] ||= Time.now.to_i * 1000
+      parsed_data
+    else
+      Rails.logger.info "load_timer_from_redis: Redisにデータがない場合の初期値"
+
+      # Redisにデータがない場合の初期値
+      initial_minutes = 10
+      {
+        "senteTime" => initial_minutes * 60 * 1000,
+        "goteTime" => initial_minutes * 60 * 1000,
+        "activePlayer" => nil, # 初期状態では手番は確定していない
+        "isPaused" => true,    # 初期状態ではタイマーは一時停止中
+        "lastUpdateTime" => Time.now.to_i * 1000 # 最初の初期化時刻
+      }
+    end
+  rescue StandardError => e
+    Rails.logger.error "Failed to load timer from Redis for room #{room_id}: #{e.message}"
+    initial_minutes = 10
+    {
+      "senteTime" => initial_minutes * 60 * 1000,
+      "goteTime" => initial_minutes * 60 * 1000,
+      "activePlayer" => nil,
+      "isPaused" => true,
+      "lastUpdateTime" => Time.now.to_i * 1000
+    }
+  end
+
+  def save_timer_to_redis(room_id, data)
+    redis_timer_key = "game_timer:#{room_id}"
+    $redis.set(redis_timer_key, data.to_json)
+  rescue StandardError => e
+    Rails.logger.error "Failed to save timer to Redis for room #{room_id}: #{e.message}"
+  end
+=begin
+  def load_timer_from_redis(room_id)
+    key = "game_timer:#{room_id}"
+    json_data = Redis.current.get(key)
+    if json_data.present?
+      parsed_data = JSON.parse(json_data) # シンボルに変換せず、文字列キーのまま
+      # lastUpdateTime が存在しない場合に備える (文字列キーでアクセス)
+      parsed_data["lastUpdateTime"] ||= Time.now.to_i * 1000
+      parsed_data
+    else
+      initial_minutes = 10
+      {
+        "senteTime" => initial_minutes * 60 * 1000,
+        "goteTime" => initial_minutes * 60 * 1000,
+        "activePlayer" => nil,
+        "isPaused" => true,
+        "lastUpdateTime" => Time.now.to_i * 1000 # 初期状態でもタイムスタンプを付ける
+      }
+    end
+  rescue StandardError => e
+    Rails.logger.error "Failed to load timer from Redis for room #{room_id}: #{e.message}"
+    initial_minutes = 10
+    {
+      "senteTime" => initial_minutes * 60 * 1000,
+      "goteTime" => initial_minutes * 60 * 1000,
+      "activePlayer" => nil,
+      "isPaused" => true,
+      "lastUpdateTime" => Time.now.to_i * 1000
+    }
+  end
+
+  def save_timer_to_redis(room_id, data)
+    key = "game_timer:#{room_id}"
+    Redis.current.set(key, data.to_json) # data は文字列キーのハッシュ
+  rescue StandardError => e
+    Rails.logger.error "Failed to save timer to Redis for room #{room_id}: #{e.message}"
+  end
+
+  def load_timer_from_redis(room_id)
+    Rails.logger.info "load_timer_from_redis: #{room_id}"
+    key = "game_timer:#{room_id}"
+    json_data = $redis.get(key)
+    if json_data.present?
+      parsed_data = JSON.parse(json_data).transform_keys(&:to_sym)
+      # lastUpdateTime が存在しない場合に備える
+      parsed_data[:lastUpdateTime] ||= Time.now.to_i * 1000
+      parsed_data
+    else
+      initial_minutes = 10
+      {
+        senteTime: initial_minutes * 60 * 1000,
+        goteTime: initial_minutes * 60 * 1000,
+        activePlayer: nil,
+        isPaused: true,
+        lastUpdateTime: Time.now.to_i * 1000 # 初期状態でもタイムスタンプを付ける
+      }
+    end
+  rescue StandardError => e
+    Rails.logger.error "Failed to load timer from Redis for room #{room_id}: #{e.message}"
+    initial_minutes = 10
+    {
+      senteTime: initial_minutes * 60 * 1000,
+      goteTime: initial_minutes * 60 * 1000,
+      activePlayer: nil,
+      isPaused: true,
+      lastUpdateTime: Time.now.to_i * 1000
+    }
+  end
+
+  def save_timer_to_redis(room_id, data)
+    key = "game_timer:#{room_id}"
+    $redis.set(key, data.to_json)
+  rescue StandardError => e
+    Rails.logger.error "Failed to save timer to Redis for room #{room_id}: #{e.message}"
+  end
+
+  # Redisからタイマー状態を読み込むヘルパーメソッド
+  def load_timer_from_redis(room_id)
+    # Redisのキーを定義 (例: "game_timer:room_123")
+    key = "game_timer:#{room_id}"
+    json_data = $redis.get(key)
+    if json_data.present?
+      JSON.parse(json_data).transform_keys(&:to_sym) # シンボルに変換
+    else
+      # 初期状態を返す (例: 10分)
+      initial_minutes = 10
+      {
+        senteTime: initial_minutes * 60 * 1000,
+        goteTime: initial_minutes * 60 * 1000,
+        activePlayer: nil,
+        isPaused: true,
+        lastUpdateTime: nil # 最終更新時間は保存しないか、クライアントが初期化時に設定
+      }
+    end
+  rescue StandardError => e
+    Rails.logger.error "Failed to load timer from Redis for room #{room_id}: #{e.message}"
+    # エラー時のフォールバック処理
+    initial_minutes = 10
+    {
+      senteTime: initial_minutes * 60 * 1000,
+      goteTime: initial_minutes * 60 * 1000,
+      activePlayer: nil,
+      isPaused: true,
+      lastUpdateTime: nil
+    }
+  end
+
+  # Redisにタイマー状態を保存するヘルパーメソッド
+  def save_timer_to_redis(room_id, data)
+    key = "game_timer:#{room_id}"
+    $redis.set(key, data.to_json)
+    # Redisの有効期限を設定することも検討 (例: ゲームが一定時間活動がなければ削除)
+    # Redis.current.expire(key, 1.day)
+  rescue StandardError => e
+    Rails.logger.error "Failed to save timer to Redis for room #{room_id}: #{e.message}"
+  end
+=end
+  #残り時間
 
 
   # RabbitMQの購読を開始する

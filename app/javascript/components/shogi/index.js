@@ -163,14 +163,16 @@ class Room extends React.Component {
       currentChatMessage: '', // 新しいstate: 現在入力中のチャットメッセージ
       isChatOpen: true, //チャットが開いているかどうか
       isCheck: false, // 王手状態を結果に追加
-      //isCheckmate: false ,// 詰み状態
       isCheckmate: false ,// 詰み状態
       winner: "yet",
+      winReason: "yet",
       rematch_sended: false,//リクエストを送信したかどうか
       rematchRequest: false,//リクエストが来ているか
       decline_received: false,//再対戦リクエストの拒否を受け取ったかどうか
       gameStatus: 'playing', // 例: 'playing', 'time_up', 'checkmate'
       timeUpPlayer: null, // 時間切れになったプレイヤー
+      bufferedInitialTimerState: null, //追加: 初期タイマー状態を一時的に保持する
+      debugMode: false,
     };
     this.subscription = null; // Action Cableのサブスクリプションをインスタンス変数で保持
 
@@ -181,11 +183,21 @@ class Room extends React.Component {
 
     this.handleTimeUp = this.handleTimeUp.bind(this);
 
+    this.handleStartTimer = this.handleStartTimer.bind(this);
+    this.handlePauseTimer = this.handlePauseTimer.bind(this);
+    this.handleToggleTimer = this.handleToggleTimer.bind(this);
+    this.handleSwitchTurn = this.handleSwitchTurn.bind(this);
+    this.handleResetTimer = this.handleResetTimer.bind(this);
+    //this.setupActionCable = this.setupActionCable.bind(this);
+    //this.teardownActionCable = this.teardownActionCable.bind(this);
+    this.handleActionCableMessage = this.handleActionCableMessage.bind(this);
+    this.applyBufferedInitialTimerState = this.applyBufferedInitialTimerState.bind(this); // ⭐ 追加
+
+
     // ShogiTimer コンポーネントのインスタンスを直接保持するプロパティ
     // React.createRef() は不要になります。
     this.shogiTimerInstance = null; 
     this.timerStarted = false;
-
     this.shogiTimerRef = React.createRef();// ShogiTimer コンポーネントへの参照を作成
     console.log(`this.shogiTimerRef: ${JSON.stringify(this.shogiTimerRef)}`);
 
@@ -196,12 +208,62 @@ class Room extends React.Component {
     this.initializeRoom();
   }
 
-  componentDidUpdate() {
+  // ⭐ここを修正: prevProps と prevState を引数として明示的に受け取る
+  componentDidUpdate(prevProps, prevState) {
+    //console.log(`prevProps: ${JSON.stringify(prevProps)}`);
+    //console.log(`prevState: ${JSON.stringify(prevState)}`);
+    // shogiTimerRef.current が null から非nullになった、
+    // かつ bufferedInitialTimerState が存在する場合に適用を試みる
+    //if (this.shogiTimerRef.current && this.state.bufferedInitialTimerState && !prevState.bufferedInitialTimerState) {
+    if (this.shogiTimerRef.current && this.state.bufferedInitialTimerState) {
+        this.applyBufferedInitialTimerState();
+    }
+    // bufferedInitialTimerState が null から非nullになった場合（データがバッファされた）
+    else if (!prevState.bufferedInitialTimerState && this.state.bufferedInitialTimerState && this.shogiTimerRef.current) {
+        this.applyBufferedInitialTimerState();
+    }
     if (!this.timerStarted && this.shogiTimerRef.current) {
       this.timerStarted = true;
       console.log(`this.timerStarted: ${this.timerStarted}`);
-      this.handleStartTimer();
+      //this.handleStartTimer();
+      //this.handleToggleTimer();
       //this.handleSwitchTurn();
+    }
+  }
+
+  /*componentDidUpdate() {
+    // shogiTimerRef.currentがnullから非nullになったときに、バッファされた初期状態を適用
+    if (!prevState.bufferedInitialTimerState && this.state.bufferedInitialTimerState) {
+        this.applyBufferedInitialTimerState();
+    }
+        // また、shogiTimerRef.current が null から非 null になったタイミングでも適用を試みる
+    if (this.shogiTimerRef.current && !prevState.bufferedInitialTimerState && this.state.bufferedInitialTimerState === null) {
+        // このケースは本来起こりにくいが、念のため
+        this.applyBufferedInitialTimerState();
+    }
+  }*/
+
+    /*if (this.state.gameId !== prevState.gameId) {
+      console.log(`Game ID changed from ${prevState.gameId} to ${this.state.gameId}. Re-subscribing Action Cable.`);
+      this.teardownActionCable();
+      this.setupActionCable();
+    }*/
+
+    /*this.handleSwitchTurn({ // ⭐ ShogiTimerが呼び出すメソッドではなく、RoomがActionCableに送信するメソッドを呼ぶ
+          senteTime: this.shogiTimerRef.current?.getSenteTime(), // 現在の時間を取得して送る
+          goteTime: this.shogiTimerRef.current?.getGoteTime(),   // getSenteTime/getGoteTime はShogiTimerで公開する必要がある
+          activePlayer: this.state.nowTurn, // 次の手番
+          isPaused: false, // 駒を動かしたら一時停止を解除
+          lastUpdateTime: Date.now()
+      });
+      */
+
+  // ⭐ 追加: バッファされた初期状態を ShogiTimer に適用するメソッド
+  applyBufferedInitialTimerState() {
+    if (this.state.bufferedInitialTimerState && this.shogiTimerRef.current) {
+        console.log("ShogiTimerにバッファされた初期タイマーの状態を適用する:", this.state.bufferedInitialTimerState);
+        this.shogiTimerRef.current.initializeTimerState(this.state.bufferedInitialTimerState);
+        this.setState({ bufferedInitialTimerState: null }); // 適用したらクリア
     }
   }
 
@@ -277,7 +339,11 @@ class Room extends React.Component {
           this.setState({ isConnected: false });
         },
         received: (data) => {
-          //console.log(`room_id のデータを取得しました。 ${roomId}:`, data);
+
+          if(data.data_type!=="board_update"){
+            this.handleActionCableMessage(data);//残り時間
+          }
+          console.log(`room_id のデータを取得しました。 ${roomId}:`, data);
           // サーバーから受信したデータでstateを更新
           /*this.setState(prevState => ({
             boardInfo: data.boardInfo || prevState.boardInfo, // 盤面更新
@@ -311,7 +377,35 @@ class Room extends React.Component {
                 rematch_sended: false,//リクエストを送信したかどうか
                 rematchRequest: false,//リクエストが来ているか
                 decline_received: false,
+                gameStatus: 'playing', // 例: 'playing', 'time_up', 'checkmate'
+                timeUpPlayer: null, // 時間切れになったプレイヤー
+                bufferedInitialTimerState: null,
+              }, () => {
+                // ⭐ ここにタイマーのリセット処理を追加
+                // リマッチが初期化されたら、タイマーもリセットする
+                //this.handleResetTimer();
+                this.handleToggleTimer();
               });
+              /*
+              this.shogiTimerInstance = null; 
+              this.timerStarted = false;
+              this.shogiTimerRef = React.createRef();// ShogiTimer コンポーネントへの参照を作成
+
+              //this.handleStartTimer(); 
+              //this.handleToggleTimer();
+              this.handleResetTimer();
+              */
+              /*if (this.shogiTimerRef.current && this.state.bufferedInitialTimerState) {
+                  this.applyBufferedInitialTimerState();
+              }
+              // bufferedInitialTimerState が null から非nullになった場合（データがバッファされた）
+              //else if (bufferedInitialTimerState && this.state.bufferedInitialTimerState && this.shogiTimerRef.current) {
+                  this.applyBufferedInitialTimerState();
+              //}
+              if (!this.timerStarted && this.shogiTimerRef.current) {
+                this.timerStarted = true;
+                console.log(`this.timerStarted: ${this.timerStarted}`);
+              }*/
           }else if(data.data_type=="already_redis_stored_board_data"){
             //console.log(`wwwwwwwdataあ: ${JSON.stringify(data.redis_stored_board_data)}`);
             //console.log(`wwwwwwwdataあ: ${JSON.stringify(data)}`);
@@ -466,7 +560,16 @@ class Room extends React.Component {
             console.log(`this.state.chatMessages：`, this.state.chatMessages);
             return
           */
-          } else if (data.data_type === 'rematch_request') {
+          } else if (data.data_type === 'game_set'){
+              console.log("ゲームセット")
+              this.setState({
+                isCheckmate: true ,// 詰み状態
+                winner: data.winner,
+                winReason: data.winReason,
+                //gameStatus: 'time_up',
+                //timeUpPlayer: player,
+              });
+          }else if (data.data_type === 'rematch_request') {
             //console.log("requesterRole:"+data);
             const requesterRole = data.requester_role;
             const message = data.message;
@@ -553,12 +656,49 @@ class Room extends React.Component {
               game_id: this.state.gameId    // キーが'game_id'
           });
         //再戦を承諾
+        },
+        // サーバーにアクションを送信するヘルパーメソッドを定義 (ShogiTimerから呼び出される)
+        // これらはShogiTimerから参照されるため、bindする必要がある
+        /*updateTimer: (timerState) => {
+          console.log("updateTimer")
+          this.subscription.perform('update_timer', timerState);
+        },
+        switchTurn: (turnState) => {
+          console.log("switchTurn")
+          this.subscription.perform('switch_turn', turnState);
+        },
+        toggleTimer: (toggleState) => {
+          console.log("toggleTimer")
+          this.subscription.perform('toggle_timer', toggleState);
+        },
+        resetTimer: (resetState) => {
+          console.log("resetTimer")
+          this.gameChannel.perform('reset_timer', resetState);
+        }*/
+        // サーバーにアクションを送信するヘルパーメソッドを定義
+        // これらはShogiTimerから参照されるため、bindする必要がある
+        // Action Cable performsメソッドはPromiseを返さないため、同期的な呼び出し
+        
+        sendToggleTimer: (timerState) => {
+          this.subscription.perform('toggle_timer', timerState);
+        },
+        sendSwitchTurn: (turnState) => {
+          this.subscription.perform('switch_turn', turnState);
+        },
+        sendResetTimer: (resetState) => {
+          this.subscription.perform('reset_timer', resetState);
         }
+        // updateTimer はイベント駆動型同期では通常不要 (ただしデバッグ用などに残すことも可能)
+        // sendUpdateTimer: (timerState) => {
+        //   this.gameChannel.perform('update_timer', timerState);
+        // },
       }
     );
   };
 
   canselSelection() {
+    if(this.state.isCheckmate){ console.log("ゲームセットしているので操作できない"); return }//ゲームセット状態なら操作できないように
+
     const nextBoardInfo = this.state.boardInfo;// 現在のboardInfoの状態を取得
     if (nextBoardInfo.selection.isNow) {// 既に何か選択されている状態の場合
       nextBoardInfo.selection.isNow = false;// 選択状態を解除
@@ -575,6 +715,8 @@ class Room extends React.Component {
 
   //ユーザーが盤面上のi行、j列をクリックしたときに呼ばれるメソッド
   handleBoardClick(i, j) {
+    if(this.state.isCheckmate){ console.log("ゲームセットしているので操作できない"); return }//ゲームセット状態なら操作できないように
+
     //const { boardInfo, isConnected } = this.state;
     //const clickResult = boardInfo.boardClick(i, j);// BoardInfoインスタンスのboardClickメソッドを呼び出す・この呼び出しで boardInfo インスタンス内部の状態が更新される・戻り値clickResultに移動情報などがまとまっている
     const { boardInfo, isConnected, yourRole } = this.state;
@@ -645,7 +787,12 @@ class Room extends React.Component {
         //勝敗がついてたらデータ消す
         if(clickResult.isCheckmate){
           console.log("勝敗がついているからデータ消す")
-          this.deleteData();
+          //this.deleteData();
+          this.subscription.perform('game_set', {
+            room_id: this.state.roomId,
+            winReason: "Tumi", 
+            winner: clickResult.winner,
+          });
         }
 
         //console.log("moveHistory:"+this.state.moveHistory[0])
@@ -654,7 +801,15 @@ class Room extends React.Component {
           //console.log(`こまがうごいた`);
 
           //this.handleStartTimer()
-          this.handleSwitchTurn()
+          //this.handleSwitchTurn()
+          this.handleSwitchTurn({ // ⭐ ShogiTimerが呼び出すメソッドではなく、RoomがActionCableに送信するメソッドを呼ぶ
+          //this.sendSwitchTurn({ // ⭐ ShogiTimerが呼び出すメソッドではなく、RoomがActionCableに送信するメソッドを呼ぶ
+            senteTime: this.shogiTimerRef.current?.getSenteTime(), // 現在の時間を取得して送る
+            goteTime: this.shogiTimerRef.current?.getGoteTime(),   // getSenteTime/getGoteTime はShogiTimerで公開する必要がある
+            activePlayer: clickResult.nowTurn, // 次の手番
+            isPaused: false, // 駒を動かしたら一時停止を解除
+            lastUpdateTime: Date.now()
+          });
 
           //console.log("盤面状態が変更されました。サーバーに送信します。", newBoardInfoInstance.getBoardState());
           //getBoardState() を呼び出し、サーバーに送るためにプレーンなオブジェクトに変換
@@ -827,11 +982,51 @@ class Room extends React.Component {
     });
     // 必要に応じて、他のゲームコンポーネントに通知するロジックを追加
   }*/
+   handleActionCableMessage(data) {
+    //console.log("handleActionCableMessage(data):", data); // JSON.stringify(data) はオブジェクトを見にくくするので直接 data をログに出す
+    //console.log("this.shogiTimerRef.current before call:", this.shogiTimerRef.current); // ⭐ 追加
+
+    switch (data.type) {
+      case 'initial_timer_state':
+        console.log("switch case initial_timer_state"); // ⭐ 追加
+
+        // ShogiTimerに初期状態を渡す (ShogiTimerが自身で状態を更新するように)
+        /*if (this.shogiTimerRef.current) {
+          this.shogiTimerRef.current.initializeTimerState(data.data);
+        }*/
+        // ⭐ ShogiTimerRefがまだ利用できない場合、状態をバッファする
+        if (this.shogiTimerRef.current) {
+          this.shogiTimerRef.current.initializeTimerState(data.data);
+          // 適用したらバッファをクリア（念のため）
+          this.setState({ bufferedInitialTimerState: null });
+        } else {
+          console.warn("ShogiTimerRef.current is null for initial_timer_state. Buffering data.", data.data);
+          this.setState({ bufferedInitialTimerState: data.data });
+        }
+        break;
+      case 'timer_updated':
+      case 'turn_switched':
+      case 'timer_toggled':
+      case 'timer_reset':
+        // ShogiTimerにサーバーからの最新の状態を渡し、UIを更新させる
+        if (this.shogiTimerRef.current) {
+          this.shogiTimerRef.current.syncTimerState(data.data);
+        }
+        break;
+      // 他のゲームイベント (例: 駒の移動、チャットなど) のハンドリング
+      default:
+        console.log("Unknown message type:", data.type);
+    }
+  }
+
+
   handleTimeUp(player) {
     console.log(`${player} の時間切れです！ゲームを終了します。`);
-    this.setState({
-      gameStatus: 'time_up',
-      timeUpPlayer: player,
+    const winner = player === 'sente' ? '後手' : '先手';//値がsenteならgoteにして、goteならsenteに
+    this.subscription.perform('game_set', {
+      room_id: this.state.roomId,
+      winReason: "TimeUp", // キーが'yourRole'
+      winner: winner,
     });
   }
 
@@ -842,14 +1037,6 @@ class Room extends React.Component {
       this.shogiTimerRef.current.start(); // ShogiTimer で公開した 'start' メソッドを呼び出す
     }
        // this.shogiTimerInstance が null でないことを確認
-    /*console.log("handleStartTimer呼び出された - shogiTimerInstance:", this.shogiTimerInstance);
-    if (this.shogiTimerInstance) {
-      this.shogiTimerInstance.start(); // ShogiTimer で公開した 'start' メソッドを呼び出す
-      console.log("App: タイマーを開始しました。");
-    } else {
-      console.warn("App: ShogiTimer インスタンスがまだ利用できません。handleStartTimerが早すぎた可能性があります。");
-    }
-      */
   };
 
   // ShogiTimer の pauseTimer メソッドを呼び出す
@@ -866,6 +1053,36 @@ class Room extends React.Component {
     if (this.shogiTimerRef.current) {
       this.shogiTimerRef.current.toggle(); // ShogiTimer で公開した 'toggle' メソッドを呼び出す
     }
+    /*if (!this.shogiTimerRef.current) return;
+
+    // ⭐ ShogiTimer コンポーネントの ref 経由で現在の状態を取得する
+    // Room の state に shogiTimerIsPaused などがあるが、
+    // handleToggleTimer の直前の ShogiTimer の状態を取得するため、ref 経由で取得するのが確実
+    const isPaused = this.shogiTimerRef.current.pause();
+    //const activePlayer = this.shogiTimerRef.current.player();
+    const senteTime = this.shogiTimerRef.current.getSenteTime();
+    const goteTime = this.shogiTimerRef.current.getGoteTime();
+
+    //console.log(`handleToggleTimer: Current State - isPaused: ${isPaused}, activePlayer: ${activePlayer}, senteTime: ${senteTime}, goteTime: ${goteTime}`);
+
+    const newIsPaused = !isPaused;
+    //let playerToActivate = activePlayer;
+    //if (newIsPaused === false && activePlayer === null) {
+    if (newIsPaused === false ) {
+        playerToActivate = 'sente'; // ゲーム開始時は先手から
+    }
+
+    //console.log(`handleToggleTimer: Sending - newIsPaused: ${newIsPaused}, playerToActivate: ${playerToActivate}`);
+
+    this.sendToggleTimer({
+        senteTime: senteTime,
+        goteTime: goteTime,
+        //activePlayer: playerToActivate,
+        activePlayer: "sente",
+        isPaused: newIsPaused,
+        lastUpdateTime: Date.now()
+    });
+    */
   };
 
   // ShogiTimer の switchTurn メソッドを呼び出す
@@ -889,9 +1106,29 @@ class Room extends React.Component {
     this.setState({ isCheckmate: true, winner:"あなた" });
   };
 
+  debugModeOn = () => {
+    console.log("デバッグモードオン")
+    if(this.state.debugMode){
+      this.setState({ debugMode: false });
+    }else if(!this.state.debugMode){
+      this.setState({ debugMode: true });
+    }
+  };
+
+  
+
   render() {
-    const { logoPath, boardInfo, gameInfo, moveHistory, nowTurn, isConnected, isLoading, loadingMessage, chatMessages, currentChatMessage, isChatOpen, yourRole, enemyRole, isCheck, isCheckmate,winner,rematch_sended,rematchRequest,decline_received,gameStatus, timeUpPlayer} = this.state;
+    const { logoPath, boardInfo, gameInfo, moveHistory, nowTurn, isConnected, isLoading, loadingMessage, chatMessages, currentChatMessage, isChatOpen, yourRole, enemyRole, isCheck, isCheckmate,winner, winReason,rematch_sended,rematchRequest,decline_received,gameStatus, timeUpPlayer,debugMode} = this.state;
     const roomId = this.state.roomId; // renderメソッド内でstateからroomIdを取得
+
+    // Action Cable の送信メソッド群を ShogiTimer に渡すオブジェクトを作成
+    // gameChannel がまだ null の可能性があるので ?. (オプショナルチェイニング) を使用
+    const sendActions = {
+      sendToggleTimer: (...args) => this.subscription?.sendToggleTimer(...args),
+      sendSwitchTurn: (...args) => this.subscription?.sendSwitchTurn(...args),
+      sendResetTimer: (...args) => this.subscription?.sendResetTimer(...args),
+      // sendUpdateTimer: (...args) => this.gameChannel?.sendUpdateTimer(...args), // 必要なら
+    };
 
     //senteだったら"先手"に、goteだったら"後手"に
     //yourRole = yourRole === "sente" ? "先手" : yourRole === "gote" ? "後手" : yourRole;
@@ -955,9 +1192,18 @@ class Room extends React.Component {
                   <div className="bg-white rounded-lg shadow-lg p-6 max-w-md mx-auto">
                     <div className="text-center mb-6">
                       <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                        勝者はあなたです
+                        {winner === yourRole ? "あなたの勝ち！" : "あなたの負け"}
                       </h2>
+                      {winReason==="TimeUp" && (
+                        <>時間切れ</>
+                      )}
+                      {winReason==="Tumi" && (
+                        <>詰み</>
+                      )}
                       <div className="w-16 h-1 bg-blue-500 mx-auto rounded"></div>
+                    </div>
+                    <div className="mt-4 flex justify-center">
+                      <div className="text-4xl">🎉</div>
                     </div>
                     {!rematch_sended && ( //再選リクエストを送信していないなら
                       <div className="space-y-3">
@@ -987,10 +1233,6 @@ class Room extends React.Component {
                       </div>
                     )}
 
-                    <div className="mt-4 flex justify-center">
-                      <div className="text-4xl">🎉</div>
-                    </div>
-
                  {/*  {yourRole === winner ? (
                     <p>あなたが勝者です</p>
                   ) : (
@@ -1009,8 +1251,33 @@ class Room extends React.Component {
 
             {!isCheckmate && ( //ゲームセットしていないなら
               <div>
+                {/*
                 <ShogiTimer initialMinutes={10} onTimeUp={this.handleTimeUp} ref={this.shogiTimerRef} yourRole={yourRole} />
 
+                <ShogiTimer
+                  initialMinutes={10}
+                  onTimeUp={this.handleTimeUp}
+                  ref={this.shogiTimerRef}
+                  yourRole={yourRole}
+                  roomId={roomId} // ⭐ gameId を ShogiTimer に渡す
+                  // Action Cable の送信メソッドを props として ShogiTimer に渡す
+                  // これにより ShogiTimer は直接Action Cableを使わず、親経由で通信
+                  sendActionCableMessage={{
+                    updateTimer: this.subscription ? this.subscription.updateTimer : () => {},
+                    switchTurn: this.subscription ? this.subscription.switchTurn : () => {},
+                    toggleTimer: this.subscription ? this.subscription.toggleTimer : () => {},
+                    resetTimer: this.subscription ? this.subscription.resetTimer : () => {},
+                  }}
+                />*/}
+                <ShogiTimer
+                  initialMinutes={1}
+                  onTimeUp={this.handleTimeUp}
+                  ref={this.shogiTimerRef}
+                  yourRole={yourRole}
+                  roomId={roomId} // gameId を ShogiTimer に渡す
+                  sendActionCableMessage={sendActions} // Action Cable の送信メソッド群を props として渡す
+                  debugMode={debugMode}
+                />
                 {/* <ShogiTimer initialMinutes={10} onTimeUp={this.handleTimeUp} ref={this.setShogiTimerRef} yourRole={yourRole} />
 
                 <div style={{ marginTop: '20px', border: '1px solid #2196F3', padding: '15px', borderRadius: '8px', backgroundColor: '#e3f2fd' }}>
@@ -1062,13 +1329,8 @@ class Room extends React.Component {
               </div>
             )}
 
-                  <div className="h-1/10 overflow-y-auto p-2.5 border max-h-48 overflow-y-auto">
-                    {moveHistory.map((move, index) => (
-                      <p key={index}>{index + 1}: {move}</p>
-                    ))}
-                  </div>
-              </div>
-            </div>
+        </div>
+      </div>
 
 
           <div className="game-container column" onClick={() => this.canselSelection()}
@@ -1155,8 +1417,30 @@ class Room extends React.Component {
 
           <div className="chat-and-setting-container column">
             <div className="setting-container column">
+                <div className="h-1/10 overflow-y-auto p-2.5 border max-h-48 overflow-y-auto">
+                  {moveHistory.map((move, index) => (
+                    <p key={index}>{index + 1}: {move}</p>
+                  ))}
+                </div>
 
-                {/* デバッグ */}
+                <button
+                  onClick={() => this.debugModeOn()}
+                  className="
+                    text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg
+                    fixed 
+                    top-4
+                    right-4
+                    w-[15%]
+                    h-[50px] 
+                    bg-yellow-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded
+                    hover:bg-yellow-700
+                    shadow-lg // 好みに応じて影を追加
+                    z-50 // 他の要素の上に表示されるようにz-indexを設定
+
+                  "
+                >デバッグモード</button>
+                {debugMode && (
+                <>
                 <span className="font-semibold">あなたは{yourRole}</span>
                 <button
                   onClick={this.deleteData}
@@ -1178,7 +1462,8 @@ class Room extends React.Component {
                     {isConnected ? '接続中' : '未接続'}
                   </span>
                 </div>
-
+              </>
+              )}
             </div>
 
             <div className={`chat-container ${isChatOpen ? '' : 'closed'}`} > {/* isChatOpen の状態に応じてクラスを適用 */}
@@ -1211,7 +1496,7 @@ class Room extends React.Component {
                 <input
                   type="text"
                   id="chat-input"
-                  placeholder="Type a message..."
+                  placeholder="メッセージを送信"
                   className="chat-input"
                   value={currentChatMessage}
                   onChange={this.handleChatInputChange}
@@ -1228,9 +1513,7 @@ class Room extends React.Component {
               >
                 {isChatOpen ? '>' : '<'} {/* isChatOpen の状態に応じてボタンのテキストを切り替える */}
               </button>
-
             </div>
-
         </div>
 
 

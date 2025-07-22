@@ -1,9 +1,8 @@
 // src/components/ShogiTimer/ShogiTimer.jsx
-
 import React, { useState, useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
-//import './ShogiTimer.css';
+//import './ShogiTimer.css'; // 必要に応じてCSSファイルをインポート
 
-const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourRole, roomId, sendActionCableMessage, debugMode }, ref) => {
+const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourRole, roomId, sendActionCableMessage }, ref) => {
     const initialTime = initialMinutes * 60 * 1000;
 
     const [senteTime, setSenteTime] = useState(initialTime);
@@ -14,18 +13,17 @@ const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourR
     const timerIntervalRef = useRef(null);
     const lastUpdateTimeRef = useRef(Date.now()); // 最後にタイマーがローカルで更新された時刻
 
-    // useImperativeHandle Hook
+    // useImperativeHandle Hook: 親コンポーネントに特定のメソッドを公開する
+    // ⭐ このブロックが正しく記述されていることを再確認してください！
     useImperativeHandle(ref, () => ({
+        // 親から呼び出される公開メソッド
         start: startTimer,
         pause: pauseTimer,
         toggle: toggleStartPause,
         switchTurn: switchTurn,
         reset: resetTimer,
-        
-        // ⭐ 追加: 現在の senteTime と goteTime を返すメソッド
-        getSenteTime: () => senteTime,
-        getGoteTime: () => goteTime,
 
+        // ⭐ initializeTimerState と syncTimerState は必須
         initializeTimerState: (stateFromServer) => {
             console.log("ShogiTimer: Initializing timer state from server:", stateFromServer);
             const serverTimestamp = stateFromServer.lastUpdateTime || Date.now();
@@ -35,7 +33,6 @@ const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourR
             let adjustedSenteTime = stateFromServer.senteTime;
             let adjustedGoteTime = stateFromServer.goteTime;
 
-            // サーバーから受け取った状態に基づいて時間を補正
             if (!stateFromServer.isPaused && stateFromServer.activePlayer === 'sente') {
                 adjustedSenteTime = Math.max(0, adjustedSenteTime - elapsedSinceServerAction);
             } else if (!stateFromServer.isPaused && stateFromServer.activePlayer === 'gote') {
@@ -48,23 +45,13 @@ const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourR
             setIsPaused(stateFromServer.isPaused);
             lastUpdateTimeRef.current = now; // クライアントの基準で最終更新時刻を再設定
 
-            // ⭐ setState後の値も確認
-            console.log(`DEBUG: After setState - senteTime: ${adjustedSenteTime}, goteTime: ${adjustedGoteTime}, activePlayer: ${stateFromServer.activePlayer}, isPaused: ${stateFromServer.isPaused}`);
-              
-
-            // ⭐ サーバーから受信した状態に基づいてタイマーを開始/停止する
-            if (!stateFromServer.isPaused && stateFromServer.activePlayer !== null) {
-                // タイマーが動いているはずの状態なら、setIntervalを開始
-                if (timerIntervalRef.current) {
-                    clearInterval(timerIntervalRef.current); // 念のため既存のものをクリア
-                }
+            // サーバーから受信した状態に基づいてタイマーを開始/停止
+            // ここで setInterval を直接操作する方が、useEffectに任せるより確実な場合があります
+            if (!stateFromServer.isPaused && stateFromServer.activePlayer !== null && timerIntervalRef.current === null) {
                 timerIntervalRef.current = setInterval(runTimerLogic, 100);
-                console.log("ShogiTimer: Initialized and started timer interval.");
-            } else if (timerIntervalRef.current) {
-                // タイマーが一時停止しているはずの状態なら、setIntervalを停止
+            } else if (stateFromServer.isPaused && timerIntervalRef.current) {
                 clearInterval(timerIntervalRef.current);
                 timerIntervalRef.current = null;
-                console.log("ShogiTimer: Initialized and cleared timer interval.");
             }
         },
         syncTimerState: (stateFromServer) => {
@@ -82,15 +69,13 @@ const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourR
                 adjustedGoteTime = Math.max(0, adjustedGoteTime - elapsedSinceServerAction);
             }
 
-            console.log(`DEBUG: After setState - senteTime: ${adjustedSenteTime}, goteTime: ${adjustedGoteTime}, activePlayer: ${stateFromServer.activePlayer}, isPaused: ${stateFromServer.isPaused}`);
-
             setSenteTime(adjustedSenteTime);
             setGoteTime(adjustedGoteTime);
             setActivePlayer(stateFromServer.activePlayer);
             setIsPaused(stateFromServer.isPaused);
-            lastUpdateTimeRef.current = now;
+            lastUpdateTimeRef.current = now; // クライアントの基準で最終更新時刻を再設定
 
-            // 状態が変更されたら setInterval を調整
+            // サーバーから受信した状態に基づいてタイマーを開始/停止
             if (!stateFromServer.isPaused && stateFromServer.activePlayer !== null) {
                 if (timerIntervalRef.current) {
                     clearInterval(timerIntervalRef.current);
@@ -103,6 +88,7 @@ const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourR
         }
     }));
 
+    // 時間を「MM:SS」形式の文字列にフォーマットする関数
     const formatTime = useCallback((ms) => {
         const totalSeconds = Math.floor(ms / 1000);
         const minutes = Math.floor(totalSeconds / 60);
@@ -110,47 +96,54 @@ const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourR
         return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }, []);
 
+    // タイマーの主要な時間減少ロジック (ローカルで時間を減らす)
     const runTimerLogic = useCallback(() => {
         const now = Date.now();
         const elapsed = now - lastUpdateTimeRef.current;
-        lastUpdateTimeRef.current = now;
+        lastUpdateTimeRef.current = now; // 次の計算のために更新
 
         if (activePlayer === 'sente') {
             setSenteTime(prevTime => Math.max(0, prevTime - elapsed));
         } else if (activePlayer === 'gote') {
             setGoteTime(prevTime => Math.max(0, prevTime - elapsed));
         }
-    }, [activePlayer]);
+        // ⭐ ここで sendActionCableMessage.updateTimer を頻繁に呼び出すのは避ける
+        // 重要な状態変化 (手番交代、一時停止/再開) のみサーバーに通知する
+    }, [activePlayer]); // senteTime, goteTime はsetStateのコールバック形式で安全なので依存不要
 
+    // タイマーを開始する関数（Action Cableを通じてサーバーにも通知）
     const startTimer = useCallback(() => {
         if (!isPaused || timerIntervalRef.current !== null) return;
 
-        // activePlayerがnullの場合、'sente'をデフォルトに設定
-        const playerToActivate = activePlayer === null ? 'sente' : activePlayer;
-
-        // Action Cable でサーバーに送信する前に状態を更新する
         setIsPaused(false);
+        const playerToActivate = activePlayer === null ? 'sente' : activePlayer;
         setActivePlayer(playerToActivate);
-        lastUpdateTimeRef.current = Date.now();
 
+        lastUpdateTimeRef.current = Date.now();
+        // setInterval は useEffect で管理されるため、ここでは直接開始しない（または、開始するならuseEffectから除外）
+        // ここでは、stateの変更によってuseEffectがトリガーされることを期待
+        // timerIntervalRef.current = setInterval(runTimerLogic, 100); // サーバー通知のみ
         if (sendActionCableMessage.sendToggleTimer) {
              sendActionCableMessage.sendToggleTimer({
-                senteTime: senteTime,
+                senteTime: senteTime, // 現在の時間も送信し、サーバーで保存
                 goteTime: goteTime,
                 activePlayer: playerToActivate,
                 isPaused: false,
                 lastUpdateTime: lastUpdateTimeRef.current
              });
         }
-    }, [isPaused, activePlayer, senteTime, goteTime, sendActionCableMessage]);
+    }, [isPaused, activePlayer, senteTime, goteTime, sendActionCableMessage]); // sendActionCableMessage を依存に追加
 
+    // タイマーを一時停止する関数（Action Cableを通じてサーバーにも通知）
     const pauseTimer = useCallback(() => {
         if (isPaused) return;
 
-        // Action Cable でサーバーに送信する前に状態を更新する
         setIsPaused(true);
-        lastUpdateTimeRef.current = Date.now(); // 一時停止時もタイムスタンプを更新
-
+        // setInterval は useEffect で管理されるため、ここでは直接停止しない（または、停止するならuseEffectから除外）
+        // if (timerIntervalRef.current) {
+        //     clearInterval(timerIntervalRef.current);
+        //     timerIntervalRef.current = null;
+        // }
         if (sendActionCableMessage.sendToggleTimer) {
              sendActionCableMessage.sendToggleTimer({
                 senteTime: senteTime,
@@ -160,8 +153,9 @@ const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourR
                 lastUpdateTime: lastUpdateTimeRef.current
              });
         }
-    }, [isPaused, activePlayer, senteTime, goteTime, sendActionCableMessage]);
+    }, [isPaused, activePlayer, senteTime, goteTime, sendActionCableMessage]); // sendActionCableMessage を依存に追加
 
+    // タイマーの開始/一時停止を切り替える関数
     const toggleStartPause = useCallback(() => {
         if (isPaused) {
             startTimer();
@@ -170,82 +164,85 @@ const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourR
         }
     }, [isPaused, startTimer, pauseTimer]);
 
+    // 手番を交代する関数（Action Cableを通じてサーバーにも通知）
     const switchTurn = useCallback(() => {
         if (isPaused || senteTime <= 0 || goteTime <= 0) return;
 
         const nextPlayer = activePlayer === 'sente' ? 'gote' : 'sente';
-
-        // Action Cable でサーバーに送信する前に状態を更新する
         setActivePlayer(nextPlayer);
-        lastUpdateTimeRef.current = Date.now();
+        lastUpdateTimeRef.current = Date.now(); // 手番交代で基準時刻をリセット
 
         if (sendActionCableMessage.sendSwitchTurn) {
              sendActionCableMessage.sendSwitchTurn({
                 senteTime: senteTime,
                 goteTime: goteTime,
                 activePlayer: nextPlayer,
-                isPaused: isPaused,
+                isPaused: isPaused, // 手番交代時はpaused状態は変わらないはず
                 lastUpdateTime: lastUpdateTimeRef.current
              });
         }
-    }, [isPaused, senteTime, goteTime, activePlayer, sendActionCableMessage]);
+    }, [isPaused, senteTime, goteTime, activePlayer, sendActionCableMessage]); // sendActionCableMessage を依存に追加
 
+    // タイマーをリセットする関数（Action Cableを通じてサーバーにも通知）
     const resetTimer = useCallback(() => {
-        // ローカルの状態を即座にリセット
+        pauseTimer(); // まず一時停止状態にする（サーバーに通知される）
         setSenteTime(initialTime);
         setGoteTime(initialTime);
         setActivePlayer(null);
-        setIsPaused(true);
-        lastUpdateTimeRef.current = Date.now(); // リセット時もタイムスタンプを更新
+        setIsPaused(true); // 明示的に一時停止状態に設定
 
-        // サーバーにリセットを通知
         if (sendActionCableMessage.sendResetTimer) {
              sendActionCableMessage.sendResetTimer({
                 senteTime: initialTime,
                 goteTime: initialTime,
                 activePlayer: null,
                 isPaused: true,
-                lastUpdateTime: lastUpdateTimeRef.current // リセット時のタイムスタンプ
+                lastUpdateTime: null // リセット時はタイムスタンプもnullに
              });
         }
-    }, [initialTime, sendActionCableMessage]);
+    }, [initialTime, pauseTimer, sendActionCableMessage]); // sendActionCableMessage を依存に追加
 
 
-    // 時間切れを監視
+    // 時間切れを監視し、アラートを表示し、親コンポーネントに通知する
     useEffect(() => {
         if (senteTime <= 0) {
             pauseTimer();
             console.log("先手の時間切れです！");
-            onTimeUp('sente'); // 親コンポーネントに通知
+            onTimeUp('sente');
         }
         if (goteTime <= 0) {
             pauseTimer();
             console.log("後手の時間切れです！");
-            onTimeUp('gote'); // 親コンポーネントに通知
+            onTimeUp('gote');
         }
     }, [senteTime, goteTime, pauseTimer, onTimeUp]);
 
-    // isPaused と activePlayer の変更に応じて setInterval を管理
+    // タイマーの開始/停止、アクティブプレイヤーの変更に応じてsetIntervalを管理する
     useEffect(() => {
         if (!isPaused && activePlayer !== null) {
+            // 既存のタイマーがあればクリア
             if (timerIntervalRef.current) {
                 clearInterval(timerIntervalRef.current);
             }
+            // 新しいタイマーを開始
             timerIntervalRef.current = setInterval(runTimerLogic, 100);
         } else if (isPaused && timerIntervalRef.current) {
+            // タイマーが一時停止状態になり、かつsetIntervalが動いている場合、停止
             clearInterval(timerIntervalRef.current);
             timerIntervalRef.current = null;
         }
 
+        // クリーンアップ関数: コンポーネントのアンマウント時や、依存配列が変更されて再実行される前に呼ばれる
         return () => {
             if (timerIntervalRef.current) {
                 clearInterval(timerIntervalRef.current);
                 timerIntervalRef.current = null;
             }
         };
-    }, [activePlayer, isPaused, runTimerLogic]);
+    }, [activePlayer, isPaused, runTimerLogic]); // 依存配列
 
-    // アンマウント時のクリーンアップ
+    // コンポーネントがアンマウントされる際の最終的なクリーンアップ
+    // 依存配列が空（[]）なので、マウント時に一度だけ設定され、アンマウント時に一度だけ実行される
     useEffect(() => {
         return () => {
             if (timerIntervalRef.current) {
@@ -255,6 +252,7 @@ const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourR
     }, []);
 
 
+    // JSXレンダリング: コンポーネントのUIを定義する部分
     const senteTimerDiv = (
         <div key="sente" className={`player-timer ${activePlayer === 'sente' ? 'active' : ''}`}>
             <h2>先手</h2>
@@ -294,15 +292,13 @@ const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourR
                     </>
                 )}
             </div>
-
-            {debugMode && (
+            {/* 以下のボタンは開発・デバッグ用。通常はゲームUIに統合されるべき 
             <div className="timer-controls">
                 <button onClick={toggleStartPause} className="control-button">
                     {isPaused ? 'ゲーム開始 / 再開' : '一時停止'}
                 </button>
                 <button
                     onClick={switchTurn}
-                    // activePlayer が null の間は手番交代できないようにする
                     disabled={isPaused || activePlayer === null || senteTime <= 0 || goteTime <= 0}
                     className="control-button"
                 >
@@ -311,8 +307,7 @@ const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourR
                 <button onClick={resetTimer} className="control-button">
                     リセット
                 </button>
-            </div>
-            )}
+            </div>*/}
         </div>
     );
 });
