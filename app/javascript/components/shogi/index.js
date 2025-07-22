@@ -201,6 +201,7 @@ class Room extends React.Component {
     this.shogiTimerRef = React.createRef();// ShogiTimer コンポーネントへの参照を作成
     console.log(`this.shogiTimerRef: ${JSON.stringify(this.shogiTimerRef)}`);
 
+    
   }
 
   // コンポーネントがマウントされた後に一度だけ実行される
@@ -208,8 +209,9 @@ class Room extends React.Component {
     this.initializeRoom();
   }
 
-  // ⭐ここを修正: prevProps と prevState を引数として明示的に受け取る
+  //prevProps と prevState を引数として明示的に受け取る
   componentDidUpdate(prevProps, prevState) {
+
     //console.log(`prevProps: ${JSON.stringify(prevProps)}`);
     //console.log(`prevState: ${JSON.stringify(prevState)}`);
     // shogiTimerRef.current が null から非nullになった、
@@ -908,12 +910,19 @@ class Room extends React.Component {
       //非同期送信: WebSocketを通じてサーバーへメッセージを送信
       this.subscription.sendChatMessage(currentChatMessage);
       this.setState({ currentChatMessage: '' }); // 入力フィールドをクリア
+
+          
+    setTimeout(() => {// 少し遅延させてDOMの更新を待ってチャットをスクロールして一番下のメッセージを表示
+      document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+    }, 100);
+
       console.log("チャットメッセージを送信しました:", currentChatMessage);
     } else {
       console.warn("WebSocket接続が確立されていないため、メッセージを送信できません。");
       alert("チャットサーバーに接続されていません。");
     }
   }
+  
   //チャットの開閉の表示を切り替えるメソッド
   toggleChat() {
     this.setState(prevState => ({
@@ -1141,6 +1150,12 @@ class Room extends React.Component {
     if (enemyRole === "gote") this.setState({enemyRole: "後手"});
     */
 
+    setTimeout(() => {// 少し遅延させてスクロールさせてチャットの一番下のメッセージを表示
+      if (document.getElementById('chat-messages') && document.getElementById('chat-messages').scrollHeight !== undefined){
+        document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+      }
+    }, 100);
+
     //console.log("boardInfo:"+JSON.stringify(boardInfo))
     //console.log("nowTurn:"+this.state.nowTurn)
     //console.log("chatMessages:"+chatMessages)
@@ -1191,7 +1206,7 @@ class Room extends React.Component {
               {isCheckmate && ( //勝敗に決着が着いたら
                   <div className="bg-white rounded-lg shadow-lg p-6 max-w-md mx-auto">
                     <div className="text-center mb-6">
-                      <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                      <h2 className="text-[1.2rem] font-bold text-gray-800 mb-2">
                         {winner === yourRole ? "あなたの勝ち！" : "あなたの負け"}
                       </h2>
                       {winReason==="TimeUp" && (
@@ -1417,7 +1432,8 @@ class Room extends React.Component {
 
           <div className="chat-and-setting-container column">
             <div className="setting-container column">
-                <div className="h-1/10 overflow-y-auto p-2.5 border max-h-48 overflow-y-auto">
+                {/* 差し手履歴*/ }
+                <div className="h-1/10 overflow-y-auto p-2.5 max-h-48 overflow-y-auto">
                   {moveHistory.map((move, index) => (
                     <p key={index}>{index + 1}: {move}</p>
                   ))}
@@ -1467,6 +1483,17 @@ class Room extends React.Component {
             </div>
 
             <div className={`chat-container ${isChatOpen ? '' : 'closed'}`} > {/* isChatOpen の状態に応じてクラスを適用 */}
+              
+              {/* 開閉ボタン */}
+              <button
+                className={`chat-toggle-button ${isChatOpen ? '' : 'pointer-events-auto'}`}
+                onClick={this.toggleChat} // クリックで開閉メソッドを呼び出す
+                aria-expanded={isChatOpen} // アクセシビリティのため
+                aria-controls="chat-messages-container" // 対象となるコンテナのID (chat-containerにIDを追加する場合)
+              >
+                {isChatOpen ? '>' : '<'} {/* isChatOpen の状態に応じてボタンのテキストを切り替える */}
+              </button>
+              
               <div id="chat-messages" className="chat-messages">
                 {/*Array.isArray(chatMessages) && chatMessages.map((msg, index) => (
                 {chatMessages.map((message, index) => ( 
@@ -1488,7 +1515,7 @@ class Room extends React.Component {
                       </div>
                     ))
                   ) : (
-                    <p className="text-red-500">Unable to process messages</p>
+                    <p className="text-red-500">メッセージがありません</p>
                   );
                 })()}
               </div>
@@ -1504,15 +1531,7 @@ class Room extends React.Component {
                 {/*<button type="submit" className="chat-button">Send</button>*/}
               </form>
             </div>
-            {/* 開閉ボタン */}
-              <button
-                className="chat-toggle-button"
-                onClick={this.toggleChat} // クリックで開閉メソッドを呼び出す
-                aria-expanded={isChatOpen} // アクセシビリティのため
-                aria-controls="chat-messages-container" // 対象となるコンテナのID (chat-containerにIDを追加する場合)
-              >
-                {isChatOpen ? '>' : '<'} {/* isChatOpen の状態に応じてボタンのテキストを切り替える */}
-              </button>
+
             </div>
         </div>
 

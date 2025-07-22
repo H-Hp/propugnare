@@ -68,7 +68,7 @@ class BoardInfo {
 
         //詰み処理のため一時的に追加
         //コマ動かして詰み・持ち駒打って詰み
-        this.board = [
+        /*this.board = [
             [new Blank(), new Blank(), new Blank(), new Blank(), new King("後手"), new Blank(), new Blank(), new Blank(), new Blank()],
             [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Bishop("後手"), new Blank()],
             [new Blank(), new Blank(), new Blank(), new Blank(), new GoldGeneral("先手"), new GoldGeneral("先手"), new Blank(), new Blank(), new Blank()],
@@ -89,7 +89,7 @@ class BoardInfo {
         this.pieceStand = {
             "先手": [new GoldGeneral("先手"), new Knight("先手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
             "後手": [new GoldGeneral("後手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()]
-        };
+        };*/
         
 
         //this.board = this.deserializeBoard(initialData.board || defaultBoard);
