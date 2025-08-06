@@ -1,16 +1,16 @@
-# fly.toml app configuration file generated for propugnare-damp-glitter-2704 on 2025-05-15T11:15:39+09:00
+# fly.toml app configuration file generated for propugnare-myapp on 2025-08-06T21:10:28Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'propugnare'
-primary_region = 'nrt'
+app = 'propugnare-myapp'
+primary_region = 'syd'
 console_command = '/rails/bin/rails console'
 
 [build]
 
 [http_service]
-  internal_port = 3000
+  internal_port = 8080
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
@@ -21,3 +21,4 @@ console_command = '/rails/bin/rails console'
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
+  memory_mb = 1024
