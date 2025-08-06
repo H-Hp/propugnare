@@ -1,15 +1,20 @@
 source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby '2.7.3'
+#ruby '2.7.3'
+ruby '3.3.6'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails', branch: 'main'
-gem 'rails', '~> 6.1.7', '>= 6.1.7.3'
+#gem 'rails', '~> 6.1.7', '>= 6.1.7.3'
+gem "rails", "~> 8.0.0"
+
 # Use sqlite3 as the database for Active Record
 gem 'sqlite3', '~> 1.4'
 gem 'pg'
 # Use Puma as the app server
-gem 'puma', '~> 5.0'
+#gem 'puma', '~> 5.0'
+gem "puma", ">= 6.0"#~> 6.0 は、Puma 6.0 以上、かつ 7.0 未満の最新バージョンを意味
+
 # Use SCSS for stylesheets
 gem 'sass-rails', '>= 6'
 # Transpile app-like JavaScript. Read more: https://github.com/rails/webpacker
