@@ -27,8 +27,8 @@ test:
 
 production:
   <<: *default
-  prepared_statements: false
-  #database: db/production.sqlite3
+  database: db/production.sqlite3
+  #prepared_statements: false
   #host: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_HOST] %>
   #password: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_PASSWORD] %>
   #username: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_USERNAME] %>
