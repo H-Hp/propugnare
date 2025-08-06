@@ -27,6 +27,7 @@ body, html {
   font-family: sans-serif;
   display: flex;
   flex-direction: column;
+  overscroll-behavior: none;
 }
 
 header {
@@ -85,9 +86,9 @@ header {
 
   bottom: 0px;
   right: 0px;
-  z-index: 1000; 
+  /* z-index: 1000; 
 
-  /* width: 25vw;   ビューポートの幅の20% */
+  width: 25vw;   ビューポートの幅の20% */
   height: 50vh;  /* ビューポートの高さの50% */
 
   border: 1px solid #ccc;
@@ -309,7 +310,6 @@ img#後手 {
   left: -15px;
   width: 32px;
   height: 32px;
-  background-color: #007bff;
   color: white;
   border: none;
   border-radius: 6px;

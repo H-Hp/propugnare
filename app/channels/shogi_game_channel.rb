@@ -1,4 +1,7 @@
 class ShogiGameChannel < ApplicationCable::Channel
+  #DELETE_TIME=10
+  DELETE_TIME = 30 * 60 #30分を秒単位で定義・30分 * 60秒 = 1800秒
+
   # 購読（subscribe）時に呼び出される
   def subscribed
     # 部屋番号をパラメータから取得 (例: /cable?room_id=123)
@@ -25,7 +28,7 @@ class ShogiGameChannel < ApplicationCable::Channel
     init_state(@room_id,@game_id)
 
     # 購読者カウントを増やす
-    increment_subscriber_count(@room_id)
+    #increment_subscriber_count(@room_id)
 
     # RabbitMQから特定のルーティングキーのメッセージを購読する・これは通常、別途バックグラウンドジョブや常駐プロセスで行うべきだが、簡単化のため、このチャンネル内で購読処理を記述
     #start_rabbitmq_subscription(@room_id)
@@ -34,7 +37,7 @@ class ShogiGameChannel < ApplicationCable::Channel
   # 購読解除（unsubscribe）時に呼び出される・チャンネルがサブスクリプション解除された際の処理
   def unsubscribed
     # 購読者カウントを減らす
-    decrement_subscriber_count(@room_id)
+    #decrement_subscriber_count(@room_id)
 
     # チャンネルがサブスクリプション解除された際の処理
     #stop_rabbitmq_subscription # RabbitMQの購読を停止
@@ -58,7 +61,8 @@ class ShogiGameChannel < ApplicationCable::Channel
     #Rails.logger.info "@room_id： #{@room_id}・@game_id： #{@game_id}・redis_key： #{redis_key}"
 
     $redis.set(redis_key, new_board_data.to_json)#Redisに値をセット
-    
+    $redis.expire(redis_key, 10) #時間経過後に自動削除
+
     #WebSocketで配信
     ActionCable.server.broadcast("shogi_game_room_#{@room_id}",{data_type: "board_update",new_board_data: new_board_data})
     
@@ -83,9 +87,11 @@ class ShogiGameChannel < ApplicationCable::Channel
       #updated_redis_stored_data = parsed_redis_stored_data.to_json#更新されたハッシュを再度JSON文字列に変換（必要に応じて）
       #$redis.set(redis_chat_key,updated_redis_stored_data)#Redisに値をセット
       $redis.rpush(redis_chat_key, chat_data)
+      $redis.expire(redis_chat_key, DELETE_TIME)#時間経過後に自動削除
       updated_redis_stored_data = $redis.lrange(redis_chat_key, 0, -1) #キーをリスト型としてデータ取得
     else
       $redis.rpush(redis_chat_key, chat_data)
+      $redis.expire(redis_chat_key, DELETE_TIME)#時間経過後に自動削除
       updated_redis_stored_data=chat_data
     end
     # 取得したデータをクライアントにブロードキャスト
@@ -309,6 +315,19 @@ class ShogiGameChannel < ApplicationCable::Channel
   #ゲームセットのブロードキャスト
   def game_set(data)
     Rails.logger.info "game_set: #{data}"
+    #game room dataのstatudをfinishedに変更
+    game_rooms_key = "game_room:#{data['room_id']}"
+    game_room_data = $redis.get(game_rooms_key)
+    new_room_data = JSON.parse(game_room_data, symbolize_names: true) #JSONをパースしてハッシュに変換
+    new_room_data[:status] = 'finished' #statusを変更
+    remaining_ttl = $redis.ttl(game_rooms_key)# TTLを取得（残り時間を保持するため）
+    # 変更されたデータを再保存（TTLも保持）
+    if remaining_ttl > 0
+      $redis.setex(game_rooms_key, remaining_ttl, new_room_data.to_json)
+    else
+      $redis.set(game_rooms_key, new_room_data.to_json)
+    end
+
     ActionCable.server.broadcast("shogi_game_room_#{data['room_id']}", { 
       data_type: 'game_set', 
       winReason: data['winReason'],
@@ -319,26 +338,27 @@ class ShogiGameChannel < ApplicationCable::Channel
 
   private
 
-
+=begin
   #サブスクライバーを増やす
   def increment_subscriber_count(room_id)
-    Rails.logger.info "サブスクライバーを増やす"
     #$redis.current.incr("room_#{room_id}_subscribers")
-    $redis.incr("room_#{room_id}_subscribers")
-    Rails.logger.info "サブスクライバーを増やした"
+    subscriber_count = $redis.incr("room_#{room_id}_subscribers")
+    Rails.logger.info "サブスクライバーを増やした、現在#{subscriber_count}人"
   end
 
     #サブスクライバーを減らし、0人になったらデータ削除
   def decrement_subscriber_count(room_id)
-    count = $redis.decr("room_#{room_id}_subscribers")
-    
+    subscriber_count = $redis.decr("room_#{room_id}_subscribers")
+    Rails.logger.info "サブスクライバーを減らした、現在#{subscriber_count}人"
+
     #サブスクライバーが0になったらデータを削除
-    if count <= 0
+    if subscriber_count <= 0
       Rails.logger.info "サブスクライバーが0になったからデータを削除"
       cleanup_room_data(room_id)
       Redis.current.del("room_#{room_id}_subscribers")
     end
   end
+=end
 
   #データを削除
   def cleanup_room_data(room_id)
@@ -476,6 +496,7 @@ class ShogiGameChannel < ApplicationCable::Channel
   def save_timer_to_redis(room_id, data)
     redis_timer_key = "game_timer:#{room_id}"
     $redis.set(redis_timer_key, data.to_json)
+    $redis.expire(redis_timer_key, DELETE_TIME) #時間経過後に自動削除
   rescue StandardError => e
     Rails.logger.error "Failed to save timer to Redis for room #{room_id}: #{e.message}"
   end

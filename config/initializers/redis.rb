@@ -2,7 +2,9 @@
 # development.rbやproduction.rbで環境変数を使うなど、実際の環境に合わせて設定してください
 # ENV['REDIS_URL'] = "redis://localhost:6379/0" # 例
 
-$redis = Redis.new(url: ENV.fetch("REDIS_URL") { "redis://localhost:6379/0" })
+#$redis = Redis.new(url: ENV.fetch("REDIS_URL") { "redis://localhost:6379/0" })
+$redis = Redis.new(url:  Rails.application.credentials.development[:REDIS_URL] { "redis://localhost:6379/0" })
+
 
 # オプション: Redisの接続テスト
 # begin

@@ -1,19 +1,18 @@
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/draggable@4.2.0/dist/draggable.min.js"></script>
+<div id="lobby-container" data-session-id="<%= session.id.to_s %>" data-all-gameroomdatas="<%= @game_room_datas %>" data-logo-path="<%= image_path('Logo.png') %>" data-loadingimg-path="<%= image_path('game_back.gif') %>" data-gameback-path="<%= image_path('game_back5.gif') %>" ></div>
 <%= javascript_pack_tag "matching", defer: true %>
-<meta id="matching-data" data-session-id="<%= session.id.to_s %>" data-matching-queue="<%= @matching_queue_data %>">
+<meta id="matching-data"  data-session-id="<%= session.id.to_s %>" data-matching-queue="<%= @matching_queue_data %>">
 <%= react_component("Header", { logoPath: asset_path("Logo.png") }) %>
 <%= stylesheet_link_tag 'game_lobby_matching_board', media: 'all' %>
 
-<button id="AllResetButton" class="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-5 rounded-full text-base transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-300">
-マッチングデータを全部リセット
-</button>
 
-<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 p-4">
+<!--
+<div class="h-[calc(100%-30px)] flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 p-4">
   <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md text-center">
     <h1 class="text-3xl font-extrabold text-gray-800 mb-6">将棋対戦ロビー</h1>
     <div>
       <label><input type="radio" name="battle_type" value="10min" checked>10分切負け</label>
-      <!--<label><input type="radio" name="battle_type" value="10sec">10秒将棋</label>-->
     </div>
     <button id="startMatchingButton" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full text-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300">
       対戦相手を探す
@@ -42,3 +41,4 @@
     </div>
   </div>
 </div>
+-->

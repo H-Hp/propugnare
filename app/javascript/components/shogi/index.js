@@ -132,24 +132,32 @@ class Room extends React.Component {
     super(props);
 
     const element = document.querySelector('#game-container');
+    const gameRoomData = element.dataset.gameRoomData;
     const gameId = element.dataset.gameId;// #data-game-id属性からゲームIDを取得
     const roomId = element.dataset.roomId;// #data-game-id属性からゲームIDを取得
     const yourRole = element.dataset.yourRole;
     const enemyRole = element.dataset.enemyRole;
     const logoPath = element.dataset.logoPath;
+    const gamebackPath = element.dataset.gamebackPath;
+    const loadingimgPath = element.dataset.loadingimgPath;
+    const audienceUser = element.dataset.audienceUser;
     
-    
+    //console.log("gamebackPath"+gamebackPath)
     //console.log(`gameId:${gameId}・roomId:${roomId}`)
-
     //const new_boardInfo= new BoardInfo();
     //console.log(`new BoardInfo()：${new BoardInfo()}`)
     //console.log(`typeof new BoardInfo()：${typeof new BoardInfo()}`)
+    //console.log("audienceUser: "+audienceUser)
+    console.log("audienceUser: "+audienceUser)
 
     this.state = {
       logoPath: logoPath,
+      gamebackPath: gamebackPath,
+      loadingimgPath: loadingimgPath,
       boardInfo: new BoardInfo(), // 初期状態では引数なしでBoardInfoコンストラクタを呼び出し、デフォルトの初期盤面を生成
       //boardInfo: new_boardInfo, // 盤面状態を保持
       gameInfo: {},
+      gameRoomData: gameRoomData,
       moveHistory: [],
       nowTurn: '先手',
       isConnected: false,
@@ -173,6 +181,7 @@ class Room extends React.Component {
       timeUpPlayer: null, // 時間切れになったプレイヤー
       bufferedInitialTimerState: null, //追加: 初期タイマー状態を一時的に保持する
       debugMode: false,
+      audienceUser: JSON.parse(audienceUser)
     };
     this.subscription = null; // Action Cableのサブスクリプションをインスタンス変数で保持
 
@@ -193,20 +202,62 @@ class Room extends React.Component {
     this.handleActionCableMessage = this.handleActionCableMessage.bind(this);
     this.applyBufferedInitialTimerState = this.applyBufferedInitialTimerState.bind(this); // ⭐ 追加
 
+    this.audioContextRef = null; // AudioContext のインスタンス
+    this.notificationSoundBufferRef = null; // 通知音のオーディオバッファ
+    this.setupAudio = this.setupAudio.bind(this);
+    this.playNotificationSound = this.playNotificationSound.bind(this);
 
     // ShogiTimer コンポーネントのインスタンスを直接保持するプロパティ
     // React.createRef() は不要になります。
     this.shogiTimerInstance = null; 
     this.timerStarted = false;
     this.shogiTimerRef = React.createRef();// ShogiTimer コンポーネントへの参照を作成
-    console.log(`this.shogiTimerRef: ${JSON.stringify(this.shogiTimerRef)}`);
+    //console.log(`this.shogiTimerRef: ${JSON.stringify(this.shogiTimerRef)}`);
 
     
+  }
+
+  // AudioContextと音源の準備
+  async setupAudio() {
+    if (!this.audioContextRef) {
+      this.audioContextRef = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (!this.notificationSoundBufferRef) {
+      try {
+        const response = await fetch('/assets/notification.mp3');
+        const arrayBuffer = await response.arrayBuffer();
+        this.notificationSoundBufferRef = await this.audioContextRef.decodeAudioData(arrayBuffer);
+        console.log("通知音源をロードしました。");
+      } catch (e) {
+        console.error("通知音源のロードまたはデコードに失敗しました:", e);
+      }
+    }
+  }
+
+  // 通知音を再生する処理
+  playNotificationSound() {
+    if (this.audioContextRef && this.notificationSoundBufferRef) {
+      const source = this.audioContextRef.createBufferSource();
+      source.buffer = this.notificationSoundBufferRef;
+      source.connect(this.audioContextRef.destination);
+      source.start(0);
+      console.log("通知音を再生しました。");
+    } else {
+      console.warn("通知音を再生できません。オーディオコンテキストまたはバッファが未準備です。");
+    }
   }
 
   // コンポーネントがマウントされた後に一度だけ実行される
   componentDidMount() {
     this.initializeRoom();
+
+    this.setupAudio()
+
+    //デバッグモード
+    window.addEventListener('keydown', (event) => { if (event.key === 'd' || event.key === 'D') { 
+      event.preventDefault(); //dでブックマーク登録を防ぐ
+      this.debugModeOn()
+    } });
   }
 
   //prevProps と prevState を引数として明示的に受け取る
@@ -228,7 +279,7 @@ class Room extends React.Component {
       this.timerStarted = true;
       console.log(`this.timerStarted: ${this.timerStarted}`);
       //this.handleStartTimer();
-      //this.handleToggleTimer();
+      this.handleToggleTimer();
       //this.handleSwitchTurn();
     }
   }
@@ -476,6 +527,7 @@ class Room extends React.Component {
 
             //this.setState({ isLoading: false, loadingMessage: "" });//ローディングを終了
           }else if(data.data_type=="board_update"){
+            this.playNotificationSound()
 
             //console.log(`data： ${JSON.stringify(data)}`);
             //const boardDataFromServer = data.BoardInfo; // サーバーから来たプレーンなデータ
@@ -571,6 +623,19 @@ class Room extends React.Component {
                 //gameStatus: 'time_up',
                 //timeUpPlayer: player,
               });
+
+              //マッチングデータも消す
+              const MATCH_STATUS_KEY = 'shogi_matching_status';
+              const MATCH_ROOM_ID_KEY = 'shogi_matched_room_id';
+              const MATCH_PLAYER_ROLE_KEY = 'shogi_player_role';
+              const SESSION_ID_KEY = 'shogi_session_id'; // localStorageにセッションIDを保存するキー
+
+              // ローカルストレージのマッチング状態をクリア
+              localStorage.removeItem(MATCH_STATUS_KEY);
+              localStorage.removeItem(MATCH_ROOM_ID_KEY);
+              localStorage.removeItem(MATCH_PLAYER_ROLE_KEY);
+              localStorage.removeItem(SESSION_ID_KEY);
+
           }else if (data.data_type === 'rematch_request') {
             //console.log("requesterRole:"+data);
             const requesterRole = data.requester_role;
@@ -786,9 +851,9 @@ class Room extends React.Component {
       //}), () => {
       }, () => {
 
-        //勝敗がついてたらデータ消す
+        //勝敗がついてたら
         if(clickResult.isCheckmate){
-          console.log("勝敗がついているからデータ消す")
+          console.log("勝敗がついている")
           //this.deleteData();
           this.subscription.perform('game_set', {
             room_id: this.state.roomId,
@@ -997,7 +1062,7 @@ class Room extends React.Component {
 
     switch (data.type) {
       case 'initial_timer_state':
-        console.log("switch case initial_timer_state"); // ⭐ 追加
+        //console.log("switch case initial_timer_state"); // ⭐ 追加
 
         // ShogiTimerに初期状態を渡す (ShogiTimerが自身で状態を更新するように)
         /*if (this.shogiTimerRef.current) {
@@ -1030,7 +1095,7 @@ class Room extends React.Component {
 
 
   handleTimeUp(player) {
-    console.log(`${player} の時間切れです！ゲームを終了します。`);
+    //console.log(`${player} の時間切れです！ゲームを終了します。`);
     const winner = player === 'sente' ? '後手' : '先手';//値がsenteならgoteにして、goteならsenteに
     this.subscription.perform('game_set', {
       room_id: this.state.roomId,
@@ -1041,7 +1106,7 @@ class Room extends React.Component {
 
   // ShogiTimer の startTimer メソッドを呼び出す
   handleStartTimer = () => {
-    console.log("handleStartTimer呼び出された"+JSON.stringify(this.shogiTimerRef.current))
+    //console.log("handleStartTimer呼び出された"+JSON.stringify(this.shogiTimerRef.current))
     if (this.shogiTimerRef.current) {
       this.shogiTimerRef.current.start(); // ShogiTimer で公開した 'start' メソッドを呼び出す
     }
@@ -1050,7 +1115,7 @@ class Room extends React.Component {
 
   // ShogiTimer の pauseTimer メソッドを呼び出す
   handlePauseTimer = () => {
-    console.log("handlePauseTimer呼び出された"+JSON.stringify(this.shogiTimerRef.current))
+    //console.log("handlePauseTimer呼び出された"+JSON.stringify(this.shogiTimerRef.current))
     if (this.shogiTimerRef.current) {
       this.shogiTimerRef.current.pause(); // ShogiTimer で公開した 'pause' メソッドを呼び出す
     }
@@ -1096,7 +1161,7 @@ class Room extends React.Component {
 
   // ShogiTimer の switchTurn メソッドを呼び出す
   handleSwitchTurn = () => {
-    console.log("handleSwitchTurn呼び出された"+JSON.stringify(this.shogiTimerRef.current))
+    //console.log("handleSwitchTurn呼び出された"+JSON.stringify(this.shogiTimerRef.current))
     if (this.shogiTimerRef.current) {
       this.shogiTimerRef.current.switchTurn(); // ShogiTimer で公開した 'switchTurn' メソッドを呼び出す
     }
@@ -1111,23 +1176,66 @@ class Room extends React.Component {
   };
 
   gameFinishTest = () => {
-    console.log("gameFinishTest呼び出された")
+    //console.log("gameFinishTest呼び出された")
     this.setState({ isCheckmate: true, winner:"あなた" });
+    this.handleTimeUp(this.state.yourRole)
   };
 
   debugModeOn = () => {
-    console.log("デバッグモードオン")
+    //console.log("デバッグモードオン")
     if(this.state.debugMode){
       this.setState({ debugMode: false });
     }else if(!this.state.debugMode){
       this.setState({ debugMode: true });
+
+
+    setTimeout(() => {// 少し遅延させてDOMの更新を待ってチャットをスクロールして一番下のメッセージを表示
+      const debugArea = document.getElementById('debugArea');// ドラッグしたい要素を取得
+      if (debugArea) {
+          new Draggable(debugArea);// Draggable.js のインスタンスを作成し、要素をドラッグ可能にする// 'new Draggable()' の引数にドラッグ対象の要素を渡します。
+      }
+    }, 100);
+
     }
   };
 
-  
+  chengeRoleDebug(){
+    /*console.log("ssss")
+    this.setState({ 
+      nowTurn: "先手",
+      yourRole: yourRole,
+      enemyRole: enemyRole,
+    });
+    */
+    // `setState` を呼び出す前に、`nowTurn` と `yourRole` を決定する
+    // nowTurn は常に「先手」から始まる
+    //const nowTurn = "先手";
+    let newNowTurn;
+    //console.log("this.state.yourRole:"+this.state.yourRole)
+
+    // yourRole に応じて `yourRole` と `enemyRole` を決定
+    // もし `this.state` が既に存在し、`yourRole` の値が格納されているなら、それを使う
+    // ここでは、新しい対局の開始を想定して、`this.props` か何かしらの初期値から `yourRole` が渡されると仮定
+    let newYourRole;
+    let newEnemyRole;
+    if (this.state.yourRole === "先手") {
+      newYourRole= "後手"
+      newEnemyRole = "先手";
+    } else {
+      newYourRole= "先手"
+      newEnemyRole = "後手";
+    }
+
+    // 最終的な状態をセット
+    this.setState({
+      //nowTurn: nowTurn,
+      yourRole: newYourRole,
+      enemyRole: newEnemyRole,
+    });
+  }
 
   render() {
-    const { logoPath, boardInfo, gameInfo, moveHistory, nowTurn, isConnected, isLoading, loadingMessage, chatMessages, currentChatMessage, isChatOpen, yourRole, enemyRole, isCheck, isCheckmate,winner, winReason,rematch_sended,rematchRequest,decline_received,gameStatus, timeUpPlayer,debugMode} = this.state;
+    const { logoPath,gamebackPath,loadingimgPath, boardInfo, gameInfo, gameRoomData, moveHistory, nowTurn, isConnected, isLoading, loadingMessage, chatMessages, currentChatMessage, isChatOpen, yourRole, enemyRole, isCheck, isCheckmate,winner, winReason,rematch_sended,rematchRequest,decline_received,gameStatus, timeUpPlayer,debugMode ,audienceUser} = this.state;
     const roomId = this.state.roomId; // renderメソッド内でstateからroomIdを取得
 
     // Action Cable の送信メソッド群を ShogiTimer に渡すオブジェクトを作成
@@ -1156,6 +1264,11 @@ class Room extends React.Component {
       }
     }, 100);
 
+    //見やすいボードのデータを作る
+    const EasyBoardData = this.state.boardInfo.board.map(row =>row.map(cell => cell && cell.name ? "「"+cell.owner+"の"+cell.name+"」" : "「　　　　」")).map(row => row.join(", ")).join("\n");
+    //console.log('EasyBoard:'+JSON.stringify(EasyBoardData))
+
+
     //console.log("boardInfo:"+JSON.stringify(boardInfo))
     //console.log("nowTurn:"+this.state.nowTurn)
     //console.log("chatMessages:"+chatMessages)
@@ -1167,14 +1280,14 @@ class Room extends React.Component {
     
     if (isLoading) { // ★ isLoading が true の間はローディング表示
       return (
-        <div id="loading-overlay">
+        <div id="loading-overlay" className={`bg-[url('${loadingimgPath}')] bg-no-repeat bg-cover bg-center`}>
           <div className="spinner"></div>
-          <p className="ml-4 text-xl text-gray-700">{loadingMessage}</p>
+          <p className="ml-4 text-xl text-white">{loadingMessage}</p>
         </div>
       );
     }
     return (
-      <>
+      <div className=" h-full">
 
         {/*<div id="chat-zone">
           <div id="chat-messages"></div>
@@ -1199,7 +1312,7 @@ class Room extends React.Component {
 
         <Header logoPath={logoPath} />
 
-        <div className="main-container ">
+        <div className={`main-container h-[calc(100%-30px)] bg-no-repeat bg-cover bg-center bg-[url('${gamebackPath}')]`}>
           <div className="menu-container column">
             <div className="menu-div">
 
@@ -1207,7 +1320,10 @@ class Room extends React.Component {
                   <div className="bg-white rounded-lg shadow-lg p-6 max-w-md mx-auto">
                     <div className="text-center mb-6">
                       <h2 className="text-[1.2rem] font-bold text-gray-800 mb-2">
-                        {winner === yourRole ? "あなたの勝ち！" : "あなたの負け"}
+                        {/*winner === yourRole ? "あなたの勝ち！" : "あなたの負け"*/}
+                        {winner === yourRole && !audienceUser ? ( "あなたの勝ち！"
+                        ) : winner !== yourRole && !audienceUser ? ( "あなたの負け"
+                        ) : ( winner+"の勝ち！" )}
                       </h2>
                       {winReason==="TimeUp" && (
                         <>時間切れ</>
@@ -1217,17 +1333,21 @@ class Room extends React.Component {
                       )}
                       <div className="w-16 h-1 bg-blue-500 mx-auto rounded"></div>
                     </div>
-                    <div className="mt-4 flex justify-center">
-                      <div className="text-4xl">🎉</div>
-                    </div>
-                    {!rematch_sended && ( //再選リクエストを送信していないなら
+                    { winner === yourRole && !audienceUser &&(
+                      <div className="mt-4 flex justify-center">
+                        <div className="text-4xl">🎉</div>
+                      </div>
+                    )}
+                    {!rematch_sended &&  ( //再選リクエストを送信していないなら
                       <div className="space-y-3">
-                          <button
-                            onClick={() => this.rematch()}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
-                          >
-                            再対戦する
-                          </button>
+                          { !audienceUser && (
+                            <button
+                              onClick={() => this.rematch()}
+                              className="w-full bg-[#dc143c] hover:bg-[#b80f33] text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+                            >
+                              再対戦する
+                            </button>
+                          )}
                           <a href="/">
                             <button
                               className="w-full bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
@@ -1285,7 +1405,7 @@ class Room extends React.Component {
                   }}
                 />*/}
                 <ShogiTimer
-                  initialMinutes={1}
+                  initialMinutes={10}
                   onTimeUp={this.handleTimeUp}
                   ref={this.shogiTimerRef}
                   yourRole={yourRole}
@@ -1324,7 +1444,7 @@ class Room extends React.Component {
                 </div>
                 <div className="bg-white rounded-lg shadow-lg p-2">
                   <div className="relative">
-                    {nowTurn === yourRole ? (
+                    {nowTurn === yourRole && !audienceUser ? (
                       <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-4 text-white overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-500/20 animate-pulse"></div>
                         <div className="relative z-10 text-center">
@@ -1333,10 +1453,14 @@ class Room extends React.Component {
                         </div>
                         <div className="absolute -top-2 -right-2 w-20 h-20 bg-white/10 rounded-full animate-ping"></div>
                       </div>
-                    ) : (
+                    ) : nowTurn !== yourRole  && !audienceUser ?(
                       <div className="text-center py-6 px-6 bg-gray-100 border border-gray-300 rounded-xl">
                         <div className="text-xl text-gray-600 mb-1">相手の手番</div>
                         <div className="text-sm text-gray-500">お待ちください...</div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 px-6 bg-gray-100 border border-gray-300 rounded-xl">
+                        <div className="text-xl text-gray-600 mb-1">{nowTurn}の手番</div>
                       </div>
                     )}
                   </div>
@@ -1438,55 +1562,13 @@ class Room extends React.Component {
                     <p key={index}>{index + 1}: {move}</p>
                   ))}
                 </div>
-
-                <button
-                  onClick={() => this.debugModeOn()}
-                  className="
-                    text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg
-                    fixed 
-                    top-4
-                    right-4
-                    w-[15%]
-                    h-[50px] 
-                    bg-yellow-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded
-                    hover:bg-yellow-700
-                    shadow-lg // 好みに応じて影を追加
-                    z-50 // 他の要素の上に表示されるようにz-indexを設定
-
-                  "
-                >デバッグモード</button>
-                {debugMode && (
-                <>
-                <span className="font-semibold">あなたは{yourRole}</span>
-                <button
-                  onClick={this.deleteData}
-                  className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                  試合が終わったのでデータ削除
-                </button>
-
-                <button
-                  onClick={this.gameFinishTest}
-                  className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                  試合が終わらせる
-                </button>
-
-                <div className="mb-3">
-                  <span className="font-semibold">接続状態: </span>
-                  <span className={`px-2 py-1 rounded text-sm ${
-                    isConnected ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'
-                  }`}>
-                    {isConnected ? '接続中' : '未接続'}
-                  </span>
-                </div>
-              </>
-              )}
             </div>
 
             <div className={`chat-container ${isChatOpen ? '' : 'closed'}`} > {/* isChatOpen の状態に応じてクラスを適用 */}
               
               {/* 開閉ボタン */}
               <button
-                className={`chat-toggle-button ${isChatOpen ? '' : 'pointer-events-auto'}`}
+                className={`chat-toggle-button bg-[#dc143c] hover:bg-[#b80f33] ${isChatOpen ? '' : 'pointer-events-auto'}`}
                 onClick={this.toggleChat} // クリックで開閉メソッドを呼び出す
                 aria-expanded={isChatOpen} // アクセシビリティのため
                 aria-controls="chat-messages-container" // 対象となるコンテナのID (chat-containerにIDを追加する場合)
@@ -1618,7 +1700,81 @@ class Room extends React.Component {
               </h2>
             )}
         </div>*/}
-      </>
+
+
+        {/*<button
+          onClick={() => this.debugModeOn()}
+          className="
+            text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg
+            fixed top-4 right-4 w-[15%] h-[50px]  bg-yellow-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded hover:bg-yellow-700
+            shadow-lg // 好みに応じて影を追加
+            z-50 // 他の要素の上に表示されるようにz-indexを設定
+          "
+        >デバッグモード</button>*/}
+
+        {debugMode && (
+          
+
+          <div id="debugArea"
+            className="w-[90%] h-[50%] fixed top-7 right-4 z-50 opacity-80 border bg-gray-500 items-center justify-center overflow-auto whitespace-pre-line"
+          >  
+                <span className="font-semibold m-5">あなたは{yourRole}</span>
+
+                <button
+                  onClick={() => this.chengeRoleDebug()}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+                >
+                  自分の役割の手番を変更
+                </button>
+
+                <button
+                  onClick={this.deleteData}
+                  className="m-5 mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                  試合が終わったのでデータ削除
+                </button>
+
+                <button
+                  onClick={this.gameFinishTest}
+                  className="m-5 mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                  試合が終わらせる
+                </button>
+
+                <div className="mb-3">
+                  <span className="font-semibold">接続状態: </span>
+                  <span className={`px-2 py-1 rounded text-sm ${
+                    isConnected ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'
+                  }`}>
+                    {isConnected ? '接続中' : '未接続'}
+                  </span>
+                </div>
+
+                {/* */}
+                <div
+                 className="mb-3 text-white
+                  whitespace-pre    /* 改行をそのまま反映、折り返しも無効 */
+                  font-mono         /* 等幅フォントで見やすく */
+                  text-sm
+                  bg-black
+                  p-3
+                  border border-gray-200
+                  overflow-x-auto   /* 横長のときはスクロール */
+                ">
+                  <p>ボードデータ: </p>
+                  {EasyBoardData}
+                </div>
+                <div className="mb-3 text-white">
+                  先手の持ち駒: {JSON.stringify(this.state.boardInfo.pieceStand["先手"])}
+                </div>
+                <div className="mb-3 text-white">
+                  後手の持ち駒: {JSON.stringify(this.state.boardInfo.pieceStand["後手"])}
+                </div>
+                <div>
+                  gameRoomData: {gameRoomData}
+                </div>
+          </div>
+        )}
+
+      </div>
     );
   }
 }
@@ -1661,6 +1817,7 @@ document.addEventListener('turbolinks:load', () => {//urbolinks による初回�
 
   if (shogiBoardElement) {
     const rootElement = document.createElement('div');
+    rootElement.className = 'h-full';
     document.body.appendChild(rootElement);
     
     const root = ReactDOM.createRoot(rootElement);
@@ -1674,6 +1831,6 @@ document.addEventListener('turbolinks:load', () => {//urbolinks による初回�
     //console.log("将棋ゲームコンポーネントが初期化されました。");
   } else {
     // shogi-board要素が見つからない場合は、このページが将棋ページではないと判断
-    console.log("将棋ゲームコンポーネントは、このページでは初期化されませんでした（#shogi-board要素なし）。");
+    //console.log("将棋ゲームコンポーネントは、このページでは初期化されませんでした（#shogi-board要素なし）。");
   }
 })

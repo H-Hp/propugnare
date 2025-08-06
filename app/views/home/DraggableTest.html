@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draggable Div</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter フォントの読み込み -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* 画面いっぱいの高さ */
+            background-color: #f0f4f8; /* 背景色 */
+            margin: 0;
+            overflow: hidden; /* 画面スクロールを防止 */
+        }
+        /* ドラッグ可能な要素のスタイル */
+        .draggable-box {
+            cursor: grab; /* ドラッグ可能なことを示すカーソル */
+            user-select: none; /* テキスト選択を無効にする */
+        }
+        .draggable-box:active {
+            cursor: grabbing; /* ドラッグ中のカーソル */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ドラッグ可能なdiv要素 -->
+    <div id="myDraggableDiv" 
+         class="draggable-box 
+                bg-blue-500 hover:bg-blue-600 
+                text-white text-lg font-bold 
+                p-6 rounded-lg shadow-xl 
+                w-64 h-32 flex items-center justify-center 
+                transition-colors duration-200">
+        ドラッグしてね！
+    </div>
+
+    <!-- Draggable.js CDN -->
+    <!-- このライブラリは、要素をドラッグ可能にするシンプルな機能を提供します。 
+    <script src="https://unpkg.com/draggable@1.0.0/dist/draggable.bundle.js"></script>
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/draggable@4.2.0/dist/draggable.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const draggableElement = document.getElementById('myDraggableDiv');// ドラッグしたい要素を取得
+            if (draggableElement) {
+                new Draggable(draggableElement);// Draggable.js のインスタンスを作成し、要素をドラッグ可能にする// 'new Draggable()' の引数にドラッグ対象の要素を渡します。
+                console.log("Draggable.js が初期化されました。");
+            } else {
+                console.error("ドラッグ可能な要素が見つかりませんでした。ID 'myDraggableDiv' を確認してください。");
+            }
+        });
+    </script>
+
+</body>
+</html>

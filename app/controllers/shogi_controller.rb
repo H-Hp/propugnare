@@ -5,16 +5,19 @@ class ShogiController < ApplicationController
   def index
     @game_id = params[:id]
     @room_id = params[:id]
+    game_rooms_key = "game_room:#{@room_id}"
 
-    if $redis.hget(GAME_ROOMS_HASH_KEY, @room_id).nil? # nil の場合、ゲームが終了している場合の処理
+    #if $redis.hget(game_rooms_key, @room_id).nil? # nil の場合、ゲームが終了している場合の処理
+    if $redis.get(game_rooms_key).nil? # nil の場合、ゲームが終了している場合の処理
       redirect_to root_path
     else# データが存在する場合の処理
       #a=$redis.get(MATCHING_QUEUE_KEY)
       # 特定のroom_idのデータを取得
-      room_game_data_json = $redis.hget(GAME_ROOMS_HASH_KEY, @room_id)
-      Rails.logger.info "redisからデータ取得: #{room_game_data_json}"#redisからデータ取得: {"sente_identifier":"9a407895123bef7a65202dfb165a9aff","gote_identifier":"9f63ac8f86022e04a98aa62b8be8a737","status":"active","created_at":1750569827,"player1_user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36","player2_user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"}
+      #@game_room_data_json = $redis.hget(GAME_ROOMS_HASH_KEY, @room_id)
+      @game_room_data_json = $redis.get(game_rooms_key)
+      Rails.logger.info "redisからデータ取得: #{@game_room_data_json}"#redisからデータ取得: {"sente_identifier":"9a407895123bef7a65202dfb165a9aff","gote_identifier":"9f63ac8f86022e04a98aa62b8be8a737","status":"active","created_at":1750569827,"player1_user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36","player2_user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"}
       
-      room_game_data_json=JSON.parse(room_game_data_json)
+      @game_room_data_json=JSON.parse(@game_room_data_json)
       
       current_session_id = session.id.to_s
       @your_role=""
@@ -22,25 +25,28 @@ class ShogiController < ApplicationController
       your_user_agent=""
       your_session_id=""
 
-      battleType = room_game_data_json["battleType"]
+      battleType = @game_room_data_json["battleType"]
       #Rails.logger.info "バトルタイプ: #{battleType}"
 
       # セッションIDがsenteかgoteかで分岐
-      if current_session_id == room_game_data_json["sente_identifier"]
+      if current_session_id == @game_room_data_json["sente_identifier"]
         #@your_role = "sente"
         #@enemy_role = "gote"
         @your_role = "先手"
         @enemy_role = "後手"
-        your_user_agent = room_game_data_json["player1_user_agent"]
-        your_session_id = room_game_data_json["sente_identifier"]
-      elsif current_session_id == room_game_data_json["gote_identifier"]
+        your_user_agent = @game_room_data_json["sente_user_agent"]
+        your_session_id = @game_room_data_json["sente_identifier"]
+        @audienceUser=false
+      elsif current_session_id == @game_room_data_json["gote_identifier"]
         #@your_role = "gote"
         #@enemy_role = "sente"
         @your_role = "後手"
         @enemy_role = "先手"
-        your_user_agent = room_game_data_json["player2_user_agent"]
-        your_session_id = room_game_data_json["gote_identifier"]
+        your_user_agent = @game_room_data_json["gote_user_agent"]
+        your_session_id = @game_room_data_json["gote_identifier"]
+        @audienceUser=false
       else
+        @audienceUser=true
         # どちらにも該当しない場合（不正アクセスなど）
         #render json: { error: "不正なセッションです。" }, status: :unauthorized and return
       end
@@ -71,6 +77,7 @@ class ShogiController < ApplicationController
     Rails.logger.error "ShogiControllerのRedisServiceからの戻り値のgame_state:  #{game_state}"
   end
 
+=begin
   def destroy
     @room_id = params[:id]
     redis_board_key = "shogi_game:#{@room_id}"
@@ -90,4 +97,5 @@ class ShogiController < ApplicationController
       render json: { error: "予期せぬエラーが発生" }, status: :internal_server_error
     end
   end
+=end
 end

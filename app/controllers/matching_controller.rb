@@ -6,14 +6,49 @@ class MatchingController < ApplicationController
 
   MATCHING_QUEUE_KEY = 'shogi:matching_queue' # Redisのリストキー
   GAME_ROOMS_HASH_KEY = 'shogi:game_rooms'    # Redisのハッシュキー
-
+  GAME_ROOMS_KEY =""
+  #DELETE_TIME=1000
+  DELETE_TIME = 30 * 60 #30分を秒単位で定義・30分 * 60秒 = 1800秒
   #def game_lobby_auto_matching
   #end
 
   def game_lobby_matching_board
-    #現在のマッチング待ち人数を確認・キューの長さを確認
-    @matching_queue_length = $redis.llen(MATCHING_QUEUE_KEY)
+    @matching_queue_length = $redis.llen(MATCHING_QUEUE_KEY)#現在のマッチング待ち人数を確認・キューの長さを確認
     @matching_queue_data = $redis.lrange(MATCHING_QUEUE_KEY, 0, -1)# 既存のキューから全てのデータを取得
+    #@room_game_data_json = $redis.hget(GAME_ROOMS_HASH_KEY, @room_id) #ゲームデータ
+    
+    #全てのゲームルームデータを取得
+    @game_room_datas = {}
+    $redis.scan_each(match: "game_room:*", count: 100) do |full_key|
+      if (json_str = $redis.get(full_key))# Redis から JSON 文字列を取得
+        room_id = full_key.sub(/^game_room:/, "")# プレフィックスを取り除いて room_id を抽出
+        @game_room_datas[room_id] = JSON.parse(json_str, symbolize_names: true)# ハッシュのキーに room_id を使って格納
+      end
+    end
+    @game_room_datas = @game_room_datas.to_json
+    puts "@game_room_datas:#{@game_room_datas}"
+=begin
+    # SCAN を使う
+    $redis.scan_each(match: "game_room:*", count: 100) do |key|
+      j = $redis.get(key)
+      @game_room_datas << JSON.parse(j, symbolize_names: true) if j
+    end
+    
+
+    game_rooms_hash = $redis.hgetall(GAME_ROOMS_HASH_KEY)
+
+    game_rooms_hash.each do |room_id, json_data|
+      @game_room_datas[room_id] = JSON.parse(json_data)
+    end
+    @game_room_datas = @game_room_datas.to_json
+    #@game_room_datas1 = @game_room_datas.deep_symbolize_keys
+    #@game_room_datas2 = @game_room_datas.transform_values { |v| v.transform_keys(&:to_sym) }
+    #game_room_datas = @game_room_datas.transform_keys(&:to_s).transform_values { |v| v.transform_keys(&:to_sym) }
+    #puts "@game_room_datas: #{ @game_room_datas1}"
+    #puts "@game_room_datas: #{ @game_room_datas2}"
+    #puts "@game_room_datas3: #{ @game_room_datas3}"
+    #@game_room_datas = @game_room_datas.deep_symbolize_keys #ハッシュからシンボルに変換("sente"=>"8f" を sente: "8f" みたいに変換)
+=end
   end
 
   #このstartメソッドは、将棋のオンライン対戦における「マッチング機能」を実装しています。Redisのキューを使って2つのプレイヤーを待機させ、2人揃ったら対戦部屋を作成する仕組み
@@ -24,10 +59,12 @@ class MatchingController < ApplicationController
     #Rails.logger.info "user_identifier:#{user_identifier} "
 
     battleType = params[:battleType]
+    userName = params[:userName]
     Rails.logger.info "バトルタイプ:#{battleType} "
 
     #現在のユーザー情報をJSON文字列に変換する
     user_info_json = {
+      user_name: userName,
       identifier: user_identifier,
       user_agent: request.user_agent,
       timestamp: Time.current.to_i
@@ -88,14 +125,27 @@ class MatchingController < ApplicationController
 
       Rails.logger.info "Popped player1: #{player1_info[:identifier]}, player2: #{player2_info[:identifier]}"
 
+      
       # 先手と後手を決定・true/false のランダムでどちらが先手(sente)か後手(gote)を決める
       if [true, false].sample # ランダムに振り分け
+        #この場合はplayer1が先手でplayer2が後手
         sente_identifier = player1_info[:identifier]
+        sente_user_agent = player1_info[:user_agent]
+        sente_user_name = player1_info[:user_name]
         gote_identifier = player2_info[:identifier]
+        gote_user_agent = player2_info[:user_agent]
+        gote_user_name = player2_info[:user_name]
       else
+        #この場合はplayer2が先手でplayer1が後手
         sente_identifier = player2_info[:identifier]
+        sente_user_agent = player2_info[:user_agent]
+        sente_user_name = player2_info[:user_name]
         gote_identifier = player1_info[:identifier]
+        gote_user_agent = player1_info[:user_agent]
+        gote_user_name = player1_info[:user_name]
       end
+
+
 
       # 一意な room_id を生成
       room_id = SecureRandom.uuid
@@ -104,15 +154,21 @@ class MatchingController < ApplicationController
       room_data = {
         sente_identifier: sente_identifier,
         gote_identifier: gote_identifier,
+        sente_user_agent: sente_user_agent,
+        gote_user_agent: gote_user_agent,
+        sente_user_name: sente_user_name,
+        gote_user_name: gote_user_name,
         status: 'active',
         battleType: battleType,
         created_at: Time.current.to_i,
-        player1_user_agent: player1_info[:user_agent],
-        player2_user_agent: player2_info[:user_agent]
       }
+      game_rooms_key = "game_room:#{room_id}"
       #Redisのハッシュ（GAME_ROOMS_HASH_KEY）に対し、キーroom_idでroom_dataをJSON文字列として保存する
-      $redis.hset(GAME_ROOMS_HASH_KEY, room_id, room_data.to_json)
+      #$redis.hset(GAME_ROOMS_HASH_KEY, room_id, room_data.to_json)
+      $redis.setex(game_rooms_key, DELETE_TIME, room_data.to_json)
+      #$redis.expire(GAME_ROOMS_HASH_KEY, 30) # 30秒後に削除
       Rails.logger.info "RedisにGameRoom#{room_id}が作成された。"
+      Rails.logger.info "Redisに入れたデータ：#{room_data.to_json}"
 
       #マッチングのRedisデータからマッチング完了した2人だけを削除(他のマッチング中の人は消さない)
       #上の処理でlpopしてるからすでにデータから削除されてる？・LPOPを利用して先頭から2件取り出すと、自動的にリストから削除されます
@@ -120,10 +176,13 @@ class MatchingController < ApplicationController
 
       #マッチング成立後の通知・各プレイヤーにマッチング成立をブロードキャスト
       #player1にマッチング成立後の通知
-      ActionCable.server.broadcast("personal_notification_#{player1_info[:identifier]}" ,{ status: 'matched', room_id: room_id, player_role: (player1_info[:identifier] == sente_identifier ? 'sente' : 'gote') })
+      #ActionCable.server.broadcast("personal_notification_#{player1_info[:identifier]}" ,{ status: 'matched', room_id: room_id, player_role: (player1_info[:identifier] == sente_identifier ? 'sente' : 'gote') })
+      ActionCable.server.broadcast("personal_notification_#{player1_info[:identifier]}" ,{ status: 'matched', room_id: room_id, player_role: (player1_info[:identifier] == sente_identifier ? 'sente' : 'gote') , game_room_data: room_data.to_json })
+
       Rails.logger.info "#{player1_info[:identifier]}にブロードキャストマッチした"
       #player2にマッチング成立後の通知
-      ActionCable.server.broadcast("personal_notification_#{player2_info[:identifier]}" ,{ status: 'matched', room_id: room_id, player_role: (player2_info[:identifier] == sente_identifier ? 'sente' : 'gote') })
+      #ActionCable.server.broadcast("personal_notification_#{player2_info[:identifier]}" ,{ status: 'matched', room_id: room_id, player_role: (player2_info[:identifier] == sente_identifier ? 'sente' : 'gote') })
+      ActionCable.server.broadcast("personal_notification_#{player2_info[:identifier]}" ,{ status: 'matched', room_id: room_id, player_role: (player2_info[:identifier] == sente_identifier ? 'sente' : 'gote') , game_room_data: room_data.to_json })
       Rails.logger.info "#{player2_info[:identifier]}にブロードキャストマッチした"
 
       # このリクエストを送信したユーザーへのレスポンス
@@ -176,7 +235,7 @@ class MatchingController < ApplicationController
     
     #user_identifier = session.renew #セッション中のデータは保持しつつ、新しいセッションIDを発行
     # セッションを完全にリセット（セッションIDが変わり、既存データは全て消える）
-    reset_session
+    #reset_session
 
     debug_data={
       matching_queue_length: $redis.llen(MATCHING_QUEUE_KEY),
@@ -201,9 +260,86 @@ class MatchingController < ApplicationController
     #new_token = form_authenticity_token #セッションを削除するとセッションID（クッキー）が破棄され、Railsが内部的に保持しているCSRFトークンもリセットされるので新発行して渡す
     Rails.logger.info "マッチングのデータを全て削除する"
     $redis.del(MATCHING_QUEUE_KEY)
-    $redis.del(GAME_ROOMS_HASH_KEY)
+    #$redis.del(GAME_ROOMS_HASH_KEY)
+    #$redis.del(GAME_ROOMS_HASH_KEY)
+    #scan_eachを使って個別に削除
+    $redis.scan_each(match: "game_room:*", count: 100) do |full_key|
+      $redis.del(full_key)
+    end
     Rails.logger.info "MATCHING_QUEUE_KEYのRedisデータ：#{$redis.lrange(MATCHING_QUEUE_KEY, 0, -1)}"
     Rails.logger.info "GAME_ROOMS_HASH_KEYのRedisデータ：#{$redis.lrange(MATCHING_QUEUE_KEY, 0, -1)}"
     render json: { status: 'delete', message: 'すべてのマッチングデータの削除完了' }
+  end
+
+  def check
+    room_id = params[:roomId]
+    sessionId = params[:sessionId]
+    matching_queue_length = $redis.llen(MATCHING_QUEUE_KEY)#現在のマッチング待ち人数を確認・キューの長さを確認
+    matching_queue_data = $redis.lrange(MATCHING_QUEUE_KEY, 0, -1)# 既存のキューから全てのデータを取得
+    puts "matching_queue_data: #{matching_queue_data}"
+    data = {
+      matching_queue_length: matching_queue_length,
+      matching_queue_data: matching_queue_data,
+    }#.to_json
+
+    #そのユーザがマッチング中かどうかチェック
+    matching_user_exists = matching_queue_data.any? do |json_string|
+      matching_queue_data_json = JSON.parse(json_string)
+      matching_queue_data_json["identifier"] == sessionId
+    end
+    if matching_user_exists
+      puts "セッションIDが見つかったのでユーザーはマッチング待機中"
+      data[:matching_user_exists] = true
+    else
+      data[:matching_user_exists] = false
+    end
+    
+    #全てのルームのゲームデータを取得
+=begin
+    all_game_rooms_hash = $redis.hgetall(GAME_ROOMS_HASH_KEY)
+    all_room_game_data_json = {}
+    all_game_rooms_hash.each do |room_id, json_data|
+      all_room_game_data_json[room_id] = JSON.parse(json_data)
+    end
+    all_room_game_data_json = all_room_game_data_json.to_json
+=end
+    all_room_game_data_json = {}
+    $redis.scan_each(match: "game_room:*", count: 100) do |full_key|
+      if (json_str = $redis.get(full_key))# Redis から JSON 文字列を取得
+        room_id = full_key.sub(/^game_room:/, "")# プレフィックスを取り除いて room_id を抽出
+        all_room_game_data_json[room_id] = JSON.parse(json_str, symbolize_names: true)# ハッシュのキーに room_id を使って格納
+      end
+    end
+    all_room_game_data_json = all_room_game_data_json.to_json
+    data[:all_room_game_data_json] = all_room_game_data_json
+
+
+    #そのユーザーがマッチングしていてゲームルームデータがあるかチェック
+    #gemedata_user_exists = JSON.parse(all_room_game_data_json).any? do |room_id, room_data|
+    gemedata_user_exists = JSON.parse(all_room_game_data_json).find do |room_id, room_data|
+      room_data["sente_identifier"] == sessionId || room_data["gote_identifier"] == sessionId
+    end
+    if gemedata_user_exists
+      puts "ゲームルームデータにユーザーのセッションIDが見つかりました"
+      room_id, room_data = gemedata_user_exists
+      data[:this_user_room_game_data] = room_data
+    else
+      puts "ゲームルームデータにユーザーのセッションIDが見つかりませんでした"
+      data[:this_user_room_game_data] = false
+    end
+=begin
+    if !room_id.nil?
+      #room_game_data_json = $redis.hget(GAME_ROOMS_HASH_KEY, room_id) #ゲームデータ
+      game_rooms_key = "game_room:#{room_id}"
+      this_user_room_game_data = $redis.get(game_rooms_key) #ゲームデータ
+      data[:this_user_room_game_data] = this_user_room_game_data
+    else
+      data[:this_user_room_game_data] = false
+    end
+=end
+
+    data.to_json
+    puts "data.to_json:#{data.to_json}"
+    render json: { check_data: data }
   end
 end

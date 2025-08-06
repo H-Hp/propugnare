@@ -11,6 +11,7 @@ Rails.application.routes.draw do
   get 'matching/status', to: 'matching#status', as: :matching_status # ポーリング用
   post 'matching/cancel', to: 'matching#cancel', as: :cancel_matching
   post 'matching/all_delete', to: 'matching#all_delete', as: :all_delete_matching_data #開発用のマッチングデータ削除用
+  post 'matching/check', to: 'matching#check', as: :check_matching #デバッグ用
 
   get '/shogi/:id', to: 'shogi#index'
   delete '/shogi/:id/destroy', to: 'shogi#destroy'#試合終了後にデータ削除
