@@ -35,9 +35,9 @@ production:
   <% elsif ENV['RAILS_MASTER_KEY'].present? %>
     prepared_statements: false
     #database: db/production.sqlite3
-    host: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_HOST] %>
-    password: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PASSWORD] %>
-    username: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_USERNAME] %>
-    database: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_DATABASE] %>
-    port: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PORT] %>
+    host: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_HOST] %>
+    password: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_PASSWORD] %>
+    username: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_USERNAME] %>
+    database: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_DATABASE] %>
+    port: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_PORT] %>
   <% end %>
