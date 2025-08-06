@@ -26,8 +26,17 @@ test:
   port: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PORT] %>
 
 production:
-  <<: *default
-  database: db/production.sqlite3
+  <% if ENV['DATABASE_URL'].present? %>
+    url: <%= ENV['DATABASE_URL'] %>
+    prepared_statements: false
+  <% else %>
+    adapter: sqlite3
+    database: db/production.sqlite3
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+    timeout: 5000
+  <% end %>
+  #<<: *default
+  #database: db/production.sqlite3
   #prepared_statements: false
   #host: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_HOST] %>
   #password: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_PASSWORD] %>
