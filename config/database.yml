@@ -27,10 +27,17 @@ test:
 
 production:
   <<: *default
-  prepared_statements: false
-  #database: db/production.sqlite3
-  host: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_HOST] %>
-  password: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PASSWORD] %>
-  username: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_USERNAME] %>
-  database: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_DATABASE] %>
-  port: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PORT] %>
+  # デプロイ環境で DATABASE_URL が設定されている場合、それを使用します。
+  # これは Render や Fly.io のようなサービスで自動的に設定されます。
+  <% if ENV['DATABASE_URL'].present? %>
+    url: <%= ENV['DATABASE_URL'] %>
+    prepared_statements: false # 本番環境で接続プールを使用する場合に推奨
+  <% elsif ENV['RAILS_MASTER_KEY'].present? %>
+    prepared_statements: false
+    #database: db/production.sqlite3
+    host: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_HOST] %>
+    password: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PASSWORD] %>
+    username: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_USERNAME] %>
+    database: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_DATABASE] %>
+    port: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PORT] %>
+  <% end %>
