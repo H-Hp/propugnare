@@ -11,11 +11,6 @@ development:
   username: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_USERNAME] %>
   database: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_DATABASE] %>
   port: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_PORT] %>
-  #host: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_HOST] %>
-  #password: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PASSWORD] %>
-  #username: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_USERNAME] %>
-  #database: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_DATABASE] %>
-  #port: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PORT] %>
   prepared_statements: false
 
 
