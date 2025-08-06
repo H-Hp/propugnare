@@ -28,7 +28,8 @@ ENV BUNDLE_DEPLOYMENT="1" \
     RAILS_ENV="production"
 
 # Install Node.js
-ARG NODE_VERSION=18.17.0
+#ARG NODE_VERSION=18.17.0
+ARG NODE_VERSION=22.13.1
 ENV PATH=/usr/local/node/bin:$PATH
 RUN curl -sL https://github.com/nodenv/node-build/archive/master.tar.gz | tar xz -C /tmp/ && \
     /tmp/node-build-master/bin/node-build "${NODE_VERSION}" /usr/local/node && \
@@ -73,7 +74,8 @@ RUN bundle exec bootsnap precompile app/ lib/
 
 # Precompiling assets for production without requiring secret RAILS_MASTER_KEY
 #RUN SECRET_KEY_BASE=DUMMY ./bin/rails assets:precompile
-RUN SECRET_KEY_BASE=DUMMY RAILS_ENV=production ./bin/rails assets:precompile
+#RUN SECRET_KEY_BASE=DUMMY RAILS_ENV=production ./bin/rails assets:precompile
+RUN ./bin/rails assets:precompile
 
 # Final stage for app image
 FROM base
