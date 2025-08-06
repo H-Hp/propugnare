@@ -10,7 +10,7 @@ gem 'pg'
 
 #gem 'puma', '~> 5.0'
 gem "puma", ">= 6.0"#~> 6.0 は、Puma 6.0 以上、かつ 7.0 未満の最新バージョンを意味
-gem 'sass-rails', '>= 6'
+#gem 'sass-rails', '>= 6'
 
 #gem 'webpacker', '~> 5.0'
 gem "propshaft"
