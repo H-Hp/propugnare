@@ -44,7 +44,9 @@
       <!--<script src="https://cdn.tailwindcss.com"></script>-->
 
       <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
-      <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
+      <%#= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
+      <%#= javascript_include_tag "application", defer: true %>
+      <%= javascript_include_tag "application", "data-turbo-track": "reload", type: "module" %>
   </head>
 
   <body data-no-turbolink>

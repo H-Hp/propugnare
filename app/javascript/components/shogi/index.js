@@ -34,10 +34,12 @@ import { BoardInfo, Selection } from './BoardInfo';
 
 import ShogiTimer from './ShogiTimer/ShogiTimer';
 
-import Header from '../Header';
+//import Header from '../Header';
+import Header from '../Header.jsx';
 
+//import consumer from '../../channels/consumer'; // Action Cableのconsumerをインポート
+import consumer from '../../channels/consumer.js'; // Action Cableのconsumerをインポート
 
-import consumer from '../../channels/consumer'; // Action Cableのconsumerをインポート
 
 const imgByName = {
   "王": imgKing,
@@ -1834,3 +1836,5 @@ document.addEventListener('turbolinks:load', () => {//urbolinks による初回�
     //console.log("将棋ゲームコンポーネントは、このページでは初期化されませんでした（#shogi-board要素なし）。");
   }
 })
+
+export default Room;

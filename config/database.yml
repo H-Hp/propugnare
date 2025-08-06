@@ -11,6 +11,7 @@ development:
   username: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_USERNAME] %>
   database: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_DATABASE] %>
   port: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PORT] %>
+  prepared_statements: false
 
 
 # Warning: The database defined as "test" will be erased and

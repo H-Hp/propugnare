@@ -1,8 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createRoot } from 'react-dom/client';
-import consumer from '../channels/consumer'; // Action Cableのconsumerをインポート
-import Header from '../components/Header';
+//import consumer from '../channels/consumer'; // Action Cableのconsumerをインポート
+import consumer from './channels/consumer.js';
+//import Header from '../components/Header';
+import Header from './components/Header.jsx'; 
 import { useState } from "react";
 
 class Matching extends React.Component {
