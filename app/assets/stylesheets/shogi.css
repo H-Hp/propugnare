@@ -1,8 +1,4 @@
 
-* {
-  box-sizing: border-box;
-}
-
 /*body {
   font: 14px "Century Gothic", Futura, sans-serif;
   margin:0;
@@ -11,24 +7,7 @@
   flex-direction: column;
 }*/
   /*height: 100vh;*/
-* {
-  font-size: inherit;
-  /* フォントレンダリングを統一・Braveのレイアウト崩れ防止 */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  font-variant-ligatures: none;
-}
-body, html {
-  margin: 0;
-  padding: 0;
-  height: 100vh;
-  font-size: 16px; /* 基準サイズを明確に指定 */
-  font-family: sans-serif;
-  display: flex;
-  flex-direction: column;
-  overscroll-behavior: none;
-}
+
 
 header {
   height: 64px;
