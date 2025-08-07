@@ -29,17 +29,14 @@ test:
   <% end %>
 
 production:
-  <% if ENV['DATABASE_URL'].present? %>
-    url: <%= ENV['DATABASE_URL'] %>
-    prepared_statements: false
-  <% else %>
-    <<: *default
-    host: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_HOST] %>
-    password: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PASSWORD] %>
-    username: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_USERNAME] %>
-    database: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_DATABASE] %>
-    port: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PORT] %>
-  <% end %>
+  <<: *default
+  # Fly.ioの環境変数を優先し、存在しない場合はクレデンシャルを参照する
+  host: <%= ENV['PROPUGNARE_SUPABASE_HOST'] || Rails.application.credentials.development[:PROPUGNARE_SUPABASE_HOST] %>
+  password: <%= ENV['PROPUGNARE_SUPABASE_PASSWORD'] || Rails.application.credentials[:propugnare_supabase_password] %>
+  username: <%= ENV['PROPUGNARE_SUPABASE_USERNAME'] || Rails.application.credentials.development[:PROPUGNARE_SUPABASE_USERNAME] %>
+  database: <%= ENV['PROPUGNARE_SUPABASE_DATABASE'] || Rails.application.credentials.development[:PROPUGNARE_SUPABASE_DATABASE] %>
+  port: <%= ENV['PROPUGNARE_SUPABASE_PORT'] || Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PORT] %>
+
   #<<: *default
   #database: db/production.sqlite3
   #prepared_statements: false
