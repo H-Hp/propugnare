@@ -33,10 +33,12 @@ production:
     url: <%= ENV['DATABASE_URL'] %>
     prepared_statements: false
   <% else %>
-    adapter: sqlite3
-    database: db/production.sqlite3
-    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-    timeout: 5000
+    <<: *default
+    host: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_HOST] %>
+    password: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PASSWORD] %>
+    username: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_USERNAME] %>
+    database: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_DATABASE] %>
+    port: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PORT] %>
   <% end %>
   #<<: *default
   #database: db/production.sqlite3
