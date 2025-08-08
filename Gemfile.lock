@@ -272,7 +272,6 @@ GEM
     sorted_set (1.0.3)
       rbtree
       set (~> 1.0)
-    spring (4.2.1)
     sqlite3 (1.7.3-x86_64-darwin)
     sqlite3 (1.7.3-x86_64-linux)
     stringio (3.1.7)
@@ -331,7 +330,6 @@ DEPENDENCIES
   sentry-rails (~> 5.23)
   sentry-ruby (~> 5.23)
   sidekiq
-  spring
   sqlite3 (~> 1.4)
   turbolinks (~> 5)
   tzinfo-data
