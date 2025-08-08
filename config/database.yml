@@ -28,9 +28,6 @@ test:
     port: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PORT] %>
   <% end %>
 
-production:
-  <<: *default
-  
 # Fly.ioの環境変数を優先し、存在しない場合はクレデンシャルを参照する
 #host: <%= ENV['PROPUGNARE_SUPABASE_HOST'] || Rails.application.credentials.development[:PROPUGNARE_SUPABASE_HOST] %>
 #password: <%= ENV['PROPUGNARE_SUPABASE_PASSWORD'] || Rails.application.credentials[:propugnare_supabase_password] %>
@@ -46,3 +43,8 @@ production:
 #username: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_USERNAME] %>
 #database: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_DATABASE] %>
 #port: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_PORT] %>
+
+production:
+  <<: *default
+
+
