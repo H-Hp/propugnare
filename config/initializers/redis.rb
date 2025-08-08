@@ -16,15 +16,18 @@ if Rails.env.production?
     else
       "redis://localhost:6379/0"
     end
-  $redis = Redis.new(url: $redis_url { "redis://localhost:6379/0" })
   end
 elsif Rails.env.test?
   # テスト環境
-  $redis = ENV.fetch('REDIS_URL') { "redis://localhost:6379/1" }
+  $redis_url = ENV.fetch('REDIS_URL') { "redis://localhost:6379/1" }
 else # 開発環境
   # 開発環境
-  $redis = Rails.application.credentials.development.dig(:REDIS_URL) || "redis://localhost:6379/0"
+  $redis_url = Rails.application.credentials.development.dig(:REDIS_URL) || "redis://localhost:6379/0"
+  #$redis = Redis.new(url: $redis_url)
 end
+
+$redis = Redis.new(url: $redis_url )
+
 
 # オプション: Redisの接続テスト
 # begin
