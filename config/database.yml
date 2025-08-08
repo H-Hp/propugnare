@@ -6,14 +6,12 @@ default: &default
 
 development:
   <<: *default
-  <% if ENV['DATABASE_URL'].present? %>
-    host: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_HOST] %>
-    password: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_PASSWORD] %>
-    username: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_USERNAME] %>
-    database: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_DATABASE] %>
-    port: <%= Rails.application.credentials[:PROPUGNARE_SUPABASE_PORT] %>
-    prepared_statements: false
-  <% end %>
+  host: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_HOST] %>
+  password: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PASSWORD] %>
+  username: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_USERNAME] %>
+  database: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_DATABASE] %>
+  port: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PORT] %>
+  prepared_statements: false
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".

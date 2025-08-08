@@ -21,8 +21,10 @@ elsif Rails.env.test?
   # テスト環境
   $redis_url = ENV.fetch('REDIS_URL') { "redis://localhost:6379/1" }
 else # 開発環境
-  # 開発環境
-  $redis_url = Rails.application.credentials.development.dig(:REDIS_URL) || "redis://localhost:6379/0"
+  # 開発環境R
+  #$redis_url = Rails.application.credentials.development.dig(:REDIS_URL) || "redis://localhost:6379/0"
+  $redis_url = Rails.application.credentials.development[:REDIS_URL] || "redis://localhost:6379/0"
+
   #$redis = Redis.new(url: $redis_url)
 end
 
