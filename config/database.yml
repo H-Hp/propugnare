@@ -6,13 +6,13 @@ default: &default
 
 development:
   <<: *default
-  <% if ENV['DATABASE_URL'].present? %>
-    host: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_HOST] %>
-    password: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PASSWORD] %>
-    username: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_USERNAME] %>
-    database: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_DATABASE] %>
-    port: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PORT] %>
-    prepared_statements: false
+  <% if Rails.env.development? %>
+  host: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_HOST] %>
+  password: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PASSWORD] %>
+  username: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_USERNAME] %>
+  database: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_DATABASE] %>
+  port: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PORT] %>
+  prepared_statements: false
   <% end %>
 
 # Warning: The database defined as "test" will be erased and
@@ -20,12 +20,12 @@ development:
 # Do not set this db to the same as development or production.
 test:
   <<: *default
-  <% if ENV['DATABASE_URL'].present? %>
-    host: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_HOST] %>
-    password: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PASSWORD] %>
-    username: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_USERNAME] %>
-    database: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_DATABASE] %>
-    port: <%= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PORT] %>
+  <% if Rails.env.test? %> #環境変数があれば
+    #host: <%#= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_HOST] %>
+    #password: <%#= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PASSWORD] %>
+    #username: <%#= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_USERNAME] %>
+    #database: <%#= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_DATABASE] %>
+    #port: <%#= Rails.application.credentials.development[:PROPUGNARE_SUPABASE_PORT] %>
   <% end %>
 
 
