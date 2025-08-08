@@ -10,12 +10,13 @@
 
 if Rails.env.production?
   # 本番環境では DATABASE_URL が設定されていない場合に備えてフォールバック
-  $redis = ENV.fetch('REDIS_URL') do
+  $redis_url = ENV.fetch('REDIS_URL') do
     if Rails.application.credentials.development(:REDIS_URL)
       Rails.application.credentials.development[:REDIS_URL]
     else
       "redis://localhost:6379/0"
     end
+  $redis = Redis.new(url: $redis_url { "redis://localhost:6379/0" })
   end
 elsif Rails.env.test?
   # テスト環境
