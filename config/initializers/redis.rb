@@ -27,7 +27,7 @@ else # 開発環境
 
   #$redis = Redis.new(url: $redis_url)
 end
-
+puts "$redis_url:  #{$redis_url}"
 $redis = Redis.new(url: $redis_url )
 
 
