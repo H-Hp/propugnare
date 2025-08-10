@@ -1811,8 +1811,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 */
 //HTMLドキュメントの読み込みが完了したときに実行され、viewにReactをレンダリングする処理
 //document.addEventListener('DOMContentLoaded', () => {
-document.addEventListener('turbolinks:load', () => {//urbolinks による初回ページロード時・Turbolinks によるページ遷移時・通常のブラウザリロード時 のすべてで発生します。
-
+//document.addEventListener('turbolinks:load', () => {//urbolinks による初回ページロード時・Turbolinks によるページ遷移時・通常のブラウザリロード時 のすべてで発生します。
+document.addEventListener('turbo:load', () => {
   // Shogiコンポーネントを初期化するためのDOM要素があるか確認
   const shogiBoardElement = document.getElementById('game-container'); // 例: 将棋盤を表示する<div>のID
   //console.dir("shogiBoardElement: "+shogiBoardElement);

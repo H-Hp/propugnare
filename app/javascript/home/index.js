@@ -1,4 +1,5 @@
-document.addEventListener('turbolinks:load', () => {
+//document.addEventListener('turbolinks:load', () => {
+document.addEventListener('turbo:load', () => {
   console.log("test");
 
 
