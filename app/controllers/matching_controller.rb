@@ -13,6 +13,10 @@ class MatchingController < ApplicationController
   #end
 
   def game_lobby_matching_board
+        
+    zeitwerk_enabled = Rails.autoloaders.zeitwerk_enabled?# Zeitwerkモードが有効化されているかを取得
+    Rails.logger.info "Zeitwerk enabled: #{zeitwerk_enabled}"
+
     @matching_queue_length = $redis.llen(MATCHING_QUEUE_KEY)#現在のマッチング待ち人数を確認・キューの長さを確認
     @matching_queue_data = $redis.lrange(MATCHING_QUEUE_KEY, 0, -1)# 既存のキューから全てのデータを取得
     #@room_game_data_json = $redis.hget(GAME_ROOMS_HASH_KEY, @room_id) #ゲームデータ

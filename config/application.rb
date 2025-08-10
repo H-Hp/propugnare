@@ -11,9 +11,9 @@ module Propugnare
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 6.1
 
-    # Please, add to the `ignore` list any other `lib` subdirectories that do
-    # not contain `.rb` files, or that should not be reloaded or eager loaded.
-    # Common ones are `templates`, `generators`, or `middleware`, for example.
+    # `.rb` ファイルを含まない、または再読み込みや事前読み込みの対象とすべきでない
+    #他の `lib` サブディレクトリを `ignore` リストに追加してください。
+    # 一般的な例としては、`templates`、`generators`、または `middleware` などがあります。
     config.autoload_lib(ignore: %w[assets tasks])
 
     # Configuration for the application, engines, and railties goes here.
