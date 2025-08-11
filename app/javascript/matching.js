@@ -1427,6 +1427,7 @@ class Matching extends React.Component {
 
 //document.addEventListener('turbolinks:load', () => {//urbolinks による初回ページロード時・Turbolinks によるページ遷移時・通常のブラウザリロード時 のすべてで発生します。  
 document.addEventListener('turbo:load', () => {
+  console.log("a")
   const tokenElement = document.querySelector('meta[name="csrf-token"]');
   window.csrfToken = tokenElement ? tokenElement.content : '';
 

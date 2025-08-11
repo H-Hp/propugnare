@@ -16,6 +16,8 @@ Rails.application.routes.draw do
   get '/shogi/:id', to: 'shogi#index'
   delete '/shogi/:id/destroy', to: 'shogi#destroy'#試合終了後にデータ削除
 
+  post '/contacts', to: 'matching#contacts', as: :contacts
+
   #get 'shogi/index'
   #get '/'  => 'home#index'
   mount ActionCable.server => '/cable'

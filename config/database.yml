@@ -32,6 +32,10 @@ test:
 
 production:
   <<: *default
+  host: <%#= ENV['PROPUGNARE_SUPABASE_HOST']
+  password: <%#= ENV['PROPUGNARE_SUPABASE_PASSWORD']
+  username: <%#= ENV['PROPUGNARE_SUPABASE_USERNAME']
+  database: <%#= ENV['PROPUGNARE_SUPABASE_DATABASE']
 
 # Fly.ioの環境変数を優先し、存在しない場合はクレデンシャルを参照する
 #host: <%#= ENV['PROPUGNARE_SUPABASE_HOST'] || Rails.application.credentials.development[:PROPUGNARE_SUPABASE_HOST] %>

@@ -346,4 +346,21 @@ class MatchingController < ApplicationController
     puts "data.to_json:#{data.to_json}"
     render json: { check_data: data }
   end
+
+  #問い合わせ
+  def contacts
+    @contact = Contact.new(contact_params)
+
+    if @contact.save
+      head :created
+    else
+      render json: { errors: @contact.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
+  private
+
+  def contact_params
+    params.require(:contact).permit(:message)
+  end
 end

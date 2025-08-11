@@ -14,6 +14,7 @@ import Shogi from './components/shogi/index.js';
 import Header from './components/Header.jsx';
 
 
+
 /*
 //react-rails v3では、コンポーネントをグローバルに登録するために、require.context を使った自動登録の方法が推奨されてて、これにより、ERB内の<%= react_component...がが正しく動作する
 //app/javascript/componentsフォルダ内の.js および.jsx ファイルを自動登録する
