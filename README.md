@@ -1,24 +1,30 @@
-# README
+# Propugnare
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+> Propugnare is the next-generation online Shogi platform that brings the thrill of Japanese chess to your browser with real-time matches, position analysis, and social features—all wrapped in a sleek, responsive interface.
 
-Things you may want to cover:
+## Features
 
-* Ruby version
+- **Real-Time Matchmaking**  
+  Challenge friends or face players from around the globe in live, low-latency Shogi games.
 
-* System dependencies
+- **Position Analysis Engine**  
+  Dive deep into each move with instant board analysis and engine suggestions to sharpen your skills.
 
-* Configuration
+- **Ranking & Achievements**  
+  Climb the leaderboards, earn badges for milestones, and show off your growth.
 
-* Database creation
+- **Practice & Tutorials**  
+  Hone your tactics with puzzles, guided tutorials, and historical game replays.
 
-* Database initialization
+- **Responsive Design**  
+  Enjoy a seamless experience on desktop, tablet, or smartphone—no installation required.
 
-* How to run the test suite
+- **Social & Community**  
+  Create private rooms, spectate top matches, and discuss strategies with other enthusiasts.
 
-* Services (job queues, cache servers, search engines, etc.)
+## App
 
-* Deployment instructions
+Visit the live App to experience Propugnare firsthand:
 
-* ...
+```text
+https://propugnare.online/
