@@ -2,9 +2,11 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { useState } from 'react';
 import ContactModal from './ContactModal';
+import AboutModal from './AboutModal';
 
 const Header = ({ logoPath }) => {
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isAboutOpen, setAboutOpen] = useState(false);
   const openModal = () => setModalOpen(true);
   const closeModal = () => setModalOpen(false);
   return (
@@ -18,15 +20,23 @@ const Header = ({ logoPath }) => {
             <span className="font-bold text-xs">Shogi Game</span>
           </a>
 
+          <button
+            onClick={() => setAboutOpen(true)}
+            className="text-xs hover:underline focus:outline-none"
+          >
+            このサイトについて
+          </button>
+
           {/* お問合せボタン */}
           <button
             onClick={openModal}
             className="text-xs hover:underline focus:outline-none"
           >
-            お問合せ
+            ご意見
           </button>
         </div>
       </header>
+      {isAboutOpen && <AboutModal onClose={() => setAboutOpen(false)} />}
       {isModalOpen && <ContactModal onClose={closeModal} />}
     </>
   );
