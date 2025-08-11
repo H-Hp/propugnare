@@ -1,0 +1,24 @@
+name: Keep Render App Alive
+
+on:
+  # 日本時間午前9時（UTC 0時）と午後6時（UTC 9時）に実行
+  # Render.comの無料プランは15分間アクセスがないとスリープ
+  # この設定は、それ以上の間隔でアクセスし続けることを想定しています。
+  schedule:
+    # cron式は 分 時 日 月 曜日 の順で実行時間を指定
+    # */14: 「毎時、14分ごと」を意味
+    # * は「すべて」を意味
+    # /14 は「14で割れる間隔」を意味
+    - cron: '*/14 * * * *'
+
+jobs:
+  ping: #pingという名前のジョブを定義
+    runs-on: ubuntu-latest #ジョブを実行する環境を指定
+    steps: #実行する手順を記述
+      - name: Ping Render App #ステップの名前を指定
+        #サーバーにアクセスするコマンド
+        #curl: URLにアクセスするためのコマンドラインツール
+        #-sL: -sはサイレントモード（進捗表示を非表示）、-Lはリダイレクトを自動的に追跡するオプション
+        #${{ secrets.RENDER_APP_URL }}: GitHubに設定したSecretsからURLを呼び出す
+        #> /dev/null: サーバーからのレスポンスを捨て、ログをきれいに保つ
+        run: curl -sL ${{ secrets.RENDER_APP_URL }} > /dev/null
