@@ -1,0 +1,19 @@
+name: Keep Supabase App Alive
+
+on:
+  # cron式: 毎月、毎週、毎日の0時0分（UTC）に実行
+  # 7日間停止を防ぐため、5日ごとの実行で十分安全です。
+  schedule:
+    - cron: '0 0 */5 * *'
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase API
+        run: |
+          curl -sL \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/some_public_table?select=id&limit=1" \
+            > /dev/null
