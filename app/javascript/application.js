@@ -1,7 +1,7 @@
 import Rails from "@rails/ujs"
 //import Turbolinks from "turbolinks"
 import "@hotwired/turbo-rails"
-import "controllers" // Stimulusを使用する場合
+//import "controllers" // Stimulusを使用する場合
 import * as ActiveStorage from "@rails/activestorage"
 //import "channels"
 import "./channels/index.js";
