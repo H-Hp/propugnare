@@ -13,7 +13,7 @@ import Shogi from './components/shogi/index.js';
 //import Header from '../components/Header';
 import Header from './components/Header.jsx';
 
-
+import './lang/i18n'
 
 /*
 //react-rails v3では、コンポーネントをグローバルに登録するために、require.context を使った自動登録の方法が推奨されてて、これにより、ERB内の<%= react_component...がが正しく動作する
@@ -31,3 +31,5 @@ componentRequireContext.keys().forEach((filename) => {
 Rails.start()
 //Turbolinks.start()
 ActiveStorage.start()
+
+

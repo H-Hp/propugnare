@@ -40,6 +40,9 @@ import Header from '../Header.jsx';
 //import consumer from '../../channels/consumer'; // Action Cableのconsumerをインポート
 import consumer from '../../channels/consumer.js'; // Action Cableのconsumerをインポート
 
+import { withTranslation } from 'react-i18next';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '../../lang/i18n' 
 
 const imgByName = {
   "王": imgKing,
@@ -1249,6 +1252,8 @@ class Room extends React.Component {
       // sendUpdateTimer: (...args) => this.gameChannel?.sendUpdateTimer(...args), // 必要なら
     };
 
+    const { t } = this.props;
+
     //senteだったら"先手"に、goteだったら"後手"に
     //yourRole = yourRole === "sente" ? "先手" : yourRole === "gote" ? "後手" : yourRole;
     //enemyRole = enemyRole === "sente" ? "先手" : enemyRole === "gote" ? "後手" : enemyRole;
@@ -1451,14 +1456,14 @@ class Room extends React.Component {
                         <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-500/20 animate-pulse"></div>
                         <div className="relative z-10 text-center">
                           <div className="inline-block animate-bounce text-4xl mb-2">⚡</div>
-                          <div className="text-1xl font-bold mb-1">あなたの手番です</div>
+                          <div className="text-1xl font-bold mb-1"> {t('shogi.yourturn')} </div>
                         </div>
                         <div className="absolute -top-2 -right-2 w-20 h-20 bg-white/10 rounded-full animate-ping"></div>
                       </div>
                     ) : nowTurn !== yourRole  && !audienceUser ?(
                       <div className="text-center py-6 px-6 bg-gray-100 border border-gray-300 rounded-xl">
-                        <div className="text-xl text-gray-600 mb-1">相手の手番</div>
-                        <div className="text-sm text-gray-500">お待ちください...</div>
+                        <div className="text-xl text-gray-600 mb-1"> {t('shogi.enemyturn')} </div>
+                        <div className="text-sm text-gray-500"> {t('shogi.turnwaiting')} </div>
                       </div>
                     ) : (
                       <div className="text-center py-6 px-6 bg-gray-100 border border-gray-300 rounded-xl">
@@ -1544,7 +1549,6 @@ class Room extends React.Component {
                 board={this.state.boardInfo.board}
                 boardSelectInfo={this.state.boardInfo.selection.boardSelectInfo}
                 onClick={(i, j) => this.handleBoardClick(i, j)}
-
               />
               <br />
               <PieceStand
@@ -1809,6 +1813,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 */
+
+
+// withTranslationでコンポーネントをラップ
+const RoomWithTranslation = withTranslation()(Room);
+
 //HTMLドキュメントの読み込みが完了したときに実行され、viewにReactをレンダリングする処理
 //document.addEventListener('DOMContentLoaded', () => {
 //document.addEventListener('turbolinks:load', () => {//urbolinks による初回ページロード時・Turbolinks によるページ遷移時・通常のブラウザリロード時 のすべてで発生します。
@@ -1824,7 +1833,12 @@ document.addEventListener('turbo:load', () => {
     
     const root = ReactDOM.createRoot(rootElement);
     //root.render(<Game />);
-    root.render(<Room />);
+    //root.render(<Room />);
+    root.render(
+      <I18nextProvider i18n={i18n}>
+        <RoomWithTranslation />
+      </I18nextProvider>
+    );
     //root.render(<Shogi />);
     
     // Shogiクラスのインスタンスを作成し、初期化メソッドを呼び出す

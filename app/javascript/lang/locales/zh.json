@@ -1,0 +1,14 @@
+{
+  "header": {
+    "contact": "意见",
+    "about": "关于本网站"
+  },
+  "matching": {
+    "title": "将棋对战大厅"
+  },
+  "shogi": {
+    "yourturn" : "轮到你行动了",
+    "enemyturn" : "轮到对方行动了",
+    "turnwaiting" : "请稍等..."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "header": {
+    "contact": "ご意見",
+    "about": "このサイトについて"
+  },
+  "matching": {
+    "title": "将棋対戦ロビー"
+  },
+  "shogi": {
+    "yourturn" : "あなたの手番です",
+    "enemyturn" : "相手の手番です",
+    "turnwaiting" : "お待ちください..."
+  }
+}

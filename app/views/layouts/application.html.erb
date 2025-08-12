@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Propugnare - 無料オンライン将棋アプリ | 対戦・練習・棋譜解析</title>
-    <meta name="description" content="いつでもどこでも将棋対局が楽しめるオンラインバトルアプリ。リアルタイムで全国の棋士と対戦し、棋力向上を目指そう。無料で始められる本格将棋アプリ。">
+    <title><%= t("head.title") %></title>
+    <meta name="description" content="<%= t("head.description") %>">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
@@ -34,12 +34,12 @@
       <meta property="og:type" content="website">
       <meta property="og:title" content="Propugnare - プログラミングバトルアプリ">
       <meta property="og:site_name" content="Propugnare - プログラミングバトルアプリ">
-      <meta property="og:image" content="">
+      <meta property="og:image" content="https://propugnare.online/og-image.png">
 
       <meta name="twitter:card" content="summary">
       <meta name="twitter:site" content="@RollTall">
       <meta name="twitter:description" content="コードを武器に戦う新感覚のプログラミングバトルアプリ。あなたの論理的思考と戦略が勝利を左右します。今すぐ参加して、コーディングスキルを競い合いましょう！" />
-      <meta name="twitter:image" content="" />
+      <meta name="twitter:image" content="https://propugnare.online/og-image.png" />
 
       <!--<script src="https://cdn.tailwindcss.com"></script>-->
 
@@ -47,6 +47,13 @@
       <%#= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
       <%#= javascript_include_tag "application", defer: true %>
       <%= javascript_include_tag "application", "data-turbo-track": "reload", type: "module" %>
+
+    <!-- 多言語・hreflangタグ・hreflangタグは検索エンジンに多言語サイトの構造を伝えるための設定・つまり1つのURLに複数の言語バージョンがあることを検索エンジンに伝えて重複コンテンツじゃないよと伝えSEOランキングが下がらないようにして、検索一覧ページでそのユーザーの言語のサイトを表示することができる-->
+    <link rel="alternate" hreflang="ja" href="https://propugnare.online<%= request.path %>">
+    <link rel="alternate" hreflang="en" href="https://propugnare.online<%= request.path %>">
+    <link rel="alternate" hreflang="zh-CN" href="https://propugnare.online<%= request.path %>">
+    <link rel="alternate" hreflang="x-default" href="https://propugnare.online<%= request.path %>">
+
   </head>
 
   <body data-no-turbolink>

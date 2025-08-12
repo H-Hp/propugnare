@@ -1,8 +1,12 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/draggable@4.2.0/dist/draggable.min.js"></script>
 <div id="lobby-container" data-session-id="<%= session.id.to_s %>" data-all-gameroomdatas="<%= @game_room_datas %>" data-logo-path="<%= image_path('Logo.png') %>" data-loadingimg-path="<%= image_path('game_back.gif') %>" data-gameback-path="<%= image_path('game_back5.gif') %>" ></div>
+
 <%#= javascript_pack_tag "matching", defer: true %>
-<%= javascript_include_tag "matching", defer: true %>
+<%= javascript_include_tag "matching", defer: true, type: "module" %>
+<%#= javascript_include_tag "matching", defer: true %>
+<%#= react_component("matching", { }) %>
+
 <meta id="matching-data"  data-session-id="<%= session.id.to_s %>" data-matching-queue="<%= @matching_queue_data %>">
 <%= react_component("Header", { logoPath: asset_path("Logo.png") }) %>
 <%= stylesheet_link_tag 'game_lobby_matching_board', media: 'all' %>

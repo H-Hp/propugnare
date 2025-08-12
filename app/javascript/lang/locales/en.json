@@ -1,0 +1,14 @@
+{
+  "header": {
+    "contact": "contact",
+    "about": "about"
+  },
+  "matching": {
+    "title": "Shogi Match Lobby"
+  },
+  "shogi": {
+    "yourturn" : "It's your turn",
+    "enemyturn" : "It's your turn",
+    "turnwaiting" : "Please wait..."
+  }
+}

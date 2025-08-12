@@ -6,6 +6,11 @@ import consumer from './channels/consumer.js';
 //import Header from '../components/Header';
 import Header from './components/Header.jsx'; 
 import { useState } from "react";
+//import { useTranslation } from 'react-i18next'
+import { withTranslation } from 'react-i18next';
+import { I18nextProvider } from 'react-i18next';
+//import { withTranslation, I18nextProvider } from 'react-i18next';
+import i18n from './lang/i18n' 
 
 class Matching extends React.Component {
   constructor(props) {
@@ -35,6 +40,7 @@ class Matching extends React.Component {
       loadingMessage: "マッチング中です...", // ローディングメッセージ
       roomLink: "#", // ゲームルームへのリンク
     }
+
 
     // Action Cable, Audio, Page Title の参照を管理するRef (インスタンスプロパティとして)
     this.matchingChannelRef = null; // Action Cable チャネルのインスタンス
@@ -859,6 +865,10 @@ class Matching extends React.Component {
         }
       }*/
 
+    const { t } = this.props;
+    //console.log("t:"+t)
+    //{t('matching.title')}
+
     if (isLoading) {
       return (
         <div id="loading-overlay" className={`bg-[url('${loadingimgPath}')] bg-no-repeat bg-cover bg-center`}>
@@ -874,7 +884,7 @@ class Matching extends React.Component {
         
         <div className={`h-[calc(100%-30px)] flex items-center justify-center from-indigo-500 to-purple-600 p-4  bg-no-repeat bg-cover bg-center bg-[url('${gamebackPath}')]`}>
           <div className="bg-[#696969] p-8 rounded-lg shadow-xl w-full max-w-md text-center">
-            <h1 className="text-3xl font-extrabold text-white mb-6">将棋対戦ロビー</h1>
+            <h1 className="text-3xl font-extrabold text-white mb-6">{t('matching.title')}</h1>
             <div className="mb-6">
               <label className="mr-4 text-white">
                 <input
@@ -1423,14 +1433,13 @@ class Matching extends React.Component {
   }
 };
 
-
+// withTranslationでコンポーネントをラップ
+const MatchingWithTranslation = withTranslation()(Matching);
 
 //document.addEventListener('turbolinks:load', () => {//urbolinks による初回ページロード時・Turbolinks によるページ遷移時・通常のブラウザリロード時 のすべてで発生します。  
 document.addEventListener('turbo:load', () => {
-  console.log("a")
   const tokenElement = document.querySelector('meta[name="csrf-token"]');
   window.csrfToken = tokenElement ? tokenElement.content : '';
-
   const Element = document.getElementById('lobby-container'); // 例: 将棋盤を表示する<div>のID 
   const logoPath = Element.dataset.logoPath;
   if (Element) {
@@ -1438,7 +1447,13 @@ document.addEventListener('turbo:load', () => {
     rootElement.className = 'h-full fixed top-0 w-full';
     document.body.appendChild(rootElement);
     const root = ReactDOM.createRoot(rootElement);
-    root.render(<Matching/>);
+    //root.render(<Matching/>);
+    root.render(
+      <I18nextProvider i18n={i18n}>
+        {/*<Matching/>*/}
+        <MatchingWithTranslation />
+      </I18nextProvider>
+    );
   } else {
     // shogi-board要素が見つからない場合は、このページが将棋ページではないと判断
     //console.log("将棋ゲームコンポーネントは、このページでは初期化されませんでした（#shogi-board要素なし）。");
@@ -1446,8 +1461,21 @@ document.addEventListener('turbo:load', () => {
 });
 
 
+//export default withTranslation()(Matching);
 
+/*// withTranslation で t を注入
+const TranslatedMatching = withTranslation()(Matching);
 
+// ReactRailsUJS にラップして登録
+import ReactRailsUJS from 'react_ujs';
+ReactRailsUJS.register({
+  Matching: (props) => (
+    <I18nextProvider i18n={i18n}>
+      <TranslatedMatching {...props} />
+    </I18nextProvider>
+  )
+});
+*/
 /*
 
 // React コンポーネントをレンダリングする関数

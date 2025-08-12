@@ -8,6 +8,9 @@ Bundler.require(*Rails.groups)
 
 module Propugnare
   class Application < Rails::Application
+
+    config.i18n.default_locale = :ja #デフォルトの言語を指定
+
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 6.1
 
