@@ -7,11 +7,13 @@
     "@rails/actioncable": "^6.0.0",
     "@rails/activestorage": "^6.0.0",
     "@rails/ujs": "^6.0.0",
+    "@tailwindcss/cli": "^4.1.11",
     "i18next": "^25.3.4",
     "js-cookie": "^3.0.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^15.6.1",
+    "tailwindcss": "^4.1.11",
     "ws": "^8.18.0"
   },
   "version": "0.1.0",
@@ -21,7 +23,9 @@
   },
   "packageManager": "yarn@1.22.19",
   "scripts": {
-    "build": "esbuild app/javascript/application.js app/javascript/matching.js --bundle --sourcemap --format=esm --outdir=app/assets/builds --public-path=/assets --loader:.js=jsx --loader:.jsx=jsx --loader:.png=file --loader:.jpg=file --loader:.jpeg=file --loader:.gif=file --loader:.svg=file",
-    "build:css": "tailwindcss -i ./app/assets/stylesheets/application.tailwind.css -o ./app/assets/builds/application.css --minify"
+    "build:js": "esbuild app/javascript/application.js app/javascript/matching.js  app/javascript/components/Header.jsx --bundle --sourcemap --format=esm --outdir=app/assets/builds --public-path=/assets --loader:.js=jsx --loader:.jsx=jsx --loader:.png=file --loader:.jpg=file --loader:.jpeg=file --loader:.gif=file --loader:.svg=file",
+    "build:js:watch": "npm run build:js -- --watch",
+    "build:css": "npx @tailwindcss/cli -i ./app/assets/stylesheets/application.tailwind.css -o ./app/assets/builds/application.css --minify",
+    "build:css:watch": "npm run build:css -- --watch"
   }
 }

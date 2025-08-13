@@ -884,7 +884,7 @@ class Matching extends React.Component {
         
         <div className={`h-[calc(100%-30px)] flex items-center justify-center from-indigo-500 to-purple-600 p-4  bg-no-repeat bg-cover bg-center bg-[url('${gamebackPath}')]`}>
           <div className="bg-[#696969] p-8 rounded-lg shadow-xl w-full max-w-md text-center">
-            <h1 className="text-3xl font-extrabold text-white mb-6">{t('matching.title')}</h1>
+            <h1 className="text-3xl font-extrabold text-white mb-6">aああ{t('matching.title')}</h1>
             <div className="mb-6">
               <label className="mr-4 text-white">
                 <input
@@ -1461,6 +1461,8 @@ document.addEventListener('turbo:load', () => {
   }
 });
 
+
+export default Matching;
 
 //export default withTranslation()(Matching);
 

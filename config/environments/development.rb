@@ -4,12 +4,17 @@ Rails.application.configure do
   # アセットの動的コンパイルを有効化
   config.assets.compile = true
   config.assets.debug = true
+  #config.assets.compile = false # jsbundling-rails使用時はfalse
+  #config.assets.debug = false # jsbundling-rails使用時はfalse
+  
   config.assets.digest = false
+  #config.assets.digest = true
 
   # Settings specified here will take precedence over those in config/application.rb.
 
-  # Make code changes take effect immediately without server restart.
-  config.enable_reloading = true
+  # コード変更を即時反映
+  config.cache_classes = false
+  config.enable_reloading = true # サーバーの再起動なしで、コードの変更を即時に反映させる。
 
   # Do not eager load code on boot.
   config.eager_load = false

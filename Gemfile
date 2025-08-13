@@ -14,6 +14,7 @@ gem "puma", ">= 6.0"#~> 6.0 は、Puma 6.0 以上、かつ 7.0 未満の最新�
 #gem 'webpacker', '~> 5.0'
 gem "propshaft"
 gem 'jsbundling-rails'
+gem 'cssbundling-rails'
 
 gem 'turbolinks', '~> 5'
 gem 'jbuilder', '~> 2.7'

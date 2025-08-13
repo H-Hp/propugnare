@@ -10,6 +10,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 //import Shogi from '../components/shogi/index'
 import Shogi from './components/shogi/index.js';
+import Matching from './matching.js';
 //import Header from '../components/Header';
 import Header from './components/Header.jsx';
 

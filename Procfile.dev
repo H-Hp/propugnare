@@ -1,2 +1,3 @@
 web: bin/rails server
-js: bin/rails javascript:build --watch
+js: yarn build:js:watch
+css: yarn build:css:watch   # TailwindCSS などを使う場合css: yarn build:css --watch
