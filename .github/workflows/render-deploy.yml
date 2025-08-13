@@ -23,6 +23,4 @@ jobs:
           # Render.comのデプロイ用APIを呼び出す
           # ここではcurlコマンドを使用
           # URLはRenderのデプロイフックURLに置き換えてください
-          curl -X POST "https://api.render.com/v1/services/srv-XXXXXXXXXXXXXX/deploys?key=$RENDER_API_KEY"
-          #curl -X POST "https://api.render.com/deploy/srv-$RENDER_PROJECT_ID?key=$DEPLOY_KEY" 
-
+          curl -X POST "https://api.render.com/deploy/srv-cppbvt2j1k6c73801m9g?key=$RENDER_API_KEY"
