@@ -1724,6 +1724,8 @@ class Room extends React.Component {
           <div id="debugArea"
             className="w-[90%] h-[50%] fixed top-7 right-4 z-50 opacity-80 border bg-gray-500 items-center justify-center overflow-auto whitespace-pre-line"
           >  
+<h3>Version1</h3>
+
                 <span className="font-semibold m-5">あなたは{yourRole}</span>
 
                 <button
