@@ -3,7 +3,10 @@ name: Scheduled Render Deploy
 # このワークフローがトリガーされるタイミングを指定
 on:
   # GitHubのUIから手動で実行できるようにする
-  workflow_dispatch:
+  #workflow_dispatch:
+  #git push時に自動実行
+  push:
+    branches: [ main ]
 
 jobs:
   # デプロイを行うジョブ
