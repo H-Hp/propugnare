@@ -1,4 +1,4 @@
-name: Scheduled Render Deploy
+name: Render Deploy
 
 # このワークフローがトリガーされるタイミングを指定
 on:
@@ -23,6 +23,5 @@ jobs:
       - name: Deploy to Render
         run: |
           # Render.comのデプロイ用APIを呼び出す
-          # ここではcurlコマンドを使用
-          # URLはRenderのデプロイフックURLに置き換えてください
           curl -X POST "https://api.render.com/deploy/srv-cppbvt2j1k6c73801m9g?key=$RENDER_API_KEY"
+          https://api.render.com/deploy/srv-cppbvt2j1k6c73801m9g?key=kEk2gCRoh1s
