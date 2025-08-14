@@ -1,25 +1,17 @@
-#require 'securerandom'
 
 class MatchingController < ApplicationController
-
-  # Redisクライアントのインスタンスを生成
-
   MATCHING_QUEUE_KEY = 'shogi:matching_queue' # Redisのリストキー
   GAME_ROOMS_HASH_KEY = 'shogi:game_rooms'    # Redisのハッシュキー
   GAME_ROOMS_KEY =""
   #DELETE_TIME=1000
   DELETE_TIME = 30 * 60 #30分を秒単位で定義・30分 * 60秒 = 1800秒
-  #def game_lobby_auto_matching
-  #end
 
   def game_lobby_matching_board
-        
     zeitwerk_enabled = Rails.autoloaders.zeitwerk_enabled?# Zeitwerkモードが有効化されているかを取得
     Rails.logger.info "Zeitwerk enabled: #{zeitwerk_enabled}"
 
     @matching_queue_length = $redis.llen(MATCHING_QUEUE_KEY)#現在のマッチング待ち人数を確認・キューの長さを確認
     @matching_queue_data = $redis.lrange(MATCHING_QUEUE_KEY, 0, -1)# 既存のキューから全てのデータを取得
-    #@room_game_data_json = $redis.hget(GAME_ROOMS_HASH_KEY, @room_id) #ゲームデータ
     
     #全てのゲームルームデータを取得
     @game_room_datas = {}
@@ -30,37 +22,13 @@ class MatchingController < ApplicationController
       end
     end
     @game_room_datas = @game_room_datas.to_json
-    puts "@game_room_datas:#{@game_room_datas}"
-=begin
-    # SCAN を使う
-    $redis.scan_each(match: "game_room:*", count: 100) do |key|
-      j = $redis.get(key)
-      @game_room_datas << JSON.parse(j, symbolize_names: true) if j
-    end
-    
-
-    game_rooms_hash = $redis.hgetall(GAME_ROOMS_HASH_KEY)
-
-    game_rooms_hash.each do |room_id, json_data|
-      @game_room_datas[room_id] = JSON.parse(json_data)
-    end
-    @game_room_datas = @game_room_datas.to_json
-    #@game_room_datas1 = @game_room_datas.deep_symbolize_keys
-    #@game_room_datas2 = @game_room_datas.transform_values { |v| v.transform_keys(&:to_sym) }
-    #game_room_datas = @game_room_datas.transform_keys(&:to_s).transform_values { |v| v.transform_keys(&:to_sym) }
-    #puts "@game_room_datas: #{ @game_room_datas1}"
-    #puts "@game_room_datas: #{ @game_room_datas2}"
-    #puts "@game_room_datas3: #{ @game_room_datas3}"
-    #@game_room_datas = @game_room_datas.deep_symbolize_keys #ハッシュからシンボルに変換("sente"=>"8f" を sente: "8f" みたいに変換)
-=end
   end
 
-  #このstartメソッドは、将棋のオンライン対戦における「マッチング機能」を実装しています。Redisのキューを使って2つのプレイヤーを待機させ、2人揃ったら対戦部屋を作成する仕組み
+  #このstartメソッドは、将棋のオンライン対戦における「マッチング機能」を実装・Redisのキューを使って2つのプレイヤーを待機させ、2人揃ったら対戦部屋を作成する仕組み
   #render json: {...}の値はJsのマッチ開始イベントのfetch内のresponse.json()で取得
   def start
     #各ユーザーは自身のユニークな識別子を持つ
     user_identifier = session.id.to_s # 現在のセッションIDをユーザー識別子として使用
-    #Rails.logger.info "user_identifier:#{user_identifier} "
 
     battleType = params[:battleType]
     userName = params[:userName]
@@ -73,7 +41,7 @@ class MatchingController < ApplicationController
       user_agent: request.user_agent,
       timestamp: Time.current.to_i
     }.to_json
-    Rails.logger.info "アクセスしてきたユーザー情報・user_info_json:#{user_info_json} "
+    #Rails.logger.info "アクセスしてきたユーザー情報・user_info_json:#{user_info_json} "
 
     #すでにマッチング中かどうかチェックし、まだマッチングしてないならRedisキューに追加する
     #Redis のマッチング待ちキューからすでに登録されている全データを取得する・$redis.lrange(MATCHING_QUEUE_KEY, 0, -1)で、マッチングキュー内の全ユーザー情報（JSON文字列）を取得
@@ -109,13 +77,13 @@ class MatchingController < ApplicationController
       # 2人のプレイヤーをキューから取り出す・先入れ先出し（FIFO） の順序で、待機キューの左端から2件をLPOPで取り出し
       player1_json = $redis.lpop(MATCHING_QUEUE_KEY)
       player2_json = $redis.lpop(MATCHING_QUEUE_KEY)
-      Rails.logger.info "player1_のデータ・player1_json：#{player1_json}"
-      Rails.logger.info "player2_のデータ・player2_json：#{player2_json}"
+      #Rails.logger.info "player1_のデータ・player1_json：#{player1_json}"
+      #Rails.logger.info "player2_のデータ・player2_json：#{player2_json}"
 
       #万一、片方のデータが nil（存在しない）場合には、予期せぬ競合状態として処理する
       if player1_json.nil? || player2_json.nil?
         # 稀に、もう一方のリクエストが先に処理してしまった場合など
-        Rails.logger.warn "同期マッチ中に2人の選手をキューからLPOPで取り出しできませんでした。nilでなければ再プッシュ。"
+        #Rails.logger.warn "同期マッチ中に2人の選手をキューからLPOPで取り出しできませんでした。nilでなければ再プッシュ。"
         $redis.rpush(MATCHING_QUEUE_KEY, player1_json) if player1_json
         $redis.rpush(MATCHING_QUEUE_KEY, player2_json) if player2_json
         # 再度マッチングを試すよう通知するか、in_progressを返す・render json:{...}の値はJsのマッチ開始イベントのfetch内のresponse.json()で取得
@@ -126,10 +94,8 @@ class MatchingController < ApplicationController
       #取り出したJSON文字列をパースし、シンボルキーを用いてRubyのハッシュに変換する
       player1_info = JSON.parse(player1_json).symbolize_keys
       player2_info = JSON.parse(player2_json).symbolize_keys
+      #Rails.logger.info "Popped player1: #{player1_info[:identifier]}, player2: #{player2_info[:identifier]}"
 
-      Rails.logger.info "Popped player1: #{player1_info[:identifier]}, player2: #{player2_info[:identifier]}"
-
-      
       # 先手と後手を決定・true/false のランダムでどちらが先手(sente)か後手(gote)を決める
       if [true, false].sample # ランダムに振り分け
         #この場合はplayer1が先手でplayer2が後手
@@ -148,8 +114,6 @@ class MatchingController < ApplicationController
         gote_user_agent = player1_info[:user_agent]
         gote_user_name = player1_info[:user_name]
       end
-
-
 
       # 一意な room_id を生成
       room_id = SecureRandom.uuid
@@ -171,12 +135,12 @@ class MatchingController < ApplicationController
       #$redis.hset(GAME_ROOMS_HASH_KEY, room_id, room_data.to_json)
       $redis.setex(game_rooms_key, DELETE_TIME, room_data.to_json)
       #$redis.expire(GAME_ROOMS_HASH_KEY, 30) # 30秒後に削除
-      Rails.logger.info "RedisにGameRoom#{room_id}が作成された。"
-      Rails.logger.info "Redisに入れたデータ：#{room_data.to_json}"
+      #Rails.logger.info "RedisにGameRoom#{room_id}が作成された。"
+      #Rails.logger.info "Redisに入れたデータ：#{room_data.to_json}"
 
       #マッチングのRedisデータからマッチング完了した2人だけを削除(他のマッチング中の人は消さない)
       #上の処理でlpopしてるからすでにデータから削除されてる？・LPOPを利用して先頭から2件取り出すと、自動的にリストから削除されます
-      Rails.logger.info "マッチング後の2人だけを除いたマッチングのRedisデータ：#{$redis.lrange(MATCHING_QUEUE_KEY, 0, -1)}" #キュー全体の内容を lrange で取得（0番目から最後まで）
+      #Rails.logger.info "マッチング後の2人だけを除いたマッチングのRedisデータ：#{$redis.lrange(MATCHING_QUEUE_KEY, 0, -1)}" #キュー全体の内容を lrange で取得（0番目から最後まで）
 
       #マッチング成立後の通知・各プレイヤーにマッチング成立をブロードキャスト
       #player1にマッチング成立後の通知
@@ -187,7 +151,7 @@ class MatchingController < ApplicationController
       #player2にマッチング成立後の通知
       #ActionCable.server.broadcast("personal_notification_#{player2_info[:identifier]}" ,{ status: 'matched', room_id: room_id, player_role: (player2_info[:identifier] == sente_identifier ? 'sente' : 'gote') })
       ActionCable.server.broadcast("personal_notification_#{player2_info[:identifier]}" ,{ status: 'matched', room_id: room_id, player_role: (player2_info[:identifier] == sente_identifier ? 'sente' : 'gote') , game_room_data: room_data.to_json })
-      Rails.logger.info "#{player2_info[:identifier]}にブロードキャストマッチした"
+      #Rails.logger.info "#{player2_info[:identifier]}にブロードキャストマッチした"
 
       # このリクエストを送信したユーザーへのレスポンス
       # マッチングが成立したので、その情報を返す
@@ -264,8 +228,6 @@ class MatchingController < ApplicationController
     #new_token = form_authenticity_token #セッションを削除するとセッションID（クッキー）が破棄され、Railsが内部的に保持しているCSRFトークンもリセットされるので新発行して渡す
     Rails.logger.info "マッチングのデータを全て削除する"
     $redis.del(MATCHING_QUEUE_KEY)
-    #$redis.del(GAME_ROOMS_HASH_KEY)
-    #$redis.del(GAME_ROOMS_HASH_KEY)
     #scan_eachを使って個別に削除
     $redis.scan_each(match: "game_room:*", count: 100) do |full_key|
       $redis.del(full_key)
@@ -299,14 +261,6 @@ class MatchingController < ApplicationController
     end
     
     #全てのルームのゲームデータを取得
-=begin
-    all_game_rooms_hash = $redis.hgetall(GAME_ROOMS_HASH_KEY)
-    all_room_game_data_json = {}
-    all_game_rooms_hash.each do |room_id, json_data|
-      all_room_game_data_json[room_id] = JSON.parse(json_data)
-    end
-    all_room_game_data_json = all_room_game_data_json.to_json
-=end
     all_room_game_data_json = {}
     $redis.scan_each(match: "game_room:*", count: 100) do |full_key|
       if (json_str = $redis.get(full_key))# Redis から JSON 文字列を取得
@@ -331,16 +285,6 @@ class MatchingController < ApplicationController
       puts "ゲームルームデータにユーザーのセッションIDが見つかりませんでした"
       data[:this_user_room_game_data] = false
     end
-=begin
-    if !room_id.nil?
-      #room_game_data_json = $redis.hget(GAME_ROOMS_HASH_KEY, room_id) #ゲームデータ
-      game_rooms_key = "game_room:#{room_id}"
-      this_user_room_game_data = $redis.get(game_rooms_key) #ゲームデータ
-      data[:this_user_room_game_data] = this_user_room_game_data
-    else
-      data[:this_user_room_game_data] = false
-    end
-=end
 
     data.to_json
     puts "data.to_json:#{data.to_json}"

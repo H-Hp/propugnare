@@ -7,13 +7,10 @@ class ShogiController < ApplicationController
     @room_id = params[:id]
     game_rooms_key = "game_room:#{@room_id}"
 
-    #if $redis.hget(game_rooms_key, @room_id).nil? # nil の場合、ゲームが終了している場合の処理
     if $redis.get(game_rooms_key).nil? # nil の場合、ゲームが終了している場合の処理
       redirect_to root_path
     else# データが存在する場合の処理
-      #a=$redis.get(MATCHING_QUEUE_KEY)
       # 特定のroom_idのデータを取得
-      #@game_room_data_json = $redis.hget(GAME_ROOMS_HASH_KEY, @room_id)
       @game_room_data_json = $redis.get(game_rooms_key)
       Rails.logger.info "redisからデータ取得: #{@game_room_data_json}"#redisからデータ取得: {"sente_identifier":"9a407895123bef7a65202dfb165a9aff","gote_identifier":"9f63ac8f86022e04a98aa62b8be8a737","status":"active","created_at":1750569827,"player1_user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36","player2_user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"}
       
@@ -59,8 +56,6 @@ class ShogiController < ApplicationController
       #session.delete(:player_role)
       #session.delete(:opponent_identifier)
     
-      #redis_board_key = "shogi_game:#{@game_id}"
-      #redis_chat_key = "shogi_game_chat:#{@game_id}"
       redis_board_key = "shogi_game:#{@room_id}"
       redis_chat_key = "shogi_game_chat:#{@room_id}"
     end
@@ -76,26 +71,4 @@ class ShogiController < ApplicationController
     game_state = RedisService.get_game_state(@game_id)
     Rails.logger.error "ShogiControllerのRedisServiceからの戻り値のgame_state:  #{game_state}"
   end
-
-=begin
-  def destroy
-    @room_id = params[:id]
-    redis_board_key = "shogi_game:#{@room_id}"
-    redis_chat_key = "shogi_game_chat:#{@room_id}"
-
-    begin
-      $redis.del(redis_board_key)
-      $redis.del(redis_chat_key)
-      $redis.hdel(GAME_ROOMS_HASH_KEY, @room_id)#このroom_idに対応したゲームルームのデータを削除
-
-      render json: { message: "room_id #{@room_id} 削除成功" }, status: :ok
-    rescue Redis::CannotConnectError => e
-      Rails.logger.error "APIからの削除時にRedis接続エラーが発生: #{e.message}"
-      render json: { error: "Redisの接続に失敗" }, status: :service_unavailable
-    rescue StandardError => e
-      Rails.logger.error "IDのゲームデータの削除に失敗 #{@room_id}: #{e.message}"
-      render json: { error: "予期せぬエラーが発生" }, status: :internal_server_error
-    end
-  end
-=end
 end

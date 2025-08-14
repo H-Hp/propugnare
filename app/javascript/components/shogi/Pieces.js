@@ -1,42 +1,18 @@
 class Piece {// 駒の基底クラス
   constructor(owner) {
-      this.owner = owner;// 駒の所有者（"先手" or "後手"）・駒の所有者（"先手"または"後手"）を初期化する
+    this.owner = owner;// 駒の所有者（"先手" or "後手"）・駒の所有者（"先手"または"後手"）を初期化する
   }
   getPiece() {// 成り駒を元の駒に戻す
-      //console.log("PieceクラスのgetPiece()メソッド");
-      return null;//基底クラスではnullを返す（具体的な駒のクラスで実装されることを想定）
-      
+    return null;//基底クラスではnullを返す（具体的な駒のクラスで実装されることを想定）
   }
   getPromotedPiece() { // 成り駒を取得
-      //console.log("PieceクラスのgetPromotedPiece()メソッド");
-      return null;// 基底クラスではnullを返す（具体的な駒のクラスで実装されることを想定）
+    return null;// 基底クラスではnullを返す（具体的な駒のクラスで実装されることを想定）
   }
 
   // staticキーワードが付いているため、このメソッドはクラスのインスタンスではなく、クラス自体から直接呼び出される (例: Piece.getPieceByName(...))
   // 駒の名前 (name) と所有者 (owner) を受け取り、対応する駒の新しいインスタンスを生成して返す「ファクトリーメソッド」
   static getPieceByName(name, owner) { // 駒の名前から対応する駒のインスタンスを生成
       switch (name) {// switch文でnameの値に基づいて処理を分岐
-/*          case "飛":
-              return new Rook(owner);// 新しいRook（飛車）のインスタンスを作成して返す
-          case "角":
-              return new Bishop(owner);
-          case "金":
-              return new GoldGeneral(owner);
-          case "銀":
-              return new SilverGeneral(owner);
-          case "桂":
-              return new Knight(owner);
-          case "香":
-              return new Lance(owner);
-          case "歩":
-              return new Pawn(owner);
-          case "王":
-              return new Gyoku(owner);
-          case "玉":
-              return new King(owner);
-          default:return null;
-          //default: return new Blank();
-          */
           case "王": return new King(owner);
           case "玉": return new King(owner); // 必要であれば玉も追加
           case "飛": return new Rook(owner);
@@ -216,6 +192,4 @@ class PromotedPawn extends Piece {
 }
 
 //export文: 他のJavaScriptファイルからこれらのクラスをインポートして利用できるようにする。これにより別のファイルで import { King, Rook } from './piece_classes.js'; のように記述して利用できる
-//export { Piece, Blank, King, Rook, Bishop, GoldGeneral, SilverGeneral, Knight, Lance, Pawn};
-//export { Piece, Blank, King, Gyoku, Rook, Bishop, GoldGeneral, SilverGeneral, Knight, Lance, Pawn, PromotedRook,PromotedBishop,PromotedSilverGeneral,PromotedKnight,PromotedLance,PromotedPawn};
 export { Piece, Blank, King, Gyoku, Rook, Bishop, GoldGeneral, SilverGeneral, Knight, Lance, Pawn, PromotedRook,PromotedBishop,PromotedSilverGeneral,PromotedKnight,PromotedLance,PromotedPawn }

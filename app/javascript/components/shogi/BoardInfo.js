@@ -1,12 +1,8 @@
-//import { Piece, Blank, King, Rook, Bishop, GoldGeneral, SilverGeneral, Knight, Lance, Pawn } from './Pieces';
 import { Piece, Blank, King, Gyoku, Rook, Bishop, GoldGeneral, SilverGeneral, Knight, Lance, Pawn, PromotedRook,PromotedBishop,PromotedSilverGeneral,PromotedKnight,PromotedLance,PromotedPawn } from './Pieces';
 
 class BoardInfo {
     // initialDataがない場合は、デフォルトの初期盤面を生成
     constructor(initialData = {}) {
-        //console.log("initialData:"+JSON.stringify(initialData))
-        //console.log("King:"+JSON.stringify(new King("後手")))
-        //console.log("Rook:"+Rook)
         // デフォルトの初期配置の配列
         const defaultBoard = [
             [new Lance("後手"), new Knight("後手"), new SilverGeneral("後手"), new GoldGeneral("後手"), new Gyoku("後手"), new GoldGeneral("後手"), new SilverGeneral("後手"), new Knight("後手"), new Lance("後手")],
@@ -28,9 +24,6 @@ class BoardInfo {
             "先手": [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
             "後手": [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()]
         };
-        //console.log("defaultPieceStandNum:"+JSON.parse(JSON.stringify(defaultPieceStandNum)))
-        //console.log("defaultPieceStand:"+JSON.parse(JSON.stringify(defaultPieceStand)))
-        //console.log("defaultBoard:"+JSON.stringify(defaultBoard))
 
         // initialData.board が存在しない、または配列でない場合はデフォルトボードを使用
         // 存在する場合はデシリアライズして復元
@@ -39,7 +32,6 @@ class BoardInfo {
         //console.log("initialData.board.board:"+JSON.stringify(initialData.BoardInfo.board))
         //console.log("initialData.board.board:"+JSON.stringify(JSON.parse(initialData.BoardInfo).board))
         //console.log("initialData.board.board:"+JSON.stringify(JSON.parse(initialData.BoardInfo).board))
-
         //console.log("defaultBoard:"+JSON.stringify(defaultBoard))
         //console.log("initialData:"+JSON.stringify(initialData))
 
@@ -154,11 +146,8 @@ class BoardInfo {
         };*/
     }
 
-    //boardClick(i, j) {
     boardClick(i, j,yourRole) {
-        //console.log("boardClickのyourRole:"+yourRole)
         if(yourRole!==this.nowTurn){//自分のターンじゃなければ操作できないように
-            //console.log("自分のターンじゃないので操作はできない")
             return
         }
             
@@ -555,16 +544,6 @@ class BoardInfo {
             pieceStand: serializedPieceStand,
         };
     }
-
-
-
-
-
-
-
-
-
-
 
 
 

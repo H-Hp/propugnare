@@ -4,12 +4,10 @@
 <%= stylesheet_link_tag 'shogi', media: 'all' %>
 <%= stylesheet_link_tag 'ShogiTimer', media: 'all' %>
 
-<!--
-react-rails というGemが提供するヘルパーメソッド react_component
+<!-- react-rails というGemが提供するヘルパーメソッド react_component
 shogi/indexはコンポーネント名でもいい・例えばShogiとか
 2つ目の引数はわたす値
 3つ目の引数レンダリングオプション（例：prerender: falseはサーバーサイドレンダリングを無効にする）-->
-<%#= react_component("shogi/index", {gameId: @game_id}, { prerender: false }) %>
 <%= react_component("shogi/index", {gameId: @game_id}) %>
 <div id="game-container" data-game-room-data=" <%= @game_room_data_json %>" data-logo-path="<%= image_path('Logo.png') %>" data-loadingimg-path="<%= image_path('game_back.gif') %>" data-gameback-path="<%= image_path('game_back6.gif') %>" data-game-id="<%= @game_id %>" data-room-id="<%= @room_id %>" data-your-role="<%= @your_role %>"  data-enemy-role="<%= @enemy_role %>" data-audience-user="<%= @audienceUser %>" >
 

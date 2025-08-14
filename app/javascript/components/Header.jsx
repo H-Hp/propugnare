@@ -90,25 +90,6 @@ const Header = ({ logoPath }) => {
             </select>
           </div>
 
-          {/*<a href="https://x.com/share?ref_src=twsrc%5Etfw" className="twitter-share-button fixed left-4 top-4 md:right-14 md:top-6 text-xl text-gray" data-show-count="false" data-text="Propugnare - プログラミングバトルアプリ" data-url="https://propugnare.online" data-size="summary" >ポスト</a><script async src="https://platform.x.com/widgets.js"></script>
-
-          <a
-            href={
-              // 古い `/share?` → 新しい `/intent/tweet?` に置き換え
-              `https://twitter.com/intent/tweet?` +
-              new URLSearchParams({
-                text: "Propugnare - プログラミングバトルアプリ",
-                url:  "https://propugnare.online"
-              }).toString()
-            }
-            target="_blank"
-            rel="noopener noreferrer"
-            className="twitter-share-button fixed left-4 top-4 md:right-14 md:top-6 text-xl text-gray hover:text-blue-600"
-            data-show-count="false"
-          >
-            シェアする
-          </a>*/}
-
           <a
             href={shareLink}
             target="_blank"
@@ -140,15 +121,5 @@ const Header = ({ logoPath }) => {
     </>
   );
 };
-
-/*
-document.addEventListener('turbolinks:load', () => {//urbolinks による初回ページロード時・Turbolinks によるページ遷移時・通常のブラウザリロード時 のすべてで発生します。
-  const rootElement = document.createElement('div');
-  //document.body.appendChild(rootElement);//bodyタグ内の一番下に挿れる
-  document.body.prepend(rootElement);//bodyタグ内の一番上に挿れる
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(<Header />);
-})
-*/
 
 export default Header;
