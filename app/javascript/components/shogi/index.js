@@ -616,7 +616,6 @@ class Room extends React.Component {
       alert("チャットサーバーに接続されていません。");
     }
   }
-  
   //チャットの開閉の表示を切り替えるメソッド
   toggleChat() {
     this.setState(prevState => ({

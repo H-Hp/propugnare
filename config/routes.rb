@@ -12,6 +12,7 @@ Rails.application.routes.draw do
   post 'matching/cancel', to: 'matching#cancel', as: :cancel_matching
   post 'matching/all_delete', to: 'matching#all_delete', as: :all_delete_matching_data #開発用のマッチングデータ削除用
   post 'matching/check', to: 'matching#check', as: :check_matching #デバッグ用
+  #post 'matching/lobby_comment_create', to: 'matching#lobby_comment_create', as: :lobby_comment_create
 
   get '/shogi/:id', to: 'shogi#index'
   delete '/shogi/:id/destroy', to: 'shogi#destroy'#試合終了後にデータ削除

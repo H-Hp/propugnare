@@ -10,6 +10,12 @@ class MatchingController < ApplicationController
     zeitwerk_enabled = Rails.autoloaders.zeitwerk_enabled?# Zeitwerkモードが有効化されているかを取得
     Rails.logger.info "Zeitwerk enabled: #{zeitwerk_enabled}"
 
+    #@comments = LobbyComment.all.to_json
+    @comments = LobbyComment.order(created_at: :desc)
+    puts "@comments: #{@comments}"
+    #puts "@comments: #{@comments.to_json}"
+    
+
     @matching_queue_length = $redis.llen(MATCHING_QUEUE_KEY)#現在のマッチング待ち人数を確認・キューの長さを確認
     @matching_queue_data = $redis.lrange(MATCHING_QUEUE_KEY, 0, -1)# 既存のキューから全てのデータを取得
     
@@ -302,9 +308,24 @@ class MatchingController < ApplicationController
     end
   end
 
+=begin
+  def lobby_comment_create
+    @comment = LobbyComment.new(lobby_comment_params)
+    if @comment.save
+      render json: @comment, status: :created
+    else
+      render json: @comment.errors, status: :unprocessable_entity
+    end
+  end
+=end
   private
 
   def contact_params
     params.require(:contact).permit(:message)
   end
+=begin
+  def lobby_comment_params
+    params.require(:lobby_comment).permit(:content)
+  end
+=end
 end

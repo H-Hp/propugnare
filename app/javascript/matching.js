@@ -18,12 +18,20 @@ class Matching extends React.Component {
     const allGameRoomDatas = Element.dataset.allGameroomdatas;
     const loadingimgPath = Element.dataset.loadingimgPath;
     const kingPath = Element.dataset.kingPath;
+    const lobbyComments = Element.dataset.lobbyComments;
+    console.log("lobbyComments:"+JSON.stringify(lobbyComments))
     //console.log("allGameRoomDatas:"+allGameRoomDatas)
 
+    JSON.parse(lobbyComments).forEach(comment => {
+      console.log(comment.content); // コンソール出力
+      //const li = document.createElement('li');
+      //document.body.appendChild(li);
+    });
 
     this.state = {
       allGameRoomDatas: allGameRoomDatas,
       logoPath: logoPath,
+      isConnected: false,
       gamebackPath: gamebackPath,
       loadingimgPath: loadingimgPath,
       isLoading: true,
@@ -37,8 +45,17 @@ class Matching extends React.Component {
       matchingQueueLength: 0, // マッチング待機人数
       loadingMessage: "マッチング中です...", // ローディングメッセージ
       roomLink: "#", // ゲームルームへのリンク
-      kingPath: kingPath
+      kingPath: kingPath,
+      isChatOpen: true,
+      //chatMessages: [], // 新しいstate: チャットメッセージを格納する配列
+      chatMessages: lobbyComments, 
+      currentChatMessage: '', // 新しいstate: 現在入力中のチャットメッセージ
+
     }
+
+    this.handleChatInputChange = this.handleChatInputChange.bind(this);
+    this.handleChatSubmit = this.handleChatSubmit.bind(this);
+    this.toggleChat = this.toggleChat.bind(this);  
 
     // Action Cable, Audio, Page Title の参照を管理するRef (インスタンスプロパティとして)
     this.matchingChannelRef = null; // Action Cable チャネルのインスタンス
@@ -295,12 +312,10 @@ class Matching extends React.Component {
   //一応相手に通知・matching_controller.rbでマッチングが成立した双方に通知送っているけどなぜか反映されないこともあるので再び相手に通知
   reNotificationEnemy(game_room_data, playerRole, roomId){
     if(!game_room_data){
-      console.log("あgame_room_data:"+JSON.stringify(game_room_data))
+      //console.log("あgame_room_data:"+JSON.stringify(game_room_data))
       const sente_identifier = JSON.parse(game_room_data).sente_identifier;
       const gote_identifier = JSON.parse(game_room_data).gote_identifier;
-      console.log("sente_identifier:"+sente_identifier)
-      console.log("gote_identifier:"+gote_identifier)
-      console.log("playerRole:"+playerRole)
+      //console.log("sente_identifier:"+sente_identifier);console.log("gote_identifier:"+gote_identifier);console.log("playerRole:"+playerRole)
 
       if(playerRole=="sente"){
         this.matchingChannelRef.perform('reNotificationEnemy', {
@@ -375,8 +390,17 @@ class Matching extends React.Component {
               isGameFound: false, // ゲーム見つかった状態をリセット
             });
             this.flashPageTitle('マッチング中...');
-          // pong受信時の処理（ハートビート応答）
-          }else if (data.type === 'pong') {
+          }else if(data.data_type=="chat_update"){
+            console.log(`data.chat_data:`, data.chat_data);
+            this.setState({ chatMessages: data.chat_data })
+            /*if (Array.isArray(data.chat_data)) {//配列かどうかチェック
+              this.setState({ chatMessages: data.chat_data }) //最初はdata.chat_dataが"aaa"みたいに配列になっていないので配列に変換してchatMessageに入れる
+            }else{
+              this.setState({ chatMessages: data.chat_data })
+            }*/
+            //console.log(`this.state.chatMessages：`, this.state.chatMessages);
+            return
+          }else if (data.type === 'pong') {// pong受信時の処理（ハートビート応答）
            //console.log('サーバーからpong受信 - 接続正常');
           }else if(data.status==="test"){
             console.log("テスト受信")
@@ -583,8 +607,62 @@ class Matching extends React.Component {
     });
   }
 
+  //チャット入力フィールドの値が変更された時にstateを更新
+  handleChatInputChange(event) {
+    this.setState({ currentChatMessage: event.target.value });
+  }
+  //チャットフォームが送信された時（「送信」ボタンクリックまたはEnterキー）
+  async handleChatSubmit(event) {
+    event.preventDefault(); // フォームのデフォルト送信（ページリロード）を防止
+    const { currentChatMessage } = this.state;
+    if (currentChatMessage.trim() === '') {
+      return; // 空のメッセージは送信しない
+    }
+    try {
+      //console.log("currentChatMessage:"+currentChatMessage)
+      /*const content = currentChatMessage;
+      const payload = { lobby_comment: { content } };
+      const response = await fetch('/matching/lobby_comment_create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': this.getCsrfToken()
+        },
+        body: JSON.stringify(payload)
+      }); 
+      const data = await response.json();
+      console.log(data)
+
+      */
+      if (this.matchingChannelRef && this.state.actionCableIsConnected) {
+        //非同期送信: WebSocketを通じてサーバーへメッセージを送信
+        this.matchingChannelRef.perform('chat_save_and_broadcast', { 
+          chat_data: currentChatMessage,
+        });
+        //this.subscription.sendChatMessage(currentChatMessage);
+        this.setState({ currentChatMessage: '' }); // 入力フィールドをクリア
+
+        setTimeout(() => {// 少し遅延させてDOMの更新を待ってチャットをスクロールして一番下のメッセージを表示
+          document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+        }, 100);
+        console.log("チャットメッセージを送信しました:", currentChatMessage);
+      } else {
+        console.warn("WebSocket接続が確立されていないため、メッセージを送信できません。");
+        alert("チャットサーバーに接続されていません。");
+      }
+    } catch (error) {
+      console.error('デバッグエラー:', error);
+    }
+  }
+  //チャットの開閉の表示を切り替えるメソッド
+  toggleChat() {
+    this.setState(prevState => ({
+      isChatOpen: !prevState.isChatOpen // 現在の状態を反転させる
+    }));
+  }
+
   render() {
-    const { loadingimgPath, isLoading, allGameRoomDatas ,gamebackPath, actionCableIsConnected, battleType, isMatching, isGameFound, matchingQueueLength, loadingMessage, roomLink , debugMassage,kingPath} = this.state;
+    const { loadingimgPath, isLoading, allGameRoomDatas ,gamebackPath, actionCableIsConnected, battleType, isMatching, isGameFound, matchingQueueLength, loadingMessage, roomLink , debugMassage,kingPath,isChatOpen,chatMessages,currentChatMessage} = this.state;
     
     // debug_dataを解析
     let debug_matchingQueueLength;
@@ -620,7 +698,7 @@ class Matching extends React.Component {
       <>
         <Header  logoPath={this.state.logoPath}  className="w-full"/>
 
-        <img src={kingPath} alt="Black King" id="King" className="z-10" />
+        <img src={kingPath} alt="Black King" id="King" className="z-10 cursor-move" />
 
         <div className={`h-[calc(100%-30px)] flex items-center justify-center from-indigo-500 to-purple-600 p-4  bg-no-repeat bg-cover bg-center bg-[url('${gamebackPath}')]`}>
           <div className="bg-[#696969] p-8 rounded-lg shadow-xl w-full max-w-md text-center">
@@ -842,6 +920,61 @@ class Matching extends React.Component {
                 })}
             </div>
           </div>
+
+            <div className={`chat-container ${isChatOpen ? '' : 'closed'}`} > {/* isChatOpen の状態に応じてクラスを適用 */}
+              {/* 開閉ボタン */}
+              <button
+                className={`chat-toggle-button bg-[#dc143c] hover:bg-[#b80f33] ${isChatOpen ? '' : 'pointer-events-auto'}`}
+                onClick={this.toggleChat} // クリックで開閉メソッドを呼び出す
+                aria-expanded={isChatOpen} // アクセシビリティのため
+                aria-controls="chat-messages-container" // 対象となるコンテナのID (chat-containerにIDを追加する場合)
+              >
+                {isChatOpen ? '>' : '<'} {/* isChatOpen の状態に応じてボタンのテキストを切り替える */}
+              </button>
+              
+              <div id="chat-messages" className="chat-messages">
+                {/*(() => {
+                  // もしchatMessagesが文字列の場合、配列に変換
+                  let messages = chatMessages;
+                  if (typeof chatMessages === 'string') {
+                    messages = chatMessages.split(',').map(msg => msg.trim());// カンマ区切りで文字列を分割
+                  }
+                  return Array.isArray(messages) ? (
+                    messages.map((message, index) => (
+                      <div key={index} className="chat-message p-2 mb-2 rounded">
+                        {message}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-red-500">メッセージがありません</p>
+                  );
+                })()
+                  
+                  {return JSON.parse(lobbyComments).forEach(comment => {
+                    <div className="chat-message p-2 mb-2 rounded">
+                      {comment}
+                    </div>
+                  }*/}
+                {
+                  JSON.parse(chatMessages).map((comment, index) => (
+                //JSON.parse(lobbyComments).map((comment, index) => (
+                  <div key={index} className="chat-message p-2 mb-2 rounded">
+                    {comment.content}
+                  </div>
+                ))}
+              </div>
+              <form id="chat-form" className="chat-form" onSubmit={this.handleChatSubmit}>
+                <input
+                  type="text"
+                  id="chat-input"
+                  placeholder="メッセージを送信"
+                  className="chat-input"
+                  value={currentChatMessage}
+                  onChange={this.handleChatInputChange}
+                />
+                {/*<button type="submit" className="chat-button">Send</button>*/}
+              </form>
+            </div>
 
 
             {/* デバッグモード */}

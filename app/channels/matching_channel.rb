@@ -22,6 +22,28 @@ class MatchingChannel < ApplicationCable::Channel
     Rails.logger.info "MatchingStatusChannel が解除されました。#{params[:identifier]}"
   end
 
+  def chat_save_and_broadcast(data)
+    chat_data = data['chat_data']
+    @comment = LobbyComment.new( content: chat_data )
+    if @comment.save
+      #レコードは10件まで保存でき、データが追加されると古いものから順に消す
+      comments_record_count = LobbyComment.count # 現在のレコード数を取得
+      if comments_record_count > 10 # レコード数が10件を超えた場合
+        #oldest_comments = LobbyComment.order(created_at: :asc).offset(10) # 作成日時が古いものから数えて、余分なレコードを取得・ oldest_commentsは、created_atで昇順に並べたレコードの11件目以降を取得
+        oldest_comments = LobbyComment.order(created_at: :desc).offset(10) # 作成日時が古いものから数えて、余分なレコードを取得・ oldest_commentsは、created_atで昇順に並べたレコードの11件目以降を取得
+        puts "oldest_comments: #{oldest_comments}"
+        oldest_comments.each do |comment| # 取得したレコードをすべて削除
+          puts "oldest_comment: #{comment}"
+          comment.destroy
+        end
+      end
+      updated_db_stored_data = LobbyComment.order(created_at: :desc)
+      ActionCable.server.broadcast( "matching_status",{ data_type: "chat_update", chat_data: updated_db_stored_data.to_json}) # 取得したデータをクライアントにブロードキャスト
+    else
+      Rails.logger.info "チャットセーブ失敗"
+    end
+  end
+
   #相手に一応マッチ成功の通知
   def reNotificationEnemy(data)
     game_room_data = data['game_room_data']

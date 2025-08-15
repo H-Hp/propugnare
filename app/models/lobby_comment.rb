@@ -1,0 +1,2 @@
+class LobbyComment < ApplicationRecord
+end

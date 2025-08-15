@@ -50,11 +50,6 @@ class ShogiGameChannel < ApplicationCable::Channel
 
     redis_key = "shogi_game:#{@game_id}"
     routing_key = "game.#{@room_id}.board_update"
-
-    #Rails.logger.info "Redisに値をセット・new_data： #{new_board_data}"
-    #Rails.logger.info "BoardInfo： #{boardInfo}"
-    #Rails.logger.info "@room_id： #{@room_id}・@game_id： #{@game_id}・redis_key： #{redis_key}"
-
     $redis.set(redis_key, new_board_data.to_json)#Redisに値をセット
     $redis.expire(redis_key, 10) #時間経過後に自動削除
 
@@ -71,12 +66,6 @@ class ShogiGameChannel < ApplicationCable::Channel
     redis_chat_key = "shogi_game_chat:#{game_id}"
     updated_redis_stored_data=""
     if $redis.exists?(redis_chat_key)
-      #redis_stored_data = $redis.get(redis_chat_key)
-      #Rails.logger.info "チャット・chat_data： #{redichat_datas_stored_data}"
-      #parsed_redis_stored_data = JSON.parse(redis_stored_data)#JSON文字列をRubyのハッシュにパース
-      #parsed_redis_stored_data["chatMessages"] = chat_data# 既存のハッシュにチャットデータを追加/ここでは、chatMessagesという新しいキーでチャットデータを追加します。
-      #updated_redis_stored_data = parsed_redis_stored_data.to_json#更新されたハッシュを再度JSON文字列に変換（必要に応じて）
-      #$redis.set(redis_chat_key,updated_redis_stored_data)#Redisに値をセット
       $redis.rpush(redis_chat_key, chat_data)
       $redis.expire(redis_chat_key, DELETE_TIME)#時間経過後に自動削除
       updated_redis_stored_data = $redis.lrange(redis_chat_key, 0, -1) #キーをリスト型としてデータ取得

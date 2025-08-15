@@ -2,6 +2,7 @@
 <script src="https://cdn.jsdelivr.net/npm/draggable@4.2.0/dist/draggable.min.js"></script>
 <%= stylesheet_link_tag 'shogi', media: 'all' %>
 <%= stylesheet_link_tag 'ShogiTimer', media: 'all' %>
+<%= stylesheet_link_tag 'chat', media: 'all' %>
 <!-- react-rails というGemが提供するヘルパーメソッド react_component・shogi/indexはコンポーネント名でもいい・例えばShogiとか・2つ目の引数はわたす値・3つ目の引数レンダリングオプション（例：prerender: falseはサーバーサイドレンダリングを無効にする）-->
 <%= react_component("shogi/index", {gameId: @game_id}) %>
 <div id="game-container" 

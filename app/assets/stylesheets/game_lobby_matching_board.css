@@ -15,7 +15,22 @@
     100% { transform: rotate(360deg); }
   }
 
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  bottom: 0px;
+  right: 0px;
+  height: 50vh;  /* ビューポートの高さの50% */
 
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-family: Arial, sans-serif;
+  background-color: #f9f9f9;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out; /* アニメーションを追加 */
+  position: relative;
+}
 
 
 .btn {

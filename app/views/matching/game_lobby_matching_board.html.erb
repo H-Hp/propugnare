@@ -1,5 +1,15 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/draggable@4.2.0/dist/draggable.min.js"></script>
+
+<ul>
+  <% @comments.each do |comment| %>
+    <li>
+      <%= comment.content %>
+      <small>(<%= comment.created_at.strftime("%Y-%m-%d %H:%M:%S") %>)</small>
+    </li>
+  <% end %>
+</ul>
+
 <div id="lobby-container" 
   data-session-id="<%= session.id.to_s %>" 
   data-all-gameroomdatas="<%= @game_room_datas %>" 
@@ -7,7 +17,9 @@
   data-king-path="<%= image_path('shogi/king.png') %>" 
   data-loadingimg-path="<%= image_path('game_back.gif') %>" 
   data-gameback-path="<%= image_path('game_back5.gif') %>" 
+  data-lobby-comments="<%= @comments.to_json %>"
 ></div>
 <!--"data-turbo-track": "reload"はTurboがファイルの変更を検知し、ページをリロードしてくれる-->
 <%= javascript_include_tag "matching", "data-turbo-track": "reload", defer: true, type: "module" %>
 <%= stylesheet_link_tag 'game_lobby_matching_board', media: 'all' %>
+<%= stylesheet_link_tag 'chat', media: 'all' %>
