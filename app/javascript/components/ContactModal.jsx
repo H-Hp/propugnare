@@ -6,8 +6,6 @@ const ContactModal = ({ onClose }) => {
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  console.log("aaaaa")
-
   const csrfToken = document
     .querySelector('meta[name="csrf-token"]')
     .getAttribute('content');

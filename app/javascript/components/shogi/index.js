@@ -2,22 +2,6 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 //import './index.css';
 
-import imgKing from "./img/black_king.png";
-import imgGyoku from "./img/black_king2.png"; // 玉の駒としてblack_king2.pngを使用
-import imgRook from "./img/black_rook.png";
-import imgBishop from "./img/black_bishop.png";
-import imgGoldGeneral from "./img/black_gold.png";
-import imgSilverGeneral from "./img/black_silver.png";
-import imgKnight from "./img/black_knight.png";
-import imgLance from "./img/black_lance.png";
-import imgPawn from "./img/black_pawn.png";
-import imgPromotedRook from "./img/black_dragon.png"; // 竜
-import imgPromotedBishop from "./img/black_horse.png"; // 馬
-import imgPromotedSilverGeneral from "./img/black_prom_silver.png";
-import imgPromotedKnight from "./img/black_prom_knight.png";
-import imgPromotedLance from "./img/black_prom_lance.png";
-import imgPromotedPawn from "./img/black_prom_pawn.png";
-
 import { BoardInfo, Selection } from './BoardInfo';
 import ShogiTimer from './ShogiTimer/ShogiTimer';
 import Header from '../Header.jsx';
@@ -26,22 +10,39 @@ import { withTranslation } from 'react-i18next';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '../../lang/i18n' 
 
+const element = document.querySelector('#game-container');
+const kingPath = element.dataset.kingPath;
+const gyokuPath = element.dataset.gyokuPath;
+const rookPath = element.dataset.rookPath;
+const bishopPath = element.dataset.bishopPath;
+const goldPath = element.dataset.goldPath;
+const silverPath = element.dataset.silverPath;
+const knightPath = element.dataset.knightPath;
+const lancePath = element.dataset.lancePath;
+const pawnPath = element.dataset.pawnPath;
+const dragonPath = element.dataset.dragonPath;
+const horsePath = element.dataset.horsePath;
+const prom_silverPath = element.dataset.prom_silverPath;
+const prom_knightPath = element.dataset.prom_knightPath;
+const prom_lancePath = element.dataset.prom_lancePath;
+const prom_pawnPath = element.dataset.prom_pawnPath;
+
 const imgByName = {
-  "王": imgKing,
-  "玉": imgGyoku,
-  "飛": imgRook,
-  "角": imgBishop,
-  "金": imgGoldGeneral,
-  "銀": imgSilverGeneral,
-  "桂": imgKnight,
-  "香": imgLance,
-  "歩": imgPawn,
-  "竜": imgPromotedRook,
-  "馬": imgPromotedBishop,
-  "成銀": imgPromotedSilverGeneral,
-  "成桂": imgPromotedKnight,
-  "成香": imgPromotedLance,
-  "と": imgPromotedPawn
+  "王": kingPath,
+  "玉": gyokuPath,
+  "飛": rookPath,
+  "角": bishopPath,
+  "金": goldPath,
+  "銀": silverPath,
+  "桂": knightPath,
+  "香": lancePath,
+  "歩": pawnPath,
+  "竜": dragonPath,
+  "馬": horsePath,
+  "成銀": prom_silverPath,
+  "成桂": prom_knightPath,
+  "成香": prom_lancePath,
+  "と": prom_pawnPath
 };
 
 function Square(props) {
@@ -238,9 +239,7 @@ class Room extends React.Component {
 
   //prevProps と prevState を引数として明示的に受け取る
   componentDidUpdate(prevProps, prevState) {
-    // shogiTimerRef.current が null から非nullになった、
-    // かつ bufferedInitialTimerState が存在する場合に適用を試みる
-    // if (this.shogiTimerRef.current && this.state.bufferedInitialTimerState && !prevState.bufferedInitialTimerState) {
+    // shogiTimerRef.current が null から非nullになった、かつ bufferedInitialTimerState が存在する場合に適用を試みる
     if (this.shogiTimerRef.current && this.state.bufferedInitialTimerState) {
         this.applyBufferedInitialTimerState();
     }
@@ -558,7 +557,7 @@ class Room extends React.Component {
     console.log('データを削除する');
     const { roomId } = this.state; // stateからroomIdを取得
     if (!roomId) {
-      alert("ルームIDが不明です。");
+      console.log("ルームIDが不明");
       return;
     }
     try {
@@ -569,7 +568,6 @@ class Room extends React.Component {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken
         },
-        //body: JSON.stringify({ game_id: 12345 })
       });
 
       const data = await response.json(); // await を使う
@@ -587,11 +585,9 @@ class Room extends React.Component {
         //window.location.href = '/'; // トップページへ戻る
       } else {
         console.error('削除失敗:', data.error || data.message);
-        alert('データの削除に失敗しました: ' + (data.error || data.message));
       }
     } catch (error) {
       console.error('リクエストエラー:', error);
-      alert('ネットワークエラーが発生しました。');
     }
   };
 
@@ -643,7 +639,6 @@ class Room extends React.Component {
   }
   declineRematch() {
     console.log("再対戦を拒否しました。");
-    //this.setState({ rematchRequest: false, isCheckmate: false, winner: "yet" });
     //window.location.href = '/';
     // サーバーに拒否したことを通知するAction Cableメッセージを送る
     this.setState({ rematchRequest: false});//再戦リクエストモーダルを非表示
@@ -656,7 +651,6 @@ class Room extends React.Component {
   // 時間切れ時に実行されるコールバック関数
    handleActionCableMessage(data) {
     //console.log("handleActionCableMessage(data):", data); // JSON.stringify(data) はオブジェクトを見にくくするので直接 data をログに出す
-    //console.log("this.shogiTimerRef.current before call:", this.shogiTimerRef.current); // ⭐ 追加
     switch (data.type) {
       case 'initial_timer_state':
         // ShogiTimerに初期状態を渡す (ShogiTimerが自身で状態を更新するように)
@@ -684,7 +678,6 @@ class Room extends React.Component {
         console.log("Unknown message type:", data.type);
     }
   }
-
 
   handleTimeUp(player) {
     //console.log(`${player} の時間切れです！ゲームを終了します。`);
@@ -760,9 +753,7 @@ class Room extends React.Component {
     //setStateを呼び出す前に、nowTurnとyourRoleを決定する
     let newNowTurn;
 
-    // yourRole に応じてyourRoleとenemyRoleを決定
-    // もしthis.stateが既に存在し、yourRoleの値が格納されているなら、それを使う
-    // ここでは、新しい対局の開始を想定して、this.propsか何かしらの初期値からyourRoleが渡されると仮定
+    // yourRole に応じてyourRoleとenemyRoleを決定・もしthis.stateが既に存在し、yourRoleの値が格納されているなら、それを使う・ここでは、新しい対局の開始を想定して、this.propsか何かしらの初期値からyourRoleが渡されると仮定
     let newYourRole;
     let newEnemyRole;
     if (this.state.yourRole === "先手") {
@@ -783,8 +774,7 @@ class Room extends React.Component {
     const { logoPath,gamebackPath,loadingimgPath, boardInfo, gameInfo, gameRoomData, moveHistory, nowTurn, isConnected, isLoading, loadingMessage, chatMessages, currentChatMessage, isChatOpen, yourRole, enemyRole, isCheck, isCheckmate,winner, winReason,rematch_sended,rematchRequest,decline_received,gameStatus, timeUpPlayer,debugMode ,audienceUser} = this.state;
     const roomId = this.state.roomId; // renderメソッド内でstateからroomIdを取得
 
-    // Action Cable の送信メソッド群を ShogiTimer に渡すオブジェクトを作成
-    // gameChannel がまだ null の可能性があるので ?. (オプショナルチェイニング) を使用
+    // Action Cable の送信メソッド群を ShogiTimer に渡すオブジェクトを作成・gameChannel がまだ null の可能性があるので ?. (オプショナルチェイニング) を使用
     const sendActions = {
       sendToggleTimer: (...args) => this.subscription?.sendToggleTimer(...args),
       sendSwitchTurn: (...args) => this.subscription?.sendSwitchTurn(...args),

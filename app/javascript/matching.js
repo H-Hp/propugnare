@@ -6,7 +6,8 @@ import Header from './components/Header.jsx';
 import { useState } from "react";
 import { withTranslation } from 'react-i18next';
 import { I18nextProvider } from 'react-i18next';
-import i18n from './lang/i18n' 
+import i18n from './lang/i18n';
+//import imgKing from "./components/shogi/img/black_king.png";
 
 class Matching extends React.Component {
   constructor(props) {
@@ -16,7 +17,9 @@ class Matching extends React.Component {
     const gamebackPath = Element.dataset.gamebackPath;
     const allGameRoomDatas = Element.dataset.allGameroomdatas;
     const loadingimgPath = Element.dataset.loadingimgPath;
+    const kingPath = Element.dataset.kingPath;
     //console.log("allGameRoomDatas:"+allGameRoomDatas)
+
 
     this.state = {
       allGameRoomDatas: allGameRoomDatas,
@@ -34,6 +37,7 @@ class Matching extends React.Component {
       matchingQueueLength: 0, // マッチング待機人数
       loadingMessage: "マッチング中です...", // ローディングメッセージ
       roomLink: "#", // ゲームルームへのリンク
+      kingPath: kingPath
     }
 
     // Action Cable, Audio, Page Title の参照を管理するRef (インスタンスプロパティとして)
@@ -413,8 +417,6 @@ class Matching extends React.Component {
       return false;
     }
     //console.log("consumer:", this.matchingChannelRef.consumer);
-    //console.log("connection:", this.matchingChannelRef.consumer?.connection);
-    //console.log("isOpen:", this.matchingChannelRef.consumer?.connection?.isOpen());
     return this.matchingChannelRef && this.matchingChannelRef.consumer?.connection?.isOpen();
   }
   // ハートビート機能の設定（接続維持）・定期的にサーバーにpingを送信
@@ -582,7 +584,7 @@ class Matching extends React.Component {
   }
 
   render() {
-    const { loadingimgPath, isLoading, allGameRoomDatas ,gamebackPath, actionCableIsConnected, battleType, isMatching, isGameFound, matchingQueueLength, loadingMessage, roomLink , debugMassage} = this.state;
+    const { loadingimgPath, isLoading, allGameRoomDatas ,gamebackPath, actionCableIsConnected, battleType, isMatching, isGameFound, matchingQueueLength, loadingMessage, roomLink , debugMassage,kingPath} = this.state;
     
     // debug_dataを解析
     let debug_matchingQueueLength;
@@ -598,6 +600,13 @@ class Matching extends React.Component {
 
     const { t } = this.props;
 
+    setTimeout(() => {// 少し遅延させてDOMの更新を待ってチャットをスクロールして一番下のメッセージを表示
+      const King = document.getElementById('King');// ドラッグしたい要素を取得
+      if (King) {
+        new Draggable(King);// Draggable.js のインスタンスを作成し、要素をドラッグ可能にする// 'new Draggable()' の引数にドラッグ対象の要素を渡します。
+      }
+    }, 100);
+
     if (isLoading) {
       return (
         <div id="loading-overlay" className={`bg-[url('${loadingimgPath}')] bg-no-repeat bg-cover bg-center`}>
@@ -610,10 +619,12 @@ class Matching extends React.Component {
     return (
       <>
         <Header  logoPath={this.state.logoPath}  className="w-full"/>
-        
+
+        <img src={kingPath} alt="Black King" id="King" className="z-10" />
+
         <div className={`h-[calc(100%-30px)] flex items-center justify-center from-indigo-500 to-purple-600 p-4  bg-no-repeat bg-cover bg-center bg-[url('${gamebackPath}')]`}>
           <div className="bg-[#696969] p-8 rounded-lg shadow-xl w-full max-w-md text-center">
-            <h1 className="text-3xl font-extrabold text-white mb-6">aああ{t('matching.title')}</h1>
+            <h1 className="text-3xl font-extrabold text-white mb-6"> {t('matching.title')} </h1>
             <div className="mb-6">
               <label className="mr-4 text-white">
                 <input
@@ -838,7 +849,7 @@ class Matching extends React.Component {
               <div
                 className="w-[70%] h-[50%] fixed top-7 left-4 opacity-85 bg-black overflow-auto"
               >
-<h3>Version1</h3>
+
                 {(() => {
                   try {
                     if (debugMassage) {
@@ -899,6 +910,7 @@ class Matching extends React.Component {
                         
                         return (
                           <div>
+                            <h3 className="text-white">Version4</h3>
                             <h1 className="text-white">
                               現在のマッチング人数: {matchingQueueLength}人
                             </h1>
