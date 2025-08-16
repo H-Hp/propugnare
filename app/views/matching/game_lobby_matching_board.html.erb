@@ -1,15 +1,5 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/draggable@4.2.0/dist/draggable.min.js"></script>
-
-<ul>
-  <% @comments.each do |comment| %>
-    <li>
-      <%= comment.content %>
-      <small>(<%= comment.created_at.strftime("%Y-%m-%d %H:%M:%S") %>)</small>
-    </li>
-  <% end %>
-</ul>
-
 <div id="lobby-container" 
   data-session-id="<%= session.id.to_s %>" 
   data-all-gameroomdatas="<%= @game_room_datas %>" 

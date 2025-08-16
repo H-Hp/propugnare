@@ -60,21 +60,27 @@ class ShogiGameChannel < ApplicationCable::Channel
   end
 
   def chat_broadcast_and_store(data)
-    chat_data = data['chat_data']
+    chat_text = data['chat_data']
+    yourUsername = data['yourUsername']
     room_id = data['room_id']
     game_id = data['game_id']
     redis_chat_key = "shogi_game_chat:#{game_id}"
+    chat_data = {
+      username: yourUsername,
+      chat_text:  chat_text
+    }
     updated_redis_stored_data=""
     if $redis.exists?(redis_chat_key)
-      $redis.rpush(redis_chat_key, chat_data)
+      $redis.rpush(redis_chat_key, chat_data.to_json)
       $redis.expire(redis_chat_key, DELETE_TIME)#時間経過後に自動削除
       updated_redis_stored_data = $redis.lrange(redis_chat_key, 0, -1) #キーをリスト型としてデータ取得
     else
-      $redis.rpush(redis_chat_key, chat_data)
+      $redis.rpush(redis_chat_key, chat_data.to_json)
       $redis.expire(redis_chat_key, DELETE_TIME)#時間経過後に自動削除
       updated_redis_stored_data=chat_data
     end
     # 取得したデータをクライアントにブロードキャスト
+    puts "updated_redis_stored_data: #{updated_redis_stored_data}"
     ActionCable.server.broadcast( "shogi_game_room_#{room_id}",{ data_type: "chat_update", chat_data: updated_redis_stored_data})
   end
 

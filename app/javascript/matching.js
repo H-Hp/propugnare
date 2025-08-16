@@ -1043,7 +1043,7 @@ class Matching extends React.Component {
                         
                         return (
                           <div>
-                            <h3 className="text-white">Version4</h3>
+<h3 className="text-white">Version6</h3>
                             <h1 className="text-white">
                               現在のマッチング人数: {matchingQueueLength}人
                             </h1>

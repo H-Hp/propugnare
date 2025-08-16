@@ -129,6 +129,7 @@ class Room extends React.Component {
     const gamebackPath = element.dataset.gamebackPath;
     const loadingimgPath = element.dataset.loadingimgPath;
     const audienceUser = element.dataset.audienceUser;
+    const yourUsername = element.dataset.yourUsername;
     //console.log("audienceUser: "+audienceUser)
 
     this.state = {
@@ -140,6 +141,7 @@ class Room extends React.Component {
       gameInfo: {},
       gameRoomData: gameRoomData,
       moveHistory: [],
+      yourUsername: yourUsername,
       nowTurn: '先手',
       isConnected: false,
       gameId: gameId,
@@ -366,6 +368,7 @@ class Room extends React.Component {
             //console.log(`data.chat_data:`, data.chat_data);
             if (Array.isArray(data.chat_data)) {//配列かどうかチェック
               //最初はdata.chat_dataが"aaa"みたいに配列になっていないので配列に変換してchatMessageに入れる
+              console.log("data.chat_data: ",data.chat_data)
               this.setState({ chatMessages: data.chat_data }, () => {
                   //console.log("state 更新後:", this.state.chatMessages);
               });
@@ -439,6 +442,7 @@ class Room extends React.Component {
           //console.log(`sendChatMessageメソッド・chat_data:${chat_data}`);
           this.subscription.perform('chat_broadcast_and_store', { 
             chat_data: chat_data,
+            yourUsername: this.state.yourUsername,
             room_id: this.state.roomId,
             game_id: this.state.gameId 
           });
@@ -963,18 +967,57 @@ class Room extends React.Component {
                 {(() => {
                   // もしchatMessagesが文字列の場合、配列に変換
                   let messages = chatMessages;
-                  if (typeof chatMessages === 'string') {
+                  console.log("messages:",messages)
+                  console.log("typeof chatMessages:",typeof chatMessages)
+                  /*if (typeof chatMessages === 'string') {
                     messages = chatMessages.split(',').map(msg => msg.trim());// カンマ区切りで文字列を分割
+                    return Array.isArray(messages) ? (
+                      messages.map((message, index) => (
+                        <div key={index} className="chat-message p-2 mb-2 rounded">
+                          <strong>{JSON.parse(message).username}</strong>: {JSON.parse(message).chat_text}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-red-500">メッセージがありません</p>
+                    );
+                  }else if (typeof messages === "object" && messages !== null) {
+                      console.log("messagesgg:"+messages)
+                      // 単一オブジェクトの場合
+                      return (
+                        <div className="chat-message p-2 mb-2 rounded bg-gray-100">
+                          <strong>{messages.username}</strong>: {messages.chat_text}
+                        </div>
+                      );
+                  }*/
+                  let parsedMessages = [];
+                  if (typeof messages === "string") {
+                    try {
+                      parsedMessages = JSON.parse(messages); // 文字列ならパース
+                    } catch (e) {
+                      console.error("JSONパース失敗:", e);
+                      return null;
+                    }
+                  } else if (Array.isArray(messages)) {
+                    parsedMessages = messages; // すでに配列ならそのまま
+                  } else {
+                    parsedMessages = [messages]; // 単一オブジェクトなら配列に変換
                   }
-                  return Array.isArray(messages) ? (
-                    messages.map((message, index) => (
-                      <div key={index} className="chat-message p-2 mb-2 rounded">
-                        {message}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-red-500">メッセージがありません</p>
+                  console.log("parsedMessages:",parsedMessages)
+
+                  return (
+                    <>
+                      {parsedMessages.map((msg, index) => {
+                          // msgが文字列ならパース、オブジェクトならそのまま使う
+                          const data = typeof msg === "string" ? JSON.parse(msg) : msg;
+                        return (
+                        <div key={index} className="chat-message p-2 mb-2 rounded bg-gray-100">
+                          <strong>{data.username}</strong>: {data.chat_text}
+                        </div>
+                        );
+                    })}
+                    </>
                   );
+
                 })()}
               </div>
               <form id="chat-form" className="chat-form" onSubmit={this.handleChatSubmit}>
