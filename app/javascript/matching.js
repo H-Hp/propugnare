@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { createRoot } from 'react-dom/client';
 import consumer from './channels/consumer.js';
 import Header from './components/Header.jsx'; 
+import LoadingOverlay from "./components/LoadingOverlay.jsx";
 import { useState } from "react";
 import { withTranslation } from 'react-i18next';
 import { I18nextProvider } from 'react-i18next';
@@ -19,18 +20,16 @@ class Matching extends React.Component {
     const loadingimgPath = Element.dataset.loadingimgPath;
     const kingPath = Element.dataset.kingPath;
     const lobbyComments = Element.dataset.lobbyComments;
-    console.log("lobbyComments:"+JSON.stringify(lobbyComments))
+    const lobby_bgmPath = Element.dataset.lobby_bgmPath;
+    const notificationPath = Element.dataset.notificationPath;
+    //console.log("lobbyComments:"+JSON.stringify(lobbyComments))
     //console.log("allGameRoomDatas:"+allGameRoomDatas)
-
-    JSON.parse(lobbyComments).forEach(comment => {
-      console.log(comment.content); // コンソール出力
-      //const li = document.createElement('li');
-      //document.body.appendChild(li);
-    });
 
     this.state = {
       allGameRoomDatas: allGameRoomDatas,
       logoPath: logoPath,
+      lobby_bgmPath: lobby_bgmPath,
+      notificationPath: notificationPath,
       isConnected: false,
       gamebackPath: gamebackPath,
       loadingimgPath: loadingimgPath,
@@ -64,6 +63,8 @@ class Matching extends React.Component {
 
     this.audioContextRef = null; // AudioContext のインスタンス
     this.notificationSoundBufferRef = null; // 通知音のオーディオバッファ
+    //this.lobbyBgmSoundBufferRef = null;
+    this.lobbyBgmAudioRef = React.createRef();
     this.originalPageTitleRef = document.title; // 元のページタイトル (初期値として直接設定)
     this.titleIntervalRef = null; // タイトル点滅の setInterval ID
     this.sessionIdRef = null; // 現在のクライアントセッションID
@@ -77,7 +78,8 @@ class Matching extends React.Component {
 
     // メソッドのバインド (useCallback の代わりに)
     this.getCsrfToken = this.getCsrfToken.bind(this);
-    this.setupAudio = this.setupAudio.bind(this);
+    this.setupNotificationAudio = this.setupNotificationAudio.bind(this);
+    //this.setupBgmAudio= this.setupBgmAudio.bind(this);
     this.playNotificationSound = this.playNotificationSound.bind(this);
     this.flashPageTitle = this.flashPageTitle.bind(this);
     this.stopFlashingPageTitle = this.stopFlashingPageTitle.bind(this);
@@ -105,6 +107,9 @@ class Matching extends React.Component {
   }
   componentDidMount() {// コンポーネントがマウントされた後に一度だけ実行される
     this.initializeMatchingSystem();
+    //this.setupBgmAudio();
+    this.playBgmSound()
+    //this.initBgm()
 
     // visibilitychange イベントリスナー
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
@@ -158,13 +163,14 @@ class Matching extends React.Component {
   }
 
   // AudioContextと音源の準備
-  async setupAudio() {
+  async setupNotificationAudio() {
     if (!this.audioContextRef) {
       this.audioContextRef = new (window.AudioContext || window.webkitAudioContext)();
     }
     if (!this.notificationSoundBufferRef) {
       try {
-        const response = await fetch('/assets/notification.mp3');
+        //const response = await fetch('/assets/notification.mp3');
+        const response = await fetch(this.state.notificationPath);
         const arrayBuffer = await response.arrayBuffer();
         this.notificationSoundBufferRef = await this.audioContextRef.decodeAudioData(arrayBuffer);
         console.log("通知音源をロードしました。");
@@ -173,6 +179,28 @@ class Matching extends React.Component {
       }
     }
   }
+
+  /*async initBgm() {
+    await this.setupBgmAudio();   // ロードが完了するまで待つ
+    this.playBgmSound();          // 準備ができてから再生
+  }*/
+  // AudioContextと音源の準備
+  /*async setupBgmAudio() {
+    if (!this.audioContextRef) {
+      this.audioContextRef = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (!this.lobbyBgmSoundBufferRef) {
+      try {
+        const lobby_bgm_response = await fetch(this.state.lobby_bgmPath);
+        //const lobby_bgm_response = await fetch('/assets/lobby_bgm.mp3');
+        const lobby_bgm_arrayBuffer = await lobby_bgm_response.arrayBuffer();
+        this.lobbyBgmSoundBufferRef = await this.audioContextRef.decodeAudioData(lobby_bgm_arrayBuffer);
+        console.log("BGMをロードしました。");
+      } catch (e) {
+        console.error("BGMのロードまたはデコードに失敗しました:", e);
+      }
+    }
+  }*/
 
   // 通知音を再生する処理
   playNotificationSound() {
@@ -185,6 +213,53 @@ class Matching extends React.Component {
     } else {
       console.warn("通知音を再生できません。オーディオコンテキストまたはバッファが未準備です。");
     }
+  }
+
+  //BGMを再生する処理
+  playBgmSound() {
+    /*if (this.audioContextRef && this.lobbyBgmSoundBufferRef) {
+      const source = this.audioContextRef.createBufferSource();
+      source.buffer = this.lobbyBgmSoundBufferRef;
+      source.connect(this.audioContextRef.destination);
+      source.start(0);
+      console.log("BGMを再生しました。");
+    } else {
+      console.warn("BGMを再生できません。オーディオコンテキストまたはバッファが未準備です。");
+    }*/
+    
+    //const audio = new Audio(this.state.lobby_bgmPath);
+    const audio = this.lobbyBgmAudioRef.current
+    //const audio = document.getElementById("lobby_bgm");
+    if (!audio) return;
+    audio.loop = true;
+    audio.volume = 0; // 無音で開始
+    audio.play().then(() => {
+      console.log("サイレント自動再生 OK");
+      // 少し待ってから音量を上げる（フェードイン）
+      setTimeout(() => {
+        audio.volume = 0.7;
+      }, 1000);
+    }).catch(err => {
+      console.warn("自動再生がブロックされました。ユーザー操作を待機中です。:"+err);
+      // ブロックされたらクリック時に再生
+      document.addEventListener("click", () => {
+        console.log(" ブロックされたらクリック時に再生");
+        audio.volume = 0.7; // ← 音量を上げてから
+        audio.play();
+      }, { once: true });
+    });
+    
+    /*this.audio = new Audio(this.state.lobby_bgmPath);
+    this.audio.loop = true;
+    this.audio.volume = 0.3;
+
+    // 自動再生を試みる
+    this.audio
+      .play()
+      .catch((e) => {
+        console.warn('Autoplay blocked, will wait for user interaction', e);
+      });
+      */
   }
 
   // ブラウザのタブタイトルを点滅させる
@@ -474,7 +549,8 @@ class Matching extends React.Component {
 
   //マッチング開始
   async handleStartMatching() {
-    this.setupAudio(); // ユーザー操作でオーディオを準備
+    //this.setupAudio(); // ユーザー操作でオーディオを準備
+    this.setupNotificationAudio(); 
     this.setState({
       isMatching: true,
       isGameFound: false,
@@ -662,7 +738,7 @@ class Matching extends React.Component {
   }
 
   render() {
-    const { loadingimgPath, isLoading, allGameRoomDatas ,gamebackPath, actionCableIsConnected, battleType, isMatching, isGameFound, matchingQueueLength, loadingMessage, roomLink , debugMassage,kingPath,isChatOpen,chatMessages,currentChatMessage} = this.state;
+    const { loadingimgPath,lobby_bgmPath, isLoading, allGameRoomDatas ,gamebackPath, actionCableIsConnected, battleType, isMatching, isGameFound, matchingQueueLength, loadingMessage, roomLink , debugMassage,kingPath,isChatOpen,chatMessages,currentChatMessage} = this.state;
     
     // debug_dataを解析
     let debug_matchingQueueLength;
@@ -678,7 +754,13 @@ class Matching extends React.Component {
 
     const { t } = this.props;
 
-    setTimeout(() => {// 少し遅延させてDOMの更新を待ってチャットをスクロールして一番下のメッセージを表示
+    setTimeout(() => {// 少し遅延させてスクロールさせてチャットの一番下のメッセージを表示
+      if (document.getElementById('chat-messages') && document.getElementById('chat-messages').scrollHeight !== undefined){
+        document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+      }
+    }, 100);
+
+    setTimeout(() => {
       const King = document.getElementById('King');// ドラッグしたい要素を取得
       if (King) {
         new Draggable(King);// Draggable.js のインスタンスを作成し、要素をドラッグ可能にする// 'new Draggable()' の引数にドラッグ対象の要素を渡します。
@@ -687,21 +769,26 @@ class Matching extends React.Component {
 
     if (isLoading) {
       return (
-        <div id="loading-overlay" className={`bg-[url('${loadingimgPath}')] bg-no-repeat bg-cover bg-center`}>
-          <div className="spinner"></div>
-          <p className="ml-4 text-xl text-white">{loadingMessage}</p>
-        </div>
+        <LoadingOverlay loadingimgPath={loadingimgPath} loadingMessage={loadingMessage} />
       );
     }
 
     return (
-      <>
+      <div className={`w-full h-full bg-no-repeat bg-cover bg-center bg-[url('${gamebackPath}')]`} >
         <Header  logoPath={this.state.logoPath}  className="w-full"/>
 
-        <img src={kingPath} alt="Black King" id="King" className="z-10 cursor-move" />
+        <img src={kingPath} alt="Black King" id="King" className="z-10 cursor-move w-[50px] h-[50px]" />
 
-        <div className={`h-[calc(100%-30px)] flex items-center justify-center from-indigo-500 to-purple-600 p-4  bg-no-repeat bg-cover bg-center bg-[url('${gamebackPath}')]`}>
-          <div className="bg-[#696969] p-8 rounded-lg shadow-xl w-full max-w-md text-center">
+        <div 
+          className={` 
+            flex items-center p-4  
+            ${!isChatOpen ? '' : 'w-[70%]'}
+          `}>
+          <div 
+            className="
+              p-8 rounded-lg shadow-xl w-full max-w-md text-center
+              bg-gradient-to-br from-black via-gray-800 to-gray-900
+          ">
             <h1 className="text-3xl font-extrabold text-white mb-6"> {t('matching.title')} </h1>
             <div className="mb-6">
               <label className="mr-4 text-white">
@@ -737,8 +824,8 @@ class Matching extends React.Component {
                   value={this.state.username}
                   onChange={this.handleUsernameChange}
                   placeholder="ニックネーム"
-                  className="border p-2 rounded"
-                />さん
+                  className="border p-2 rounded text-white"
+                />
                 <button
                   id="startMatchingButton"
                   className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full text-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300"
@@ -785,18 +872,19 @@ class Matching extends React.Component {
               </div>
             )}
           </div>
+        </div>
 
           <div
-            className={` text-white
-            whitespace-pre    /* 改行をそのまま反映、折り返しも無効 */
-            font-mono         /* 等幅フォントで見やすく */
-            text-sm
-            bg-black
-            p-3
-            border border-gray-200
-            overflow-auto   /* 横長のときはスクロール */
-            bg-[url('${gamebackPath}')]
-            bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6
+            className={` 
+              text-white
+              whitespace-pre    /* 改行をそのまま反映、折り返しも無効 */
+              font-mono         /* 等幅フォントで見やすく */
+              text-sm
+              p-3
+              overflow-auto   /* 横長のときはスクロール */
+              bg-gradient-to-br from-black via-gray-800 to-gray-900
+              p-6
+              ${!isChatOpen ? '' : 'w-[50%]'}
             `}
           >
             {/* ヘッダー */}
@@ -921,15 +1009,40 @@ class Matching extends React.Component {
             </div>
           </div>
 
-            <div className={`chat-container ${isChatOpen ? '' : 'closed'}`} > {/* isChatOpen の状態に応じてクラスを適用 */}
+
+
+
+
+
+
+            <div 
+              className={`
+                chat-container 
+                fixed 
+                top-[30px]
+                right-0 
+                min-w-[300px] 
+                max-w-[350px] 
+                flex 
+                flex-col 
+                h-[calc(100%-30px)]
+                font-sans 
+                bg-[#18181b] 
+                shadow-[0_4px_12px_rgba(0,0,0,0.1)] 
+                transition 
+                duration-300 
+                ease-out 
+                transform 
+                opacity-100
+                ${isChatOpen ? '' : 'closed'}`} > {/* isChatOpen の状態に応じてクラスを適用 */}
               {/* 開閉ボタン */}
               <button
-                className={`chat-toggle-button bg-[#dc143c] hover:bg-[#b80f33] ${isChatOpen ? '' : 'pointer-events-auto'}`}
+                className={`chat-toggle-button bg-[#18181b] hover:bg-[#27272a] ${isChatOpen ? '' : 'pointer-events-auto'}`}
                 onClick={this.toggleChat} // クリックで開閉メソッドを呼び出す
                 aria-expanded={isChatOpen} // アクセシビリティのため
                 aria-controls="chat-messages-container" // 対象となるコンテナのID (chat-containerにIDを追加する場合)
               >
-                {isChatOpen ? '>' : '<'} {/* isChatOpen の状態に応じてボタンのテキストを切り替える */}
+                {isChatOpen ? '→' : '←'} {/* isChatOpen の状態に応じてボタンのテキストを切り替える */}
               </button>
               
               <div id="chat-messages" className="chat-messages">
@@ -956,19 +1069,23 @@ class Matching extends React.Component {
                     </div>
                   }*/}
                 {
-                  JSON.parse(chatMessages).map((comment, index) => (
+                //JSON.parse(chatMessages).map((comment, index) => (
+                JSON.parse(chatMessages).slice().reverse().map((comment, index) => (
                 //JSON.parse(lobbyComments).map((comment, index) => (
-                  <div key={index} className="chat-message p-2 mb-2 rounded">
+                  <div key={index} className="chat-message p-2 mb-2 rounded text-white text-[11px]">
                     {comment.content}
                   </div>
                 ))}
               </div>
-              <form id="chat-form" className="chat-form" onSubmit={this.handleChatSubmit}>
+              <form id="chat-form" 
+                className="chat-form bg-[#18181b]" 
+                onSubmit={this.handleChatSubmit}>
                 <input
                   type="text"
                   id="chat-input"
                   placeholder="メッセージを送信"
-                  className="chat-input"
+                  className="chat-input text-white"
+                  autoComplete="off"
                   value={currentChatMessage}
                   onChange={this.handleChatInputChange}
                 />
@@ -976,209 +1093,224 @@ class Matching extends React.Component {
               </form>
             </div>
 
+        <audio 
+          src={lobby_bgmPath}
+          ref={this.lobbyBgmAudioRef}
+          id="lobby_bgm" 
+          controls 
+          loop
+          className="fixed bottom-4 left-4"
+        />
 
-            {/* デバッグモード */}
-            {this.state.debugMode && (
-              <div
-                className="w-[70%] h-[50%] fixed top-7 left-4 opacity-85 bg-black overflow-auto"
-              >
 
-                {(() => {
-                  try {
-                    if (debugMassage) {
-                      // データ1とデータ2の両方に対応
-                      let debugData;
-                      
-                      // debugMassageが文字列の場合はパース、オブジェクトの場合はそのまま使用
-                      if (typeof debugMassage === 'string') {
-                        const parsedDebugData = JSON.parse(debugMassage);
-                        debugData = parsedDebugData.check_data;
-                      } else {
-                        debugData = debugMassage.check_data;
-                      }
-                      
-                      if (debugData) {
-                        // debug_dataが文字列の場合はパース、オブジェクトの場合はそのまま使用
-                        let finalDebugData;
-                        if (typeof debugData === 'string') {
-                          finalDebugData = JSON.parse(debugData);
-                        } else {
-                          finalDebugData = debugData;
-                        }
-                        
-                        const matchingQueueLength = finalDebugData.matching_queue_length;
-                        const matchingQueueData_json = finalDebugData.matching_queue_data;
-                        
-                        // matching_queue_dataの最初の要素を取得
-                        let identifier, user_agent, username;
-                        if (matchingQueueData_json && matchingQueueData_json.length > 0) {
-                          const firstQueueItem = typeof matchingQueueData_json[0] === 'string' 
-                            ? JSON.parse(matchingQueueData_json[0]) 
-                            : matchingQueueData_json[0];
-                          identifier = firstQueueItem.identifier;
-                          user_agent = firstQueueItem.user_agent;
-                          username   = firstQueueItem.user_name;
-                        }
-                        
-                        // this_user_room_game_dataが存在する場合の処理（データ2の場合）
-                        let roomGameData = null;
-                        if (finalDebugData.this_user_room_game_data) {
-                          try {
-                            roomGameData = typeof finalDebugData.this_user_room_game_data === 'string' 
-                              ? JSON.parse(finalDebugData.this_user_room_game_data)
-                              : finalDebugData.this_user_room_game_data;
-                          } catch (error) {
-                            console.error('this_user_room_game_data解析エラー:', error);
-                          }
-                        }
+        {/* デバッグモード */}
+        {this.state.debugMode && (
+          <div
+            className="w-[70%] h-[50%] fixed top-7 left-4 opacity-85 bg-black overflow-auto"
+          >
 
-                        //let AllRoomGameData = null;
-                        if (finalDebugData.all_room_game_data_json) {
-                          try {
-                            allGameRoomDatas_json = JSON.parse(finalDebugData.all_room_game_data_json)
-                          } catch (error) {
-                            console.error('all_room_game_data_json解析エラー:', error);
-                          }
-                        }
-                        
-                        return (
-                          <div>
-<h3 className="text-white">Version6</h3>
-                            <h1 className="text-white">
-                              現在のマッチング人数: {matchingQueueLength}人
-                            </h1>
-                            <h1 className="text-white">
-                              username: {username || '不明'}
-                            </h1>
-                            <h1 className="text-white">
-                              identifier: {identifier || '不明'}
-                            </h1>
-                            <h1 className="text-white">
-                              user_agent: {user_agent || '不明'}
-                            </h1>
-                            
-                            {/* room_game_data_jsonが存在する場合の追加情報（データ2の場合） */}
-                            {roomGameData && (
-                              <div className="mt-4">
-                                <h2 className="text-yellow-300">このユーザーのゲーム情報:</h2>
-                                <p className="text-white">
-                                  先手の{roomGameData.sente_user_name}さん: {roomGameData.sente_identifier}
-                                </p>
-                                <p className="text-white">
-                                  後手{roomGameData.gote_user_name}さん: {roomGameData.gote_identifier}
-                                </p>
-                                <p className="text-white">
-                                  ステータス: {roomGameData.status}
-                                </p>
-                                <p className="text-white">
-                                  対戦形式: {roomGameData.battleType}
-                                </p>
-                                <p className="text-white">
-                                  作成日時: {new Date(roomGameData.created_at * 1000).toLocaleString()}
-                                </p>
-                              </div>
-                            )}
-                            
-                            <details className="mt-4" open>
-                              <summary className="text-gray-300 cursor-pointer">
-                                詳細データを表示
-                              </summary>
-                              <pre className="text-xs text-gray-400 bg-gray-800 p-2 rounded mt-2 whitespace-pre-wrap break-words">
-                                {JSON.stringify(finalDebugData, null, 2)}
-                              </pre>
-                            </details>
-
-                            <div
-                              className="mb-3 text-white
-                                whitespace-pre    /* 改行をそのまま反映、折り返しも無効 */
-                                font-mono         /* 等幅フォントで見やすく */
-                                text-sm
-                                bg-black
-                                p-3
-                                border border-gray-200
-                                overflow-x-auto   /* 横長のときはスクロール */
-                              ">
-                              全部のゲームルームデータ: 
-                              {allGameRoomDatas_json && Object.entries(allGameRoomDatas_json).map(([roomId, gameDetails]) => (
-                                <div key={roomId} className="mt-4 border-t border-gray-700 pt-4">
-                                  <h3 className="text-lg font-semibold text-blue-300">ルームID: {roomId}</h3>
-                                  <p>Sente User Name: {gameDetails.sente_user_name}</p>
-                                  <p>Gote User Name: {gameDetails.gote_user_name}</p>
-                                  <p>Sente Identifier: {gameDetails.sente_identifier}</p>
-                                  <p>Gote Identifier: {gameDetails.gote_identifier}</p>
-                                  <p>Sente User Agent: {gameDetails.sente_user_agent}</p>
-                                  <p>Gote User Agent: {gameDetails.gote_user_agent}</p>
-                                  <p>Status: {gameDetails.status}</p>
-                                  <p>Battle Type: {gameDetails.battleType}</p>
-                                  <p>Created At: {gameDetails.created_at}</p>
-                                </div>
-                              ))}
-                              </div>
-                          </div>
-                        );
+            {(() => {
+              try {
+                if (debugMassage) {
+                  // データ1とデータ2の両方に対応
+                  let debugData;
+                  
+                  // debugMassageが文字列の場合はパース、オブジェクトの場合はそのまま使用
+                  if (typeof debugMassage === 'string') {
+                    const parsedDebugData = JSON.parse(debugMassage);
+                    debugData = parsedDebugData.check_data;
+                  } else {
+                    debugData = debugMassage.check_data;
+                  }
+                  
+                  if (debugData) {
+                    // debug_dataが文字列の場合はパース、オブジェクトの場合はそのまま使用
+                    let finalDebugData;
+                    if (typeof debugData === 'string') {
+                      finalDebugData = JSON.parse(debugData);
+                    } else {
+                      finalDebugData = debugData;
+                    }
+                    
+                    const matchingQueueLength = finalDebugData.matching_queue_length;
+                    const matchingQueueData_json = finalDebugData.matching_queue_data;
+                    
+                    // matching_queue_dataの最初の要素を取得
+                    let identifier, user_agent, username;
+                    if (matchingQueueData_json && matchingQueueData_json.length > 0) {
+                      const firstQueueItem = typeof matchingQueueData_json[0] === 'string' 
+                        ? JSON.parse(matchingQueueData_json[0]) 
+                        : matchingQueueData_json[0];
+                      identifier = firstQueueItem.identifier;
+                      user_agent = firstQueueItem.user_agent;
+                      username   = firstQueueItem.user_name;
+                    }
+                    
+                    // this_user_room_game_dataが存在する場合の処理（データ2の場合）
+                    let roomGameData = null;
+                    if (finalDebugData.this_user_room_game_data) {
+                      try {
+                        roomGameData = typeof finalDebugData.this_user_room_game_data === 'string' 
+                          ? JSON.parse(finalDebugData.this_user_room_game_data)
+                          : finalDebugData.this_user_room_game_data;
+                      } catch (error) {
+                        console.error('this_user_room_game_data解析エラー:', error);
                       }
                     }
-                  } catch (error) {
-                    return  <p className="text-white">JSON解析エラー: {error.message}</p>;
+
+                    //let AllRoomGameData = null;
+                    if (finalDebugData.all_room_game_data_json) {
+                      try {
+                        allGameRoomDatas_json = JSON.parse(finalDebugData.all_room_game_data_json)
+                      } catch (error) {
+                        console.error('all_room_game_data_json解析エラー:', error);
+                      }
+                    }
+                    
+                    return (
+                      <div>
+<h3 className="text-white">Version6</h3>
+                        <h1 className="text-white">
+                          現在のマッチング人数: {matchingQueueLength}人
+                        </h1>
+                        <h1 className="text-white">
+                          username: {username || '不明'}
+                        </h1>
+                        <h1 className="text-white">
+                          identifier: {identifier || '不明'}
+                        </h1>
+                        <h1 className="text-white">
+                          user_agent: {user_agent || '不明'}
+                        </h1>
+                        
+                        {/* room_game_data_jsonが存在する場合の追加情報（データ2の場合） */}
+                        {roomGameData && (
+                          <div className="mt-4">
+                            <h2 className="text-yellow-300">このユーザーのゲーム情報:</h2>
+                            <p className="text-white">
+                              先手の{roomGameData.sente_user_name}さん: {roomGameData.sente_identifier}
+                            </p>
+                            <p className="text-white">
+                              後手{roomGameData.gote_user_name}さん: {roomGameData.gote_identifier}
+                            </p>
+                            <p className="text-white">
+                              ステータス: {roomGameData.status}
+                            </p>
+                            <p className="text-white">
+                              対戦形式: {roomGameData.battleType}
+                            </p>
+                            <p className="text-white">
+                              作成日時: {new Date(roomGameData.created_at * 1000).toLocaleString()}
+                            </p>
+                          </div>
+                        )}
+                        
+                        <details className="mt-4" open>
+                          <summary className="text-gray-300 cursor-pointer">
+                            詳細データを表示
+                          </summary>
+                          <pre className="text-xs text-gray-400 bg-gray-800 p-2 rounded mt-2 whitespace-pre-wrap break-words">
+                            {JSON.stringify(finalDebugData, null, 2)}
+                          </pre>
+                        </details>
+
+                        <div
+                          className="mb-3 text-white
+                            whitespace-pre    /* 改行をそのまま反映、折り返しも無効 */
+                            font-mono         /* 等幅フォントで見やすく */
+                            text-sm
+                            bg-black
+                            p-3
+                            border border-gray-200
+                            overflow-x-auto   /* 横長のときはスクロール */
+                          ">
+                          全部のゲームルームデータ: 
+                          {allGameRoomDatas_json && Object.entries(allGameRoomDatas_json).map(([roomId, gameDetails]) => (
+                            <div key={roomId} className="mt-4 border-t border-gray-700 pt-4">
+                              <h3 className="text-lg font-semibold text-blue-300">ルームID: {roomId}</h3>
+                              <p>Sente User Name: {gameDetails.sente_user_name}</p>
+                              <p>Gote User Name: {gameDetails.gote_user_name}</p>
+                              <p>Sente Identifier: {gameDetails.sente_identifier}</p>
+                              <p>Gote Identifier: {gameDetails.gote_identifier}</p>
+                              <p>Sente User Agent: {gameDetails.sente_user_agent}</p>
+                              <p>Gote User Agent: {gameDetails.gote_user_agent}</p>
+                              <p>Status: {gameDetails.status}</p>
+                              <p>Battle Type: {gameDetails.battleType}</p>
+                              <p>Created At: {gameDetails.created_at}</p>
+                            </div>
+                          ))}
+                          </div>
+                      </div>
+                    );
                   }
-                  return null;
-                })()}
+                }
+              } catch (error) {
+                return  <p className="text-white">JSON解析エラー: {error.message}</p>;
+              }
+              return null;
+            })()}
 
-                {debugMassage && debugMassage.debug_data && (
-                  <div>
-                    <h1
-                      className="text-white"
-                    >debugMassage: {debugMassage}</h1>
+            {debugMassage && debugMassage.debug_data && (
+              <div>
+                <h1
+                  className="text-white"
+                >debugMassage: {debugMassage}</h1>
 
-                    <h1
-                      className="text-white"
-                    >現在のマッチング人数: {JSON.parse(debugMassage.debug_data).matching_queue_length}人</h1>
-                    <h1
-                      className="text-white"
-                    >現在のマッチングデータ: {JSON.parse(debugMassage.debug_data).matchingQueueData}人</h1>
-                  </div>
-                )}
-
-                <div className="mb-3">
-                  <span className="font-semibold text-white">ActionCable接続状態: </span>
-                  <span className={`px-2 py-1 rounded text-sm ${
-                    actionCableIsConnected ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'
-                  }`}>
-                    {actionCableIsConnected ? '接続中' : '未接続'}
-                  </span>
-                  
-                  {/* ActionCable手動再接続ボタン */}
-                  <button 
-                    onClick={this.handleManualActionvCableReconnect}
-                    disabled={actionCableIsConnected === '接続中'}
-                  >
-                    再接続
-                  </button>
-
-                  <div className="font-semibold text-white">
-                    このブラウザの(このユーザーの)セッションid: {localStorage.getItem(this.SESSION_ID_KEY)}
-                  </div>
-                </div>
-
-                <button
-                  id="AllResetButton"
-                  className="mt-4 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-5 rounded-full text-base transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-300"
-                  onClick={this.matchedTest} 
-                >
-                  擬似マッチング
-                </button>
-
-                <button
-                  id="AllResetButton"
-                  className="mt-4 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-5 rounded-full text-base transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-300"
-                  onClick={this.handleAllReset}
-                >
-                  全データリセット
-                </button>
+                <h1
+                  className="text-white"
+                >現在のマッチング人数: {JSON.parse(debugMassage.debug_data).matching_queue_length}人</h1>
+                <h1
+                  className="text-white"
+                >現在のマッチングデータ: {JSON.parse(debugMassage.debug_data).matchingQueueData}人</h1>
               </div>
             )}
-        </div>
-      </>
+
+            <div className="mb-3">
+              <span className="font-semibold text-white">ActionCable接続状態: </span>
+              <span className={`px-2 py-1 rounded text-sm ${
+                actionCableIsConnected ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'
+              }`}>
+                {actionCableIsConnected ? '接続中' : '未接続'}
+              </span>
+              
+              {/* ActionCable手動再接続ボタン */}
+              <button 
+                onClick={this.handleManualActionvCableReconnect}
+                disabled={actionCableIsConnected === '接続中'}
+              >
+                再接続
+              </button>
+
+              <div className="font-semibold text-white">
+                このブラウザの(このユーザーの)セッションid: {localStorage.getItem(this.SESSION_ID_KEY)}
+              </div>
+            </div>
+
+            <audio 
+              src={lobby_bgmPath} 
+              id="music" 
+              controls 
+              loop
+            />
+
+            <button
+              id="AllResetButton"
+              className="mt-4 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-5 rounded-full text-base transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-300"
+              onClick={this.matchedTest} 
+            >
+              擬似マッチング
+            </button>
+
+            <button
+              id="AllResetButton"
+              className="mt-4 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-5 rounded-full text-base transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-300"
+              onClick={this.handleAllReset}
+            >
+              全データリセット
+            </button>
+          </div>
+        )}
+      </div>
     );
   }
 };
@@ -1194,7 +1326,7 @@ document.addEventListener('turbo:load', () => {
   const logoPath = Element.dataset.logoPath;
   if (Element) {
     const rootElement = document.createElement('div');
-    rootElement.className = 'h-full fixed top-0 w-full';
+    rootElement.className = 'top-0 h-full w-full';
     document.body.appendChild(rootElement);
     const root = ReactDOM.createRoot(rootElement);
     //root.render(<Matching/>);

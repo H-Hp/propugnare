@@ -50,7 +50,7 @@ const Header = ({ logoPath }) => {
 
   return (
     <>
-      <header className="bg-[#dc143c] text-white h-[30px]">
+      <header className="bg-[#18181b] text-white h-[30px]">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
           {/* ロゴ部分：クリックでホームへ（"/"） */}
           <a href="/" className="flex items-center">
@@ -76,12 +76,20 @@ const Header = ({ logoPath }) => {
 
 
           {/* 言語セレクタ */}
-          <div className="flex items-center text-sm text-black bg-white rounded px-2 py-1">
+          <div className="flex items-center text-sm text-black rounded px-2 py-1">
             <select
               id="lang_select"
               value={lang}
               onChange={handleLangChange}
-              className="bg-transparent focus:outline-none"
+              className="
+                bg-transparent focus:outline-none
+                appearance-none
+                px-2 py-1
+                rounded-md border
+                text-gray-800
+                dark:bg-gray-900 dark:text-white dark:border-gray-700
+                focus:outline-none focus:ring-2 focus:ring-blue-500
+              "
             >
               <option value="ja">日本語</option>
               <option value="en">English</option>

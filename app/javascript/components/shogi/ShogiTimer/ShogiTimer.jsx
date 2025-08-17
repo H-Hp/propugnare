@@ -251,7 +251,7 @@ const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourR
             <h2>先手</h2>
             <div
                 className="time"
-                style={{ color: senteTime <= 0 ? 'red' : '#555' }}
+                style={{ color: senteTime <= 0 ? 'red' : 'white' }}
             >
                 {senteTime <= 0 ? '時間切れ！' : formatTime(senteTime)}
             </div>
@@ -262,7 +262,7 @@ const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourR
             <h2>後手</h2>
             <div
                 className="time"
-                style={{ color: goteTime <= 0 ? 'red' : '#555' }}
+                style={{ color: goteTime <= 0 ? 'red' : 'white' }}
             >
                 {goteTime <= 0 ? '時間切れ！' : formatTime(goteTime)}
             </div>

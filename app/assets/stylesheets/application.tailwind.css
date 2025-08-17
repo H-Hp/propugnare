@@ -19,3 +19,23 @@ body, html {
   flex-direction: column;
   overscroll-behavior: none;
 }
+body{
+  background-color: #0e0e10;
+}
+
+/* スマートフォン用：画面幅が600px以下 */
+@media only screen and (max-width: 600px) {
+
+}
+
+
+/* タブレット用：画面幅が600px以上と900px以下 */
+@media only screen and (min-width: 601px) and (max-width: 900px) {
+
+}
+
+
+/* PC用：画面幅が901px以上 */
+@media only screen and (min-width: 901px) {
+
+}

@@ -5,6 +5,7 @@ import ReactDOM from 'react-dom/client';
 import { BoardInfo, Selection } from './BoardInfo';
 import ShogiTimer from './ShogiTimer/ShogiTimer';
 import Header from '../Header.jsx';
+import LoadingOverlay from "../LoadingOverlay.jsx";
 import consumer from '../../channels/consumer.js'; // Action Cableのconsumerをインポート
 import { withTranslation } from 'react-i18next';
 import { I18nextProvider } from 'react-i18next';
@@ -130,12 +131,17 @@ class Room extends React.Component {
     const loadingimgPath = element.dataset.loadingimgPath;
     const audienceUser = element.dataset.audienceUser;
     const yourUsername = element.dataset.yourUsername;
+    const pieceMoveSoundPath = element.dataset.piece_move_soundPath;
+    const gameBgmPath = element.dataset.game_bgmPath;
+    
     //console.log("audienceUser: "+audienceUser)
 
     this.state = {
       logoPath: logoPath,
       gamebackPath: gamebackPath,
       loadingimgPath: loadingimgPath,
+      gameBgmPath: gameBgmPath,
+      pieceMoveSoundPath: pieceMoveSoundPath,
       boardInfo: new BoardInfo(), // 初期状態では引数なしでBoardInfoコンストラクタを呼び出し、デフォルトの初期盤面を生成
       //boardInfo: new_boardInfo, // 盤面状態を保持
       gameInfo: {},
@@ -344,7 +350,8 @@ class Room extends React.Component {
               });
             }            
           }else if(data.data_type=="board_update"){
-            this.playNotificationSound()
+            //this.playNotificationSound()
+            this.piece_move_sound()
             const boardDataFromServer = data.new_board_data; // サーバーから来たプレーンなデータ
             let moveHistory_redis = boardDataFromServer.moveHistory; //moveHistoryを取り出し ["後手8六と"]
             moveHistory_redis = moveHistory_redis.filter(Boolean); //空文字列の要素を除去する (先頭のカンマによる空要素のため)
@@ -544,6 +551,7 @@ class Room extends React.Component {
             newBoardInfoInstance,
             clickResult.moveDetails
           );
+          this.piece_move_sound()
         } else if (clickResult.moved_check) {
           console.warn("WebSocket接続が確立されていないため、盤面更新を送信できません。");
         }
@@ -555,6 +563,12 @@ class Room extends React.Component {
 
   pieceStandClick(piece) {
     this.state.boardInfo.pieceStandClick(piece);
+  }
+
+  piece_move_sound(){
+    const audio = new Audio(this.state.pieceMoveSoundPath);
+    audio.volume = 0.8; // 無音で開始
+    audio.play()
   }
 
   deleteData = async () => { // async/await を使用
@@ -774,7 +788,7 @@ class Room extends React.Component {
   }
 
   render() {
-    const { logoPath,gamebackPath,loadingimgPath, boardInfo, gameInfo, gameRoomData, moveHistory, nowTurn, isConnected, isLoading, loadingMessage, chatMessages, currentChatMessage, isChatOpen, yourRole, enemyRole, isCheck, isCheckmate,winner, winReason,rematch_sended,rematchRequest,decline_received,gameStatus, timeUpPlayer,debugMode ,audienceUser} = this.state;
+    const { logoPath,gamebackPath,gameBgmPath,loadingimgPath, boardInfo, gameInfo, gameRoomData, moveHistory, nowTurn, isConnected, isLoading, loadingMessage, chatMessages, currentChatMessage, isChatOpen, yourRole, enemyRole, isCheck, isCheckmate,winner, winReason,rematch_sended,rematchRequest,decline_received,gameStatus, timeUpPlayer,debugMode ,audienceUser} = this.state;
     const roomId = this.state.roomId; // renderメソッド内でstateからroomIdを取得
 
     // Action Cable の送信メソッド群を ShogiTimer に渡すオブジェクトを作成・gameChannel がまだ null の可能性があるので ?. (オプショナルチェイニング) を使用
@@ -794,27 +808,27 @@ class Room extends React.Component {
       }
     }, 100);
 
+    //背景・tailwindのclass名を変数化して再利用
+    const myDarkGradient = "bg-gradient-to-br from-black via-gray-800 to-gray-900";
+
     //見やすいボードのデータを作る
     const EasyBoardData = this.state.boardInfo.board.map(row =>row.map(cell => cell && cell.name ? "「"+cell.owner+"の"+cell.name+"」" : "「　　　　」")).map(row => row.join(", ")).join("\n");
     
-    if (isLoading) { // ★ isLoading が true の間はローディング表示
+    if (isLoading) { //isLoading が true の間はローディング表示
       return (
-        <div id="loading-overlay" className={`bg-[url('${loadingimgPath}')] bg-no-repeat bg-cover bg-center`}>
-          <div className="spinner"></div>
-          <p className="ml-4 text-xl text-white">{loadingMessage}</p>
-        </div>
+        <LoadingOverlay loadingimgPath={loadingimgPath} loadingMessage={loadingMessage} />
       );
     }
     return (
       <div className=" h-full">
-        <Header logoPath={logoPath} />
+        <Header logoPath={logoPath}  className="w-full"/>
         <div className={`main-container h-[calc(100%-30px)] bg-no-repeat bg-cover bg-center bg-[url('${gamebackPath}')]`}>
           <div className="menu-container column">
-            <div className="menu-div">
+            <div className={`menu-div ${myDarkGradient} text-white`}>
               {isCheckmate && ( //勝敗に決着が着いたら
-                  <div className="bg-white rounded-lg shadow-lg p-6 max-w-md mx-auto">
+                  <div className="rounded-lg shadow-lg p-6 max-w-md mx-auto">
                     <div className="text-center mb-6">
-                      <h2 className="text-[1.2rem] font-bold text-gray-800 mb-2">
+                      <h2 className="text-[1.2rem] font-bold text-white mb-2">
                         {winner === yourRole && !audienceUser ? ( "あなたの勝ち！"
                         ) : winner !== yourRole && !audienceUser ? ( "あなたの負け"
                         ) : ( winner+"の勝ち！" )}
@@ -880,7 +894,7 @@ class Room extends React.Component {
                     : undefined
                   }>
                 </div>
-                <div className="bg-white rounded-lg shadow-lg p-2">
+                <div className={`${myDarkGradient} rounded-lg shadow-lg p-2`}>
                   <div className="relative">
                     {nowTurn === yourRole && !audienceUser ? (
                       <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-4 text-white overflow-hidden">
@@ -942,20 +956,20 @@ class Room extends React.Component {
             </div>
           </div>
 
-          <div className="chat-and-setting-container column">
-            <div className="setting-container column">
+          <div className={`chat-and-setting-container column`}>
+            <div className={`setting-container column ${myDarkGradient}`}>
                 {/* 差し手履歴*/ }
-                <div className="h-1/10 overflow-y-auto p-2.5 max-h-48 overflow-y-auto">
+                <div className="h-1/10 overflow-y-auto p-2.5 max-h-48 overflow-y-auto text-white">
                   {moveHistory.map((move, index) => (
                     <p key={index}>{index + 1}: {move}</p>
                   ))}
                 </div>
             </div>
 
-            <div className={`chat-container ${isChatOpen ? '' : 'closed'}`} > {/* isChatOpen の状態に応じてクラスを適用 */}
+            <div className={`chat-container ${myDarkGradient} ${isChatOpen ? '' : 'closed'}`} > {/* isChatOpen の状態に応じてクラスを適用 */}
               {/* 開閉ボタン */}
               <button
-                className={`chat-toggle-button bg-[#dc143c] hover:bg-[#b80f33] ${isChatOpen ? '' : 'pointer-events-auto'}`}
+                className={`chat-toggle-button bg-[#18181b] hover:bg-[#27272a] ${isChatOpen ? '' : 'pointer-events-auto'}`}
                 onClick={this.toggleChat} // クリックで開閉メソッドを呼び出す
                 aria-expanded={isChatOpen} // アクセシビリティのため
                 aria-controls="chat-messages-container" // 対象となるコンテナのID (chat-containerにIDを追加する場合)
@@ -967,8 +981,8 @@ class Room extends React.Component {
                 {(() => {
                   // もしchatMessagesが文字列の場合、配列に変換
                   let messages = chatMessages;
-                  console.log("messages:",messages)
-                  console.log("typeof chatMessages:",typeof chatMessages)
+                  //console.log("messages:",messages)
+                  //console.log("typeof chatMessages:",typeof chatMessages)
                   /*if (typeof chatMessages === 'string') {
                     messages = chatMessages.split(',').map(msg => msg.trim());// カンマ区切りで文字列を分割
                     return Array.isArray(messages) ? (
@@ -1002,7 +1016,7 @@ class Room extends React.Component {
                   } else {
                     parsedMessages = [messages]; // 単一オブジェクトなら配列に変換
                   }
-                  console.log("parsedMessages:",parsedMessages)
+                  //console.log("parsedMessages:",parsedMessages)
 
                   return (
                     <>
@@ -1010,7 +1024,7 @@ class Room extends React.Component {
                           // msgが文字列ならパース、オブジェクトならそのまま使う
                           const data = typeof msg === "string" ? JSON.parse(msg) : msg;
                         return (
-                        <div key={index} className="chat-message p-2 mb-2 rounded bg-gray-100">
+                        <div key={index} className="chat-message p-2 mb-2 rounded text-white">
                           <strong>{data.username}</strong>: {data.chat_text}
                         </div>
                         );
@@ -1024,8 +1038,9 @@ class Room extends React.Component {
                 <input
                   type="text"
                   id="chat-input"
+                  autoComplete="off"
                   placeholder="メッセージを送信"
-                  className="chat-input"
+                  className="chat-input text-white"
                   value={currentChatMessage}
                   onChange={this.handleChatInputChange}
                 />
@@ -1151,6 +1166,13 @@ class Room extends React.Component {
           </div>
         )}
 
+        <audio 
+          src={gameBgmPath}
+          id="game_bgm" 
+          controls 
+          loop
+          className="fixed bottom-4 left-4"
+        />
       </div>
     );
   }
