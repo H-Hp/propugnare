@@ -737,6 +737,31 @@ class Matching extends React.Component {
     }));
   }
 
+
+  async aiStartMatching(){
+    let fsen ="lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"
+    let moves='["7g7f", "3c3d"]'
+    try {
+      const res = await fetch("https://shogi-api.booster-technologies.com/bestmove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fsen,
+          moves: moves.trim() ? moves.split(/\s*,\s*/ ) : []
+        })
+      });
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      console.log("json:"+JSON.stringify(json))
+      //setResult(json);
+    } catch (e) {
+      console.log(e.message);
+    } finally {
+      console.log(false);
+    }
+  }
+
   render() {
     const { loadingimgPath,lobby_bgmPath, isLoading, allGameRoomDatas ,gamebackPath, actionCableIsConnected, battleType, isMatching, isGameFound, matchingQueueLength, loadingMessage, roomLink , debugMassage,kingPath,isChatOpen,chatMessages,currentChatMessage} = this.state;
     
@@ -832,6 +857,14 @@ class Matching extends React.Component {
                   onClick={this.handleStartMatching}
                 >
                   対戦相手を探す
+                </button>
+
+                <button
+                  id="AiButton"
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full text-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300"
+                  onClick={this.aiStartMatching}
+                >
+                  AIと対戦する
                 </button>
               </div>
             )}
