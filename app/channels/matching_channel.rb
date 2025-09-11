@@ -1,7 +1,8 @@
 class MatchingChannel < ApplicationCable::Channel
   MATCHING_QUEUE_KEY = 'shogi:matching_queue'
   #DELETE_TIME=20
-  DELETE_TIME = 30 * 60 #30分を秒単位で定義・30分 * 60秒 = 1800秒
+  #DELETE_TIME = 30 * 60 #30分を秒単位で定義・30分 * 60秒 = 1800秒
+  DELETE_TIME = 60 * 500 #8時間20分・500分・60秒 x 500秒 = 30000秒
 
   def subscribed
     identifier = params[:identifier]

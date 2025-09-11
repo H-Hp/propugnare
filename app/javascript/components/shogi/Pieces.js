@@ -14,7 +14,8 @@ class Piece {// 駒の基底クラス
   static getPieceByName(name, owner) { // 駒の名前から対応する駒のインスタンスを生成
       switch (name) {// switch文でnameの値に基づいて処理を分岐
           case "王": return new King(owner);
-          case "玉": return new King(owner); // 必要であれば玉も追加
+          //case "玉": return new King(owner); // 必要であれば玉も追加
+          case "玉": return new Gyoku(owner); // 必要であれば玉も追加
           case "飛": return new Rook(owner);
           case "角": return new Bishop(owner);
           case "金": return new GoldGeneral(owner);

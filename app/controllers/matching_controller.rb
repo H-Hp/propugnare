@@ -15,6 +15,8 @@ class MatchingController < ApplicationController
     puts "@comments: #{@comments}"
     #puts "@comments: #{@comments.to_json}"
     
+    #game_rooms_key = "game_room:ai"
+    #$redis.del(game_rooms_key)
 
     @matching_queue_length = $redis.llen(MATCHING_QUEUE_KEY)#現在のマッチング待ち人数を確認・キューの長さを確認
     @matching_queue_data = $redis.lrange(MATCHING_QUEUE_KEY, 0, -1)# 既存のキューから全てのデータを取得
@@ -28,6 +30,8 @@ class MatchingController < ApplicationController
       end
     end
     @game_room_datas = @game_room_datas.to_json
+
+    @rails_env = Rails.env
   end
 
   #このstartメソッドは、将棋のオンライン対戦における「マッチング機能」を実装・Redisのキューを使って2つのプレイヤーを待機させ、2人揃ったら対戦部屋を作成する仕組み

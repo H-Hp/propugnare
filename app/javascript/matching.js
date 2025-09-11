@@ -22,6 +22,8 @@ class Matching extends React.Component {
     const lobbyComments = Element.dataset.lobbyComments;
     const lobby_bgmPath = Element.dataset.lobby_bgmPath;
     const notificationPath = Element.dataset.notificationPath;
+    const railsEnv = Element.dataset.railsEnv;
+
     //console.log("lobbyComments:"+JSON.stringify(lobbyComments))
     //console.log("allGameRoomDatas:"+allGameRoomDatas)
 
@@ -49,7 +51,7 @@ class Matching extends React.Component {
       //chatMessages: [], // 新しいstate: チャットメッセージを格納する配列
       chatMessages: lobbyComments, 
       currentChatMessage: '', // 新しいstate: 現在入力中のチャットメッセージ
-
+      railsEnv: railsEnv
     }
 
     this.handleChatInputChange = this.handleChatInputChange.bind(this);
@@ -317,7 +319,7 @@ class Matching extends React.Component {
   attemptRedirect(roomId) {
     if (document.visibilityState === 'visible') {
       console.log("タブがアクティブなので、即座にリダイレクトします。");
-      // window.location.href = `/shogi/${roomId}`; // 自動リダイレクトが必要なら有効化
+      //window.location.href = `/shogi/${roomId}`; // 自動リダイレクトが必要なら有効化
       this.stopFlashingPageTitle();
     } else {
       console.log("タブが非アクティブなので、アクティブ化を待ちます。");
@@ -738,8 +740,15 @@ class Matching extends React.Component {
   }
 
 
-  async aiStartMatching(){
-    let fsen ="lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"
+  //async aiStartMatching(){
+  aiStartMatching(){
+    //const roomId= "ai"
+    const roomId = crypto.randomUUID();
+    console.log("roomId:"+roomId)
+    window.location.href = `/shogi/ai_${roomId}`;
+    //roomLink: `/shogi/${roomId}`,
+
+    /*let fsen ="lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"
     let moves='["7g7f", "3c3d"]'
     try {
       const res = await fetch("https://shogi-api.booster-technologies.com/bestmove", {
@@ -747,8 +756,9 @@ class Matching extends React.Component {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fsen,
-          moves: moves.trim() ? moves.split(/\s*,\s*/ ) : []
-        })
+    */
+          //moves: moves.trim() ? moves.split(/\s*,\s*/ ) : []
+    /*    })
       });
       
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -759,11 +769,11 @@ class Matching extends React.Component {
       console.log(e.message);
     } finally {
       console.log(false);
-    }
+    }*/
   }
 
   render() {
-    const { loadingimgPath,lobby_bgmPath, isLoading, allGameRoomDatas ,gamebackPath, actionCableIsConnected, battleType, isMatching, isGameFound, matchingQueueLength, loadingMessage, roomLink , debugMassage,kingPath,isChatOpen,chatMessages,currentChatMessage} = this.state;
+    const { loadingimgPath,lobby_bgmPath, isLoading, allGameRoomDatas ,gamebackPath, actionCableIsConnected, battleType, isMatching, isGameFound, matchingQueueLength, loadingMessage, roomLink , debugMassage,kingPath,isChatOpen,chatMessages,currentChatMessage, railsEnv} = this.state;
     
     // debug_dataを解析
     let debug_matchingQueueLength;
@@ -797,6 +807,9 @@ class Matching extends React.Component {
         <LoadingOverlay loadingimgPath={loadingimgPath} loadingMessage={loadingMessage} />
       );
     }
+
+    //console.log("railsEnv:"+railsEnv)
+    //console.log(typeof railsEnv)
 
     return (
       <div className={`w-full h-full bg-no-repeat bg-cover bg-center bg-[url('${gamebackPath}')]`} >
@@ -851,21 +864,24 @@ class Matching extends React.Component {
                   placeholder="ニックネーム"
                   className="border p-2 rounded text-white"
                 />
+                <br></br>
                 <button
                   id="startMatchingButton"
-                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full text-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300"
+                  className="m-[10px] bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full text-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300"
                   onClick={this.handleStartMatching}
                 >
                   対戦相手を探す
                 </button>
-
-                <button
-                  id="AiButton"
-                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full text-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300"
-                  onClick={this.aiStartMatching}
-                >
-                  AIと対戦する
-                </button>
+                <br></br>
+                {!isMatching && (
+                  <button
+                    id="AiButton"
+                    className="bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-6 rounded-full text-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300"
+                    onClick={this.aiStartMatching}
+                  >
+                    AIと対戦する
+                  </button>
+                )}
               </div>
             )}
 
@@ -1132,16 +1148,36 @@ class Matching extends React.Component {
           id="lobby_bgm" 
           controls 
           loop
-          className="fixed bottom-4 left-4"
+          className="fixed bottom-4 left-25 hidden"
         />
+
+        <div
+          className="fixed left-4 bottom-4 z-50"
+        >
+          <button
+            onClick={() =>
+              document.getElementById("lobby_bgm")?.classList.toggle("hidden")
+            }
+            className={`w-full h-full bg-white rounded-full shadow-2xl p-3 flex items-center justify-center transform transition-transform duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="w-6 h-6 "
+              aria-hidden
+            >
+              <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z" />
+            </svg>
+          </button>
+        </div>
 
 
         {/* デバッグモード */}
-        {this.state.debugMode && (
+        {this.state.debugMode && railsEnv === "development" && (
           <div
             className="w-[70%] h-[50%] fixed top-7 left-4 opacity-85 bg-black overflow-auto"
           >
-
             {(() => {
               try {
                 if (debugMassage) {

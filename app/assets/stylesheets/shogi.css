@@ -123,7 +123,7 @@ header {
 
 
 #未選択.square {
-  background: rgba(0, 0, 0, .5);
+  /*background: rgba(0, 0, 0, .5);*/
 }
 
 #選択状態.square {
@@ -131,11 +131,11 @@ header {
 }
 
 #配置可能.square {
-  background: yellow;
+  background: #7bd710;
 }
 
 #持駒.square {
-  background: darkgoldenrod;
+  /*background: darkgoldenrod;*/
 }
 
 img#後手 {

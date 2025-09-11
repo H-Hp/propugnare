@@ -10,6 +10,7 @@
   data-lobby-comments="<%= @comments.to_json %>"
   data-lobby_bgm-path="<%= audio_path("lobby_bgm.mp3") %>"
   data-notification-path="<%= audio_path("notification.mp3") %>"
+  data-rails-env="<%= @rails_env %>" 
 ></div>
 <!--"data-turbo-track": "reload"はTurboがファイルの変更を検知し、ページをリロードしてくれる-->
 <%= javascript_include_tag "matching", "data-turbo-track": "reload", defer: true, type: "module" %>

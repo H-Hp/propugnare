@@ -1,12 +1,13 @@
 class ShogiGameChannel < ApplicationCable::Channel
   #DELETE_TIME=10
-  DELETE_TIME = 30 * 60 #30分を秒単位で定義・30分 * 60秒 = 1800秒
+  #DELETE_TIME = 30 * 60 #30分を秒単位で定義・30秒 x 60秒 = 1800秒
+  DELETE_TIME = 60 * 500 #8時間20分・500分・60秒 x 500秒 = 30000秒
 
   # 購読（subscribe）時に呼び出される
   def subscribed
     # 部屋番号をパラメータから取得 (/?room_id=123)
     @room_id = params[:room_id]
-    @game_id = params[:room_id]
+    #@game_id = params[:room_id]
     reject unless @room_id.present? # 部屋番号がない場合は購読を拒否
 
     # この接続を特定のストリーム（部屋）に紐付ける・Action Cableの概念で、特定のブロードキャストに対してリスナーになる
@@ -20,7 +21,8 @@ class ShogiGameChannel < ApplicationCable::Channel
     transmit({ type: 'initial_timer_state', data: initial_timer_state })
 
     #最初のセットアップ
-    init_state(@room_id,@game_id)
+    #init_state(@room_id,@game_id)
+    init_state(@room_id)
 
     # 購読者カウントを増やす
     #increment_subscriber_count(@room_id)
@@ -230,7 +232,8 @@ class ShogiGameChannel < ApplicationCable::Channel
   end
 
   #初期設定
-  def init_state(room_id,game_id)
+  #def init_state(room_id,game_id)
+  def init_state(room_id)
     #Rails.logger.info "WebSocket初期読み込みrequest_initial_board_state: room_id:#{room_id}・game_id:#{game_id}"
 
     redis_key = "shogi_game:#{room_id}"

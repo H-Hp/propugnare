@@ -24,7 +24,7 @@ const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourR
         getGoteTime: () => goteTime,
 
         initializeTimerState: (stateFromServer) => {
-            console.log("ShogiTimer: Initializing timer state from server:", stateFromServer);
+            //console.log("ShogiTimer: Initializing timer state from server:", stateFromServer);
             const serverTimestamp = stateFromServer.lastUpdateTime || Date.now();
             const now = Date.now();
             const elapsedSinceServerAction = now - serverTimestamp;
@@ -55,16 +55,16 @@ const ShogiTimer = forwardRef(({ initialMinutes = 10, onTimeUp = () => {}, yourR
                     clearInterval(timerIntervalRef.current); // 念のため既存のものをクリア
                 }
                 timerIntervalRef.current = setInterval(runTimerLogic, 100);
-                console.log("ShogiTimer: Initialized and started timer interval.");
+                //console.log("ShogiTimer: Initialized and started timer interval.");
             } else if (timerIntervalRef.current) {
                 // タイマーが一時停止しているはずの状態なら、setIntervalを停止
                 clearInterval(timerIntervalRef.current);
                 timerIntervalRef.current = null;
-                console.log("ShogiTimer: Initialized and cleared timer interval.");
+                //console.log("ShogiTimer: Initialized and cleared timer interval.");
             }
         },
         syncTimerState: (stateFromServer) => {
-            console.log("ShogiTimer: Syncing timer state from server:", stateFromServer);
+            //console.log("ShogiTimer: Syncing timer state from server:", stateFromServer);
             const serverTimestamp = stateFromServer.lastUpdateTime || Date.now();
             const now = Date.now();
             const elapsedSinceServerAction = now - serverTimestamp;
