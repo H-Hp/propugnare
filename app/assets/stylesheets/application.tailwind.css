@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@import "./shogi";
+
  * {
   box-sizing: border-box;
   font-size: inherit;

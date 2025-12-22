@@ -39,7 +39,7 @@ header {
   justify-content: center; /* 水平中央 */
 }
 .menu-container {
-  max-width: 20%;
+  max-width: 13%;
   /*max-height: 600px;
   overflow-x: hidden;   
   overflow-y: auto; 
@@ -93,14 +93,15 @@ header {
 
 .square {
   position: relative;
-  background: #FFCC00;
-  border: 1px solid #999;
+  /*background: #FFCC00;*/
+  /*border: 1px solid #999;*/
+  border: 0.1px solid #0c0707;
   float: left;
   /*height: 34px;width: 34px;
   height: 50%;width: 50%;*/
-  height: 50px;width: 50px;
-  margin-right: -1px;
-  margin-top: -1px;
+  height: 55px;width: 55px;
+  /*margin-right: -1px;
+  margin-top: -1px;*/
   padding: 0;
   
 }
@@ -122,24 +123,54 @@ header {
 }
 
 
-#未選択.square {
+/*#未選択.square {*/
+.square.未選択 {
   /*background: rgba(0, 0, 0, .5);*/
 }
 
-#選択状態.square {
-  background: red;
+/*#選択状態.square {*/
+.square.選択状態 {
+  /*background: red;*/
+  background: rgba(255, 49, 30, 0.2);
 }
 
-#配置可能.square {
-  background: #7bd710;
+/*#配置可能.square {*/
+.square.配置可能 {
+  /*background: #7bd710;
+  background: rgba(123, 215, 50, 0.5);*/
+  background: rgba(133, 235, 16, 0.5);
+}
+/*自分のコマの配置可能ポジションに相手の駒があれば*/
+.square.配置可能.enemy-attack{
+  background: rgba(249, 9, 41, 0.905);
+}
+/*自分の打った最新の手*/
+.square.lastMoveByMe{
+  background: rgba(9, 249, 241, 0.905);
+}
+/*相手の打った最新の手*/
+.square.lastMoveByEnemy{
+  background: rgba(9, 249, 241, 0.905);
+}
+.square.配置可能:hover{
+  background: rgba(60, 16, 235, 0.5);
+}
+/* ドラッグ中、ホバーしている「配置可能」なマスに適用されるスタイル */
+.square.配置可能.drag-hover-effect {
+  /* 背景を明るい青色に変更 */
+  background-color: #a0d8ff; 
+  /* 枠線で強調 */
+  border: 3px solid #007bff;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.7);
 }
 
-#持駒.square {
+/*#持駒.square {*/
+.piece-stand .square{
   /*background: darkgoldenrod;*/
 }
 
 img#後手 {
-  transform: scale(-1, -1);
+  transform: scale(-1, -1);/*鏡のように反転*/
 }
 
 
@@ -173,6 +204,191 @@ img#後手 {
 /* メインコンテンツは初期は表示されないようにしても良い */
 #main-content {
   display: none; /* JavaScriptで表示する */
+}
+
+
+
+/*持ち駒台を横に配置するレイアウト修正*/
+.game-container{
+   /*align-items:normal!important;*/
+}
+.game-board{
+  display: flex;
+  /*justify-content:center;*/
+  flex-direction: row;
+  justify-content:space-around;
+  align-items:center;
+  /*align-items:flex-start;*/
+}
+#board{
+  min-width: 625px;
+  /*min-height: 550px;
+  background-image:url(../images/wood.png);*/
+   background-image: url('wood.png');
+}
+.board-row .square{
+  /*height: 7%;width: 7%;*/
+  height: 70px;width: 70px;
+  
+  
+}
+.piece-stand{
+  width: 55px;
+  margin: 10px;
+  background-image: url('wood2.png');
+}
+.piece-stand .square{
+  /*float:none;*/
+}
+.square {
+  height: 55px;width: 55px;
+}
+.square img{
+  max-width: 85%;
+}
+
+
+/* 画面幅が 900px 以下の場合は非表示 */
+@media (max-width: 1070px) {
+  .chat-and-setting-container {
+    display: none;
+  }
+}
+
+
+
+
+
+
+
+
+
+.shogi-wrapper {
+  /*display: grid;
+  height:700px; 
+  gap: 0;
+  grid-template-columns: 32px 1fr;*/ /* 左列幅はラベル幅（調整可） */
+  /*grid-template-columns: auto 1fr;  左: ラベル幅, 右: 盤 */
+  width: fit-content; /* 内容物の幅に合わせる */
+  background-color: #3498db;
+
+}
+/* 盤と段の座標を横並びにするラッパー */
+.board-and-ranks-wrapper {
+  display: flex; /* #board と .coords.ranks を横並びにする */
+}
+
+.coords {
+    color: #fff;
+    background-color: #34db8a;
+    font-size: 10px;
+    color: #fff;
+    display: flex;
+    font-weight: 700;
+    pointer-events: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+
+    /*position: absolute;*/
+}
+
+.coords.ranks {
+  display: flex;
+  flex-direction: column; /* 一, 二, 三... を縦並びにする */
+  justify-content: space-around; /* 上から下まで均等に配置 */
+  width: 15px;
+  height: 100%; /* 親要素 (board-and-ranks-wrapper) の高さに合わせる */
+  background-color: black;
+}
+
+.coords.ranks span {
+
+}
+
+/* 横一列に並べる（基本） */
+.coords.files {
+  display: flex;
+  flex-direction: row;    /* 横並び */
+  align-items: center;    /* 縦中央揃え */
+  justify-content: center;/* 横方向の位置調整（left/center/rightに変更可） */
+  gap: 0px;               /* マスとの間隔を調整 */
+  padding-right: 15px;
+  user-select: none;
+  top:0;
+
+  position: relative;
+  background-color: black;
+}
+
+.coords.ranks span {
+  height:70px;
+  display: flex; /* テキストを垂直方向中央に */
+  align-items: center; /* 垂直方向中央揃え */
+  height: 70px;
+
+  
+}
+/*後手は上下反転*/
+.coords.ranks.reverse span {
+  /*display: inline-block;*/
+  transform: rotate(180deg);
+}
+
+.coords.files span {
+ width: 70px;
+ text-align: center;
+}
+/*後手は上下反転*/
+.coords.files.reverse span {
+  /*display: inline-block;*/
+  transform: rotate(180deg);
+}
+
+/* 盤 */
+#board {
+  position: relative;
+  background-color: #fb60df;
+}
+
+
+
+
+/*
+
+@media (min-width: 320px) {
+    .d-12x12 .coords.ranks, body[data-notation="2"] .coords.ranks {
+        font-size: calc(6px + 4 * (100vw - 320px) / 880);
+    }
+}
+.d-12x12 .coords.ranks, body[data-notation="2"] .coords.ranks {
+    font-size: 6px;
+}
+@media (min-width: 979.3px), (orientation: landscape) {
+    .coords-out .coords.ranks {
+        right: -12px;
+        width: 12px;
+    }
+}
+@media (min-width: 979.3px), (orientation: landscape) {
+    .coords-edge .coords.ranks, .coords-out .coords.ranks {
+        top: 0;
+    }
+}
+
+@media (min-width: 979.3px), (orientation: landscape) {
+    .coords-edge .coords, .coords-out .coords {
+        text-align: center;
+        text-shadow: none;
+    }
+}
+*/
+
+
+@media (min-width: 320px) {
+    .coords {
+        font-size: calc(7px + 4 * (100vw - 320px) / 880);
+    }
 }
 
 

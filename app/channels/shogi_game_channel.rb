@@ -50,10 +50,12 @@ class ShogiGameChannel < ApplicationCable::Channel
     @game_id = data['game_id']
     new_board_data=data
 
-    redis_key = "shogi_game:#{@game_id}"
+    #redis_key = "shogi_game:#{@game_id}"
+    redis_key = "shogi_game:#{@room_id}"
     routing_key = "game.#{@room_id}.board_update"
     $redis.set(redis_key, new_board_data.to_json)#Redisに値をセット
-    $redis.expire(redis_key, 10) #時間経過後に自動削除
+    #$redis.expire(redis_key, 10) #時間経過後に自動削除
+    $redis.expire(redis_key, DELETE_TIME) #時間経過後に自動削除
 
     #WebSocketで配信
     ActionCable.server.broadcast("shogi_game_room_#{@room_id}",{data_type: "board_update",new_board_data: new_board_data})
@@ -234,7 +236,7 @@ class ShogiGameChannel < ApplicationCable::Channel
   #初期設定
   #def init_state(room_id,game_id)
   def init_state(room_id)
-    #Rails.logger.info "WebSocket初期読み込みrequest_initial_board_state: room_id:#{room_id}・game_id:#{game_id}"
+    Rails.logger.info "WebSocket初期読み込みrequest_initial_board_state: room_id:#{room_id}"
 
     redis_key = "shogi_game:#{room_id}"
     redis_chat_key = "shogi_game_chat:#{room_id}"
@@ -242,13 +244,16 @@ class ShogiGameChannel < ApplicationCable::Channel
     redis_stored_board_data=""
     if $redis.exists?(redis_key) # Redisにデータがある場合 → JSON文字列をパースして返す
       redis_stored_board_data = $redis.get(redis_key)
+      Rails.logger.info "init_stateでredisにデータがある場合: redis_stored_board_data:#{redis_stored_board_data}"
+
       ActionCable.server.broadcast( # 取得したデータをクライアントにブロードキャスト
         "shogi_game_room_#{room_id}",{
           data_type: "already_redis_stored_board_data",
           redis_stored_board_data: redis_stored_board_data
         })
     else
-      ActionCable.server.broadcast( # 取得したデータをクライアントにブロードキャスト
+      Rails.logger.info "init_stateでredisにデータがない場合"
+      ActionCable.server.broadcast(
         "shogi_game_room_#{room_id}",{
           data_type: "initialize"
         })

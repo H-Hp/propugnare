@@ -12,6 +12,11 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '../../lang/i18n' 
 
 import { getBestMoveFromSFEN } from "./shogiCpu.js";
+import BoardInfoDebugger from './BoardInfoDebugger.js';
+import { Piece } from './Pieces.js';
+
+import CoordsFiles from './CoordsFiles.jsx';
+import CoordsRanks from './CoordsRanks.jsx';
 
 const element = document.querySelector('#game-container');
 const kingPath = element.dataset.kingPath;
@@ -48,18 +53,419 @@ const imgByName = {
   "と": prom_pawnPath
 };
 
+const imgSize={//将棋のマス(コマ)の大きさ
+  width:"70px",
+  height:"70px"
+}
+
 function Square(props) {
-  //console.log("props:"+JSON.stringify(props))
+  //const { piece, selectInfo, i, j, onClick, onDragStart, onDragEnd, onDragOver, onDrop, isDraggable } = props;
+  //const { piece, selectInfo, i, j, onClick, onDragStart, onDragEnd, onDragOver, onDrop, isDraggable, onMouseDown,yourRole,nowTurn } = props;
+  //const { piece, selectInfo, i, j, onClick, roomOnDragStart, roomOnDragEnd, roomOnDragOver, roomOnDrop, isDraggable, roomOnMouseDown,yourRole,nowTurn } = props;
+  //const { piece, selectInfo, i, j, onMouseDown, roomOnDragStart, roomOnDragEnd, roomOnDragOver, roomOnDrop, isDraggable, roomOnMouseDown,yourRole,nowTurn } = props;
+  const { piece, selectInfo, i, j, roomOnDragStart, roomOnDragEnd, roomOnDragOver, roomOnDrop, isDraggable, roomOnMouseDown,yourRole,nowTurn } = props;
+  
+  //console.log("isDraggable:"+isDraggable)
+
+
+  /*const handleMouseDown = (e) => {
+    if (isDraggable && onMouseDown) {
+      // マウスダウン時点で選択状態にする
+      console.log("マウスダウン時点で選択状態にする")
+      onMouseDown(i, j);
+    }
+  };
+  */
+  // mousedownで選択状態にする
+  /*const handleMouseDown = async (e) => {
+    if (isDraggable && onClick) {
+      // マウスダウン時点で選択状態にする
+      console.log('マウスダウンで選択:', i, j);
+      await onClick();
+      
+      // 少し待ってからドラッグ開始処理
+      setTimeout(() => {
+        if (onDragStart) {
+          onDragStart(i, j);
+        }
+      }, 10);
+    }
+  };*/
+  // マウスダウンで選択状態にする
+  const squareHandleMouseDown = async (e) => {
+    const dom = e.target;//将棋のコマのimgのdom
+    //dom.style.background = "none";
+    //dom.style.border = "none";
+    //dom.style.border = '10px solid #c24242ff;';
+
+    //border: 0.1px solid #0c0707;
+    /*const parent = e.target.parentElement; //Square(将棋のコマのimgのdomの親)
+    console.log("dom:",dom); // ← これが onMouseDown された DOM
+    console.log("parent:",parent);
+    parent.style.opacity = "0.9";  // 透明度30%
+    //parent.style.display = "none";     // 完全に非表示
+    */
+
+    //e.preventDefault(); // click発火を防ぐ
+
+    //if (isDraggable && onMouseDown) {
+    //if (isDraggable && roomOnMouseDown) {
+      //console.log('マウスダウンで選択:', i, j);
+      //try {
+        //const result = await onMouseDown(i, j);//RoomコンポーネントのhandleMouseDownメソッド呼び出し
+        const result = await roomOnMouseDown(i, j);//RoomコンポーネントのroomHandleMouseDownメソッド呼び出し
+        console.log('ラップ、マウスダウン result:', result);
+      /*} catch (error) {
+        console.error('マウスダウンエラー:', error);
+      }*/
+    //}
+  };
+
+  const squareHandleDragStart = (e) => {
+    if (!isDraggable) {//この駒がドラッグ可能かどうかの判定フラグ
+      e.preventDefault();//ドラッグをキャンセルする・ドラッグ系イベントでのdragstartやdropなどでe.preventDefault() を呼ぶと、デフォルトのドラッグ挙動が完全に無効化される
+      return;
+    }
+
+    //ドラッグしている元のSquareを非表示
+    const dom = e.target;//将棋のコマのimgのdom
+    //const dom = e.target.children;//将棋のコマのimgのdom
+    console.log("dom:",dom); // ← これが onMouseDown された DOM
+    dom.style.opacity = 0;
+
+
+    console.log("ドラッグスタート：",nowTurn)
+    console.log("ドラッグスタート：",yourRole)
+
+    //後手ならドラッグ中の駒を上下逆さにする
+    //if (nowTurn === "後手") {
+    /*if (yourRole === "後手") {
+      const img = e.target.cloneNode(true); // 駒画像をコピー
+      img.style.transform = "rotate(180deg)";
+      img.style.position = "absolute";
+      img.style.top = "-1000px"; // 画面外に配置（見えないように）
+      img.style.left = "-1000px";
+
+      document.body.appendChild(img);
+
+      // ドラッグ中の見た目をこの img にする
+      e.dataTransfer.setDragImage(img, img.width / 5, img.height / 5);
+
+      // ドラッグ終了後に削除
+      setTimeout(() => {
+        document.body.removeChild(img);
+      }, 0);
+    }
+    */
+    
+    // 座標の反転処理を適用
+    /* let adjustedI = i;
+    console.log("adjustedI：",adjustedI)
+    // 駒台からのドラッグではない、かつ、後手の駒をドラッグしている場合のみ、縦座標を反転する
+    // ※ 盤の縦の座標が 0 から 8 だと仮定した場合の反転ロジック
+    //if (i !== -1 && yourRole === '後手') {
+    if (yourRole === '後手') {
+        // i の反転: 8 - i
+        adjustedI = 8 - i; 
+    }
+    console.log("adjustedI：",adjustedI)
+    */
+
+    /*const dom = e.target;//将棋のコマのimgのdom
+    const parent = e.target.parentElement; //Square(将棋のコマのimgのdomの親)
+    console.log("dom:",dom); // ← これが onMouseDown された DOM
+    console.log("parent:",parent);
+    const img = e.target.querySelector('img');
+    // ドラッグ用の画像を複製
+    //const dragImg = img.cloneNode(true);
+    const dragImg = dom.cloneNode(true);
+    //dragImg.style.transform = 'rotate(0deg)';//style="transform: rotate(180deg);"
+    dragImg.style.transform = 'rotate(180deg)';
+    dragImg.style.position = 'absolute';
+    dragImg.style.width = '800px';
+    dragImg.style.top = '-1000px';
+    document.body.appendChild(dragImg);
+    e.dataTransfer.setDragImage(dragImg, 20, 20);
+    */
+    
+    // ドラッグデータを設定
+    //dataTransferはドラッグ開始 → ドロップ完了 の間だけ保持される「伝達データ」の保管庫。ここではドラッグされている駒の情報をJSONで保存している
+    //dataTransferはドラッグ&ドロップでドラッグ元からドロップ先へデータを渡すためのオブジェクト
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      //sourceI: adjustedI,
+      sourceI: i,
+      sourceJ: j,
+      piece: piece,
+      isFromPieceStand: i === -1
+    }));
+    
+    e.dataTransfer.effectAllowed = 'move';
+
+    //上下逆
+    const img = e.target;//将棋のコマのimgのdom
+    //const img = e.target.children;//将棋のコマのimgのdom
+    const clone = img.cloneNode(true);
+    //clone.style.transform = 'rotate(0deg)'; // 回転を打ち消す
+    //clone.style.transform = 'rotate(1800deg)'; // 回転を打ち消す
+    //clone.style.transform = 'rotate(0deg)';
+    //clone.style.transform = 'scale(1, 1)';
+    clone.style.transform = 'scale(1)';
+    clone.style.position = 'absolute';
+    clone.style.top = '-9999px';
+    //clone.style.width = '50px';
+    //clone.style.height = '50px';
+    clone.style.width = imgSize.width;
+    clone.style.height = imgSize.height;
+    clone.style.border = 'none';
+    //clone.style.boader = '10px solid #c24242ff;';
+    clone.style.background = 'none';
+    clone.style.opacity = 1;
+
+    //clone.children.style.transform = 'scale(1, 1)';
+    clone.children[0].style.transform = 'scale(1, 1)';
+    clone.children[0].style.boader = 'none';
+
+    // 元の親要素を取得
+    //const parent = img.parentElement.cloneNode(false); // 子なしで clone
+    // 親の style を変更
+    //parent.style.backgroundColor = 'none';
+    // clone を親に入れる
+    //parent.appendChild(clone);
+    // 親要素のスタイルを変更
+    //const parent = clone.parentNode; // 親要素を取得
+    //parent.style.backgroundColor = 'none'; // 例: 背景色を変更
+
+    document.body.appendChild(clone);
+    //document.body.appendChild(parent);
+    // クローンをドラッグイメージに指定
+    e.dataTransfer.setDragImage(clone, clone.offsetWidth / 2-2, clone.offsetHeight / 2);
+    //e.dataTransfer.setDragImage(parent, parent.width / 2, parent.height / 2);
+
+    // 少し遅らせてクローンを削除（ブラウザによっては即削除で問題ない）
+    setTimeout(() => document.body.removeChild(clone), 0);
+    //setTimeout(() => document.body.removeChild(parent), 0);
+
+    //isDraggable=true
+
+    // ドラッグ開始時に選択状態にする
+    /*if (onDragStart) {
+      onDragStart(i, j);
+    }*/
+  };
+
+  const squareHandleDragEnd = (e) => {
+    e.preventDefault();
+    //ドラッグ中に非表示にしていたSquareを再表示
+    const dom = e.target;//将棋のコマのimgのdom
+    //const dom = e.target.children;
+    dom.style.opacity = 1;
+    console.log("squareHandleDragEnd")
+    if (roomOnDragEnd) {
+      roomOnDragEnd();//RoomコンポーネントのroomHandleDragEndメソッド呼び出し
+    }
+  };
+
+  const squareHandleDragOver = (e) => {
+    e.preventDefault();//ドラッグをキャンセルする・ドラッグ系イベントでのdragstartやdropなどでe.preventDefault() を呼ぶと、デフォルトのドラッグ挙動が完全に無効化される
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const squareHandleDrop = (e) => {
+    e.preventDefault();//ドラッグをキャンセルする・ドラッグ系イベントでのdragstartやdropなどでe.preventDefault() を呼ぶと、デフォルトのドラッグ挙動が完全に無効化される
+    try {
+      const dragData = JSON.parse(e.dataTransfer.getData('text/plain'));
+      if (roomOnDrop) {
+        roomOnDrop(dragData, i, j);//RoomコンポーネントのroomHandleDropメソッド呼び出し
+      }
+    } catch (error) {
+      console.error('ドロップデータの解析エラー:', error);
+    }
+  };
+
+
+  //ここから配置可能なマスのsquare側のイベント
+
+  // 配置可能のsquareへドラッグオーバー(hover)された時の処理
+  const onPlaceableSquareDragOver = (e) => {
+    // デフォルトの挙動（ドロップを禁止する）をキャンセルし、ドロップを許可する
+    e.preventDefault(); 
+    // ホバーしているマスが「配置可能」なマスであるかチェック
+    if (e.currentTarget.classList.contains('配置可能')) {
+      // 一時的なホバーエフェクトクラスを追加
+      e.currentTarget.classList.add('drag-hover-effect');
+    }
+  };
+  // 配置可能のsquareからドラッグ(hover)が離れたときの処理
+  const placeableSquareDragLeave = (e) => {
+    // ホバーエフェクトクラスを削除し、元の色に戻す
+    e.currentTarget.classList.remove('drag-hover-effect');
+  };
+  //配置可能のsquareへドロップされた時の配置可能のsquareのイベント
+  const placeableSquareDroped = (e) => {
+    console.log("placeableSquareDroped")
+
+    e.preventDefault();//ドラッグをキャンセルする・ドラッグ系イベントでのdragstartやdropなどでe.preventDefault() を呼ぶと、デフォルトのドラッグ挙動が完全に無効化される  
+    // ホバーエフェクトクラスを削除し、元の色に戻す
+    e.currentTarget.classList.remove('drag-hover-effect');
+
+    try {
+      const dragData = JSON.parse(e.dataTransfer.getData('text/plain'));
+      if (roomOnDrop) {
+        roomOnDrop(dragData, i, j);//RoomコンポーネントのroomHandleDropメソッド呼び出し
+      }
+    } catch (error) {
+      console.error('ドロップデータの解析エラー:', error);
+    }
+  };
+
   return (
-    <button id={props.selectInfo} className="square" onClick={props.onClick} >
-      <img id={props.piece.owner} src={imgByName[props.piece.name]} alt="" />
+    <button 
+      className={`square ${selectInfo}`} 
+      //onClick={onClick}
+      //onClick={onMouseDown}
+
+      onMouseDown={squareHandleMouseDown}
+      draggable={isDraggable}
+      onDragStart={squareHandleDragStart}
+      onDragEnd={squareHandleDragEnd}
+      //onDragOver={squareHandleDragOver}
+      //onDrop={squareHandleDrop}
+      data-i={i}
+      data-j={j}
+
+      //配置可能なマスのsquare側のイベント
+      onDragOver={selectInfo === "配置可能" ? onPlaceableSquareDragOver : undefined}
+      onDragLeave={selectInfo === "配置可能" ? placeableSquareDragLeave : undefined}
+      onDrop={selectInfo === "配置可能" ? placeableSquareDroped : undefined}
+    >
+      <img 
+        id={piece.owner} 
+        src={imgByName[piece.name]} 
+        alt=""
+        className="piece-image"
+        draggable="false" // imgのデフォルトドラッグを無効化
+      />
       <p>{(props.num >= 2) && props.num}</p>
     </button>
   );
+  //console.log("props:"+JSON.stringify(props))
+  /*return (
+    <button 
+      id={`square-${props.i}-${props.j}`} 
+      data-i={props.i} 
+      data-j={props.j}
+      className={`square ${props.selectInfo}`} 
+      onClick={props.onClick}
+    >
+      <img 
+        id={props.piece.owner} 
+        src={imgByName[props.piece.name]} 
+        alt=""
+        className="piece-image"
+        draggable="false" // imgのデフォルトドラッグを無効化
+      />
+      <p>{(props.num >= 2) && props.num}</p>
+    </button>
+    */
+    /*<button id={props.selectInfo} className="square" onClick={props.onClick} >
+      <img id={props.piece.owner} src={imgByName[props.piece.name]} alt="" />
+      <p>{(props.num >= 2) && props.num}</p>
+    </button>*/
+  //);
 }
 
 class Board extends React.Component {
   renderSquare(i, j) {
+    const piece = this.props.board[i][j];
+    //console.log("ここおthis.props.yourRole:"+this.props.yourRole)
+    //console.log("ここおpiece:"+ JSON.stringify(piece))
+    //const isDraggable = piece && piece.owner && piece.owner === this.props.yourRole;
+    const isDraggable =  piece.owner === this.props.yourRole;
+    
+    return (
+      <Square
+        key={j}
+        i={i}
+        j={j}
+        piece={piece}
+        selectInfo={this.props.boardSelectInfo[i][j]}
+        
+        //onClick={() => this.props.onClick(i, j)}
+        //onMouseDown={() => this.props.onMouseDown(i, j)}
+
+        isDraggable={isDraggable}        
+        roomOnMouseDown={this.props.roomOnMouseDown}
+        roomOnDragStart={this.props.roomOnDragStart}
+        roomOnDragEnd={this.props.roomOnDragEnd}
+        roomOnDrop={this.props.roomOnDrop}
+
+        yourRole={this.props.yourRole}
+        nowTurn={this.props.nowTurn}
+      />
+    );
+  }
+
+  render() {
+    return (
+      <div className="shogi-wrapper">
+        {/* 成り確認モーダル - 特定のマスに表示 */}
+        {this.props.showPromoteModal && (
+            <PromoteModal
+                position={this.props.promoteModalPosition}
+                piece={this.props.currentPiece}
+                yourRole={this.props.yourRole}
+                onChoice={this.props.handlePromoteOnChoice}
+            />
+        )}
+        <CoordsFiles yourRole={this.props.yourRole} />
+        <div class="board-and-ranks-wrapper">
+          <div id="board">
+            {
+            //Array(9).fill(0)で長さ9の配列を作る（中身はすべて0）。.map((_, i) => { })で配列の要素を順番に処理する。_ は値（0）を使わないので _ という名前にしている。iは現在の行番号。iは0〜8の値
+            Array(9).fill(0).map((_, i) => {
+              return (
+                <div className="board-row" key={i}>
+                  {Array(9).fill(0).map((_, j) => {
+                    return this.renderSquare(i, j);
+                  })}
+                </div>
+              );
+            })}
+          </div>
+          <CoordsRanks yourRole={this.props.yourRole} />
+        </div>
+      </div>
+    );
+  }
+  /*renderSquare(i, j) {
+    return (
+      <Square
+        key={j}
+        i={i}
+        j={j}
+        piece={this.props.board[i][j]}
+        selectInfo={this.props.boardSelectInfo[i][j]}
+        onClick={() => this.props.onClick(i, j)}
+      />
+    );
+  }
+  
+  render() {
+    return (
+      <div id="board">
+        {Array(9).fill(0).map((_, i) => {
+          return (
+            <div className="board-row" key={i}>
+              {Array(9).fill(0).map((_, j) => {
+                return this.renderSquare(i, j);
+              })}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }*/
+/*  renderSquare(i, j) {
     return (
       <Square
         key={j}
@@ -89,11 +495,75 @@ class Board extends React.Component {
         }
       </div>
     );
-  }
+  }*/
 }
 
 class PieceStand extends React.Component {
   renderSquare(i) {
+    const piece = this.props.pieceStand[i];
+    const isDraggable = piece && piece.owner && piece.owner === this.props.yourRole;
+    
+    return (
+      <Square
+        key={i}
+        i={-1} // 持ち駒台の場合は-1を使用
+        j={i}
+        piece={piece}
+        num={this.props.pieceStandNum[piece.name]}
+        selectInfo={this.props.pieceStandSelectInfo[i]}
+        //onClick={() => this.props.onClick(i)}
+        
+        isDraggable={isDraggable}
+        roomOnMouseDown={this.props.roomOnMouseDown}
+        roomOnDragStart={this.props.roomOnDragStart}
+        roomOnDragEnd={this.props.roomOnDragEnd}
+        roomOnDrop={this.props.roomOnDrop}
+        //onMouseDown={this.props.onMouseDown}
+        //onDragStart={this.props.onDragStart}
+        //onDragEnd={this.props.onDragEnd}
+        //onDrop={this.props.onDrop}
+
+        yourRole={this.props.yourRole}
+        nowTurn={this.props.nowTurn}
+      />
+    );
+  }
+  
+  render() {
+    return (
+      <div className={`piece-stand ${this.props.side}`}>
+        {
+        //Array(9).fill(0)で長さ9の配列を作る（中身はすべて0）。.map((_, i) => { })で配列の要素を順番に処理する。_ は値（0）を使わないので _ という名前にしている。iは現在の行番号。iは0〜8の値
+        Array(9).fill(0).map((_, i) => {
+          return this.renderSquare(i);
+        })}
+      </div>
+    );
+  }
+  /*renderSquare(i) {
+    return (
+      <Square
+        key={i}
+        i={-1} // 持ち駒台の場合は-1を使用
+        j={i}
+        piece={this.props.pieceStand[i]}
+        num={this.props.pieceStandNum[this.props.pieceStand[i].name]}
+        selectInfo={this.props.pieceStandSelectInfo[i]}
+        onClick={() => this.props.onClick(i)}
+      />
+    );
+  }
+  
+  render() {
+    return (
+      <div className={`piece-stand ${this.props.side}`}>
+        {Array(9).fill(0).map((_, i) => {
+          return this.renderSquare(i);
+        })}
+      </div>
+    );
+  }*/
+  /*renderSquare(i) {
     return (
       <Square
         key={i}
@@ -116,92 +586,92 @@ class PieceStand extends React.Component {
         }
       </div>
     );
-  }
+  }*/
 }
 
-  // 成り確認モーダルコンポーネント
-  function PromoteModal(props) {
-  //class PromoteModal(props) {
-      //console.log("props:"+JSON.stringify(props)) 
-      //console.log("props.piece.name:"+JSON.stringify(props.piece.name))
-      //console.log("props.yourRole"+JSON.stringify(props.yourRole))
-      //console.log("props.piece.getPromotedPiece():"+JSON.stringify(props.piece.getPromotedPiece()))
-      // マスの位置を計算（CSS Grid或いはflexboxの位置に基づく）
-      const squareSize = 60; // 各マスのサイズ（px）
-      const boardMargin = 20; // 盤面の余白
-      
-      const modalStyle = {
-          position: 'absolute',
-          left: `${boardMargin + (props.position.j * squareSize+60)}px`,
-          top: `${boardMargin + (props.position.i * squareSize+40)}px`,
-          backgroundColor: 'black',
-          border: '2px solid #333',
-          borderRadius: '8px',
-          padding: '10px',
-          boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
-          zIndex: 1000,
-          minWidth: '120px',
-          textAlign: 'center'
-      };
+// 成り確認モーダルコンポーネント
+function PromoteModal(props) {
+//class PromoteModal(props) {
+    //console.log("props:"+JSON.stringify(props)) 
+    //console.log("props.piece.name:"+JSON.stringify(props.piece.name))
+    //console.log("props.yourRole"+JSON.stringify(props.yourRole))
+    //console.log("props.piece.getPromotedPiece():"+JSON.stringify(props.piece.getPromotedPiece()))
+    // マスの位置を計算（CSS Grid或いはflexboxの位置に基づく）
+    const squareSize = 70; // 各マスのサイズ（px）
+    const boardMargin = 20; // 盤面の余白
+    
+    const modalStyle = {
+        position: 'absolute',
+        left: `${boardMargin + (props.position.j * squareSize+60)}px`,
+        top: `${boardMargin + (props.position.i * squareSize+40)}px`,
+        backgroundColor: 'black',
+        border: '2px solid #333',
+        borderRadius: '8px',
+        padding: '10px',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+        zIndex: 1000,
+        minWidth: '120px',
+        textAlign: 'center'
+    };
 
-      return (
-          <div style={modalStyle} className="promote-modal bg-gradient-to-br from-black via-gray-800 to-gray-900">
-              <div 
-                style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
+    return (
+        <div style={modalStyle} className="promote-modal bg-gradient-to-br from-black via-gray-800 to-gray-900">
+            <div 
+              style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
 
-                      <img
-                        onClick={() => props.onChoice(false)}
-                        id={props.piece.owner} 
-                        src={imgByName[props.piece.name]} 
-                        alt="" 
-                        className={`w-[50px] h-[50px] cursor-pointer ${
-                          (props.yourRole === "後手" || props.yourRole === "gote")
-                            ? "transform rotate-180"
-                            : ""
-                        }`}
-                      />
-
-                      <img 
-                        onClick={() => props.onChoice(true)}
-                        id={props.piece.getPromotedPiece().owner} 
-                        src={imgByName[props.piece.getPromotedPiece().name]} 
-                        alt=""
-                        className={`w-[50px] h-[50px] cursor-pointer ${
-                          (props.yourRole === "後手" || props.yourRole === "gote")
-                            ? "transform rotate-180"
-                            : ""
-                        }`}
-                      />
-                  {/*<button
-                      onClick={() => props.onChoice(true)}
-                      style={{
-                          padding: '5px 10px',
-                          backgroundColor: '#4CAF50',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '12px'
-                      }}
-                  >
-                  </button>
-                  <button
+                    <img
                       onClick={() => props.onChoice(false)}
-                      style={{
-                          padding: '5px 10px',
-                          backgroundColor: '#f44336',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '12px'
-                      }}
-                  >
-                  </button>*/}
-              </div>
-          </div>
-      );
-  }
+                      id={props.piece.owner} 
+                      src={imgByName[props.piece.name]} 
+                      alt="" 
+                      className={`w-[50px] h-[50px] cursor-pointer ${
+                        (props.yourRole === "後手" || props.yourRole === "gote")
+                          ? "/*transform rotate-180*/"
+                          : ""
+                      }`}
+                    />
+
+                    <img 
+                      onClick={() => props.onChoice(true)}
+                      id={props.piece.getPromotedPiece().owner} 
+                      src={imgByName[props.piece.getPromotedPiece().name]} 
+                      alt=""
+                      className={`w-[50px] h-[50px] cursor-pointer ${
+                        (props.yourRole === "後手" || props.yourRole === "gote")
+                          ? "/*transform rotate-180*/"
+                          : ""
+                      }`}
+                    />
+                {/*<button
+                    onClick={() => props.onChoice(true)}
+                    style={{
+                        padding: '5px 10px',
+                        backgroundColor: '#4CAF50',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                    }}
+                >
+                </button>
+                <button
+                    onClick={() => props.onChoice(false)}
+                    style={{
+                        padding: '5px 10px',
+                        backgroundColor: '#f44336',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                    }}
+                >
+                </button>*/}
+            </div>
+        </div>
+    );
+}
 
 class Room extends React.Component {
   constructor(props) {
@@ -226,6 +696,9 @@ class Room extends React.Component {
     //console.log("audienceUser: "+audienceUser)
     //console.log("プレーンなnew BoardInfo():"+JSON.stringify(new BoardInfo()))
 
+    this.boardInfoInstance = new BoardInfo(); // BoardInfoインスタンスをクラスプロパティとして管理
+
+
     this.state = {
       logoPath: logoPath,
       gamebackPath: gamebackPath,
@@ -233,8 +706,11 @@ class Room extends React.Component {
       gameBgmPath: gameBgmPath,
       pieceMoveSoundPath: pieceMoveSoundPath,
 
-      boardInfo: new BoardInfo(), // 初期状態では引数なしでBoardInfoコンストラクタを呼び出し、デフォルトの初期盤面を生成
+      //boardInfo: new BoardInfo(), // 初期状態では引数なしでBoardInfoコンストラクタを呼び出し、デフォルトの初期盤面を生成
+      boardInfo: this.boardInfoInstance.getBoardState(), // 状態データのみ
+      boardInfoHistory: [{reason:"初期化・Roomコンポーネントのコンストラクタ内でnew BoardInfo()・initialDataなし", boardInfo: this.boardInfoInstance.getBoardState() }], 
       //boardInfo: new_boardInfo, // 盤面状態を保持
+      
       gameInfo: {},
       gameRoomData: gameRoomData,
       moveHistory: [],
@@ -273,11 +749,18 @@ class Room extends React.Component {
 
       bufferedInitialTimerState: null, //追加: 初期タイマー状態を一時的に保持する
       debugMode: false,
+      shogiDebugMode: false,
       aiMode: aimode,
       audienceUser: JSON.parse(audienceUser),
       railsEnv: railsEnv
     };
+
+    this.boardInfoRef = {
+      current: null
+    };
     this.subscription = null; // Action Cableのサブスクリプションをインスタンス変数で保持
+
+    this.draggedPiece = null;
 
     // イベントハンドラのバインド
     this.handleChatInputChange = this.handleChatInputChange.bind(this);
@@ -308,40 +791,614 @@ class Room extends React.Component {
     this.shogiTimerRef = React.createRef();// ShogiTimer コンポーネントへの参照を作成
     //console.log(`this.shogiTimerRef: ${JSON.stringify(this.shogiTimerRef)}`);
 
-
     //this.boardInfo = new BoardInfo();
     //console.log("Setting callback to:", this.handlePromoteConfirm);
     //this.boardInfo.setPromoteConfirmCallback(this.handlePromoteConfirm);// BoardInfoにコールバック関数を設定
 
-    this.setupBoardInfoCallback();
+    //this.setupBoardInfoCallback();
   }
 
-  setupBoardInfoCallback = () => {
-    //console.log("Setting up callback for:", this.state.boardInfo);
-    //this.state.boardInfo.setPromoteConfirmCallback(this.handlePromoteConfirm);
-    
-    // BoardInfoにコールバック関数を設定
-    // 重要：stateのboardInfoに対してコールバックを設定
-    this.state.boardInfo.setPromoteConfirmCallback(this.handlePromoteConfirm);
-    //console.log("BoardInfo instance in state:", this.state.boardInfo);
-    //console.log("Callback set to:", this.state.boardInfo.onPromoteConfirmCallback);
+  roomHandleMouseDown = async (i, j) => {
+    this.canselSelection(i, j, this.state.nowTurn);
 
+    //配置可能ポイントに相手のコマがあったら別の背景色にするのを初期化
+    //console.log("初期化・配置可能ポイントに相手のコマがあったら別の背景色にする");
+    const board = document.getElementById("board");//board を取得
+    //const imgs = board.querySelectorAll('button.square.配置可能 img');//square 配置可能 の中にあるimgをすべて取得
+    const squares = board.querySelectorAll('button.square.enemy-attack');//square 配置可能 の中にあるimgをすべて取得 
+    squares.forEach(square => {
+      //square.style.backgroundColor = 'transparent';
+      square.classList.remove('enemy-attack');
+    });
+
+  //handleMouseDown = async (i, j, e) => {
+    //マウスダウン時に選択状態にする
+    //console.log('マウスダウン:', i, j);
+      //const dom = e.target;
+      //console.log(dom); // ← これが onMouseDown された DOM
+
+    //try {
+      // 選択処理を実行
+      //let result;
+      if (i === -1) {// 持ち駒台からのドラッグかクリック配置の場合
+        //console.log("this.state.boardInfo.selection:",this.state.boardInfo.selection)
+
+        /*this.setState(prevState => {
+          // 更新後の boardInfo を事前に作成
+          const updatedBoardInfo = {
+            ...prevState.boardInfo,
+            board: prevState.boardInfo.board,
+            nowTurn: prevState.boardInfo.nowTurn,
+            pieceStand: prevState.boardInfo.pieceStand,
+            pieceStandNum: prevState.boardInfo.pieceStandNum,
+            //selection: result.BoardInfo.selection
+            
+            selection: {
+              ...prevState.boardInfo.selection, // result 側の selection を展開
+              boardSelectInfo: JSON.parse(JSON.stringify((new Array(9)).fill((new Array(9)).fill("")))),
+              isNow: false,
+              state: false,
+              before_i: null,
+              before_j: null
+              /
+              pieceStandSelectInfo: {
+                  "先手": Array(9).fill("持駒"),
+                  "後手": Array(9).fill("持駒")
+              },
+              pieceStandPiece: new Blank()*
+              /
+            }
+          };
+          console.log("this.state.boardInfo・持ち駒台のコマをマウスダウン時に更新:",updatedBoardInfo)
+          console.log("prevState.boardInfo:",prevState.boardInfo)
+
+          return {
+            boardInfoHistory: [
+              ...prevState.boardInfoHistory,
+              {
+                reason: "持ち駒台のコマをマウスダウン時に更新",
+                boardInfo: updatedBoardInfo   // ← 更新後の boardInfo を履歴に追加
+              }
+            ],
+            boardInfo: updatedBoardInfo
+          };
+        //});
+        }, () => {*/
+            //setState 完了後に実行される処理
+            //console.log("this.state.boardInfo.board[i][j]:",this.state.boardInfo.board[i][j])
+            /*if(this.state.boardInfo.selection.pieceStandPiece !=null){
+              console.log("おthis.state.boardInfo.selection.pieceStandPiece:",this.state.boardInfo.selection.pieceStandPiece)
+            }
+            if(this.state.boardInfo.pieceStand[this.state.yourRole][j] !=null){
+              console.log("えthis.state.boardInfo.pieceStand[this.state.yourRole][j]:",this.state.boardInfo.pieceStand[this.state.yourRole][j])
+            }*/
+
+            // 既に選択状態の場合は何もしない
+            /*if (this.state.boardInfo.selection.state  ) {
+              console.log('持ち駒、既に選択状態なのでスキップ');
+              return;
+            }*/
+            // 自分の駒かチェック
+            /*
+            if (!piece || piece.owner !== this.state.yourRole) {
+              console.log('自分の駒ではないためスキップ');
+              return;
+            }*/
+
+            let piece = this.state.boardInfo.pieceStand[this.state.yourRole][j];
+            //myPiece = Piece.getPieceByName(myPiece.name, this.nowTurn)
+            //pieceが単に{owner: '先手', name: '銀'}となってるとエラーになる・右みたいにdxなどがないとダメ{owner: '先手', name: '金', dx: Array(6), dy: Array(6), dk: Array(6)}
+            //piece = this.state.boardInfo.pieceStand[this.state.yourRole][j].getPieceByName(piece.name, this.state.nowTurn)
+            piece = Piece.getPieceByName(this.state.boardInfo.pieceStand[this.state.yourRole][j].name, this.state.nowTurn)
+
+            console.log("dx,dyとかあるpiece:",piece)
+            //result = this.pieceStandClick(this.state.boardInfo.pieceStand[this.state.yourRole][j]);
+            //result = await this.pieceStandClick(this.state.boardInfo.pieceStand[this.state.yourRole][j]);
+            let result = await this.pieceStandClick(piece);
+            // コールバックを async 関数でラップ
+            /*(async () => {
+              const piece = this.state.boardInfo.pieceStand[this.state.yourRole][j];
+              const result = await this.pieceStandClick(piece);
+              console.log("pieceStandClick result:", result);
+            })();
+            */
+            console.log('これこれ持ち駒マウスダウン選択結果:', result);
+            
+            //if(result!==undefined && result.moved_check){
+            if(result!==undefined ){
+              // boardとnowTurnを新しい値で更新する例
+              this.setState(prevState => {
+                // 更新後の boardInfo を事前に作成
+                const updatedBoardInfo = {
+                  ...prevState.boardInfo,
+                  //board: result.BoardInfo.board,
+                  //nowTurn: result.BoardInfo.nowTurn,
+                  //pieceStand: result.BoardInfo.pieceStand,
+                  //pieceStandNum: result.BoardInfo.pieceStandNum,
+                  //selection: result.BoardInfo.selection
+                  board: result.result.BoardInfo.board,
+                  nowTurn: result.result.BoardInfo.nowTurn,
+                  pieceStand: result.result.BoardInfo.pieceStand,
+                  pieceStandNum: result.result.BoardInfo.pieceStandNum,
+                  selection: result.result.BoardInfo.selection
+                };
+                console.log("this.state.boardInfo・持ち駒台のコマをマウスダウン時に更新:",updatedBoardInfo)
+
+                return {
+                  boardInfoHistory: [
+                    ...prevState.boardInfoHistory,
+                    {
+                      reason: "持ち駒台のコマをマウスダウン時に更新",
+                      boardInfo: updatedBoardInfo   // ← 更新後の boardInfo を履歴に追加
+                    }
+                  ],
+                  boardInfo: updatedBoardInfo
+                };
+              });
+              /*this.setState(prevState => ({
+                boardInfoHistory: [
+                  ...prevState.boardInfoHistory,
+                  {
+                    reason: "初期化時",
+                    boardInfo: prevState.boardInfo   // 更新前の boardInfo を履歴に追加
+                  }
+                ],
+    
+                boardInfo: {
+                  ...prevState.boardInfo,  // 既存のboardInfoを展開
+                  board: result.BoardInfo.board,         // 新しいboardに置き換え
+                  nowTurn: result.BoardInfo.nowTurn,        // 新しいnowTurnに置き換え
+                  pieceStand: result.BoardInfo.pieceStand,
+                  pieceStandNum: result.BoardInfo.pieceStandNum,
+                  selection: result.BoardInfo.selection
+                }
+              }, () => {
+                console.log("変更後:",this.state.boardInfo)
+              }));*/
+            }
+       // });
+
+
+
+        /*if (result && result.BoardInfo) {
+          this.setState({ boardInfo: result.BoardInfo });
+        }*/
+      } else {//ボードのコマのドラッグかクリック移動の場合
+        /*console.log("this.state.boardInfo:",this.state.boardInfo)
+        console.log("this.state.boardInfo.board[i][j]:",this.state.boardInfo.board[i][j])
+        if(this.state.boardInfo.selection.before_i!=null){
+          console.log("this.state.boardInfo.board[this.state.boardInfo.selection.before_i][this.state.boardInfo.selection.before_j]:",this.state.boardInfo.board[this.state.boardInfo.selection.before_i][this.state.boardInfo.selection.before_j])
+        }*/
+        // 既に選択状態の場合は何もしない
+        //if (this.state.boardInfo.selection.state) {
+        /*if (this.state.boardInfo.selection.state && this.state.boardInfo.board[i][j]==this.state.boardInfo.board[this.state.boardInfo.selection.before_i][this.state.boardInfo.selection.before_j] ) {
+          console.log('既に選択状態なのでスキップ');
+          return;
+        }*/
+        // 自分の駒かチェック
+        /*const piece = this.state.boardInfo.board[i][j];
+        if (!piece || piece.owner !== this.state.yourRole) {
+          console.log('自分の駒ではないためスキップ');
+          return;
+        }*/
+        // 盤面からのドラッグ
+        this.setState(prevState => ({ boardInfoHistory: [ ...prevState.boardInfoHistory, { reason: "SquareコンポーネントのsquareHandleMouseDown→RoomコンポーネントのroomOnMouseDown→handleBoardClick呼び出し", boardInfo: this.boardInfoInstance.getBoardState() }] }));
+        //console.log('RoomコンポーネントのroomHandleMouseDownからhandleBoardClick呼び出し・i:'+i+" j:"+j+" yourRole:"+this.state.yourRole);
+        let result = await this.handleBoardClick(i, j, this.state.yourRole);
+        //result = this.handleBoardClick(i, j, this.state.yourRole);
+        //console.log('マウスダウン選択結果:', result);
+
+        /*if (result && result.clickResult.BoardInfo) {
+          //this.setState({ boardInfo: result.clickResult.BoardInfo });
+
+          this.setState(prevState => {
+            // 更新後の boardInfo を事前に作成
+            const updatedBoardInfo = {
+              ...prevState.boardInfo,
+              board: result.clickResult.BoardInfo.board,
+              nowTurn: result.clickResult.BoardInfo.nowTurn,
+              pieceStand: result.clickResult.BoardInfo.pieceStand,
+              pieceStandNum: result.clickResult.BoardInfo.pieceStandNum,
+              selection: result.clickResult.BoardInfo.selection
+            };
+            console.log("this.state.boardInfo・ボードのコマをマウスダウン時に更新:",updatedBoardInfo)
+
+            return {
+              boardInfoHistory: [...prevState.boardInfoHistory,{reason: "ボードのコマをマウスダウン時に更新",boardInfo: updatedBoardInfo }],
+              boardInfo: updatedBoardInfo
+            };
+          });
+        }else */if(result && result.BoardInfo){
+          return new Promise((resolve) => {
+            let updatedBoardInfo
+            this.setState(prevState => {
+              updatedBoardInfo = {
+                ...prevState.boardInfo,
+                board: result.BoardInfo.board,
+                nowTurn: result.BoardInfo.nowTurn,
+                pieceStand: result.BoardInfo.pieceStand,
+                pieceStandNum: result.BoardInfo.pieceStandNum,
+                selection: result.BoardInfo.selection
+              };
+              //console.log("this.state.boardInfo・ボードのコマをマウスダウン時に更新:",updatedBoardInfo)
+
+              return {
+                //boardInfoHistory: [...prevState.boardInfoHistory,{reason: "ボードのコマをマウスダウン時に更新",boardInfo: updatedBoardInfo }],
+                boardInfo: updatedBoardInfo
+              };
+            //});
+            }, () => {//setStateが完了した（Stateが反映された）後にここが実行される
+              /*const prevBoardInfo = this.state.boardInfo;
+              updatedBoardInfo = {
+                ...prevBoardInfo,
+                board: result.BoardInfo.board,
+                nowTurn: result.BoardInfo.nowTurn,
+                pieceStand: result.BoardInfo.pieceStand,
+                pieceStandNum: result.BoardInfo.pieceStandNum,
+                selection: result.BoardInfo.selection
+              };
+              //stateじゃなくrefで保存する
+              //ドラッグ中にstateを更新すると再レンダリングが行われ、ドラッグのdraggableがfalseになってドラッグが壊れるから
+              this.boardInfoRef.current = updatedBoardInfo;
+              */
+
+              if(result.BoardInfo.selection.isNow){
+                //console.log("配置可能ポイントに相手のコマがあったら別の背景色にする");
+                //配置可能ポイントに相手のコマがあったら別の背景色にする
+                const board = document.getElementById("board");//board を取得
+                const imgs = board.querySelectorAll('button.square.配置可能 img');//square 配置可能 の中にあるimgをすべて取得
+                const enemyPiecesImgs = Array.from(imgs).filter(img => img.id === this.state.enemyRole);//敵の役割とidが一致するimgだけに絞る
+                console.log("enemyPiecesImgs:",enemyPiecesImgs); // 敵のコマのimgのDOMの配列
+                if (enemyPiecesImgs || enemyPiecesImgs.length !== 0) {
+                  enemyPiecesImgs.forEach(img => {
+                    const square = img.parentElement;
+                    console.log("配置可能ポイントimg:"+img);
+                    if (square) {
+                      //parent.style.backgroundColor = '#c24242ff';
+                      square.classList.add('enemy-attack');
+                    }
+                  });
+                }
+              }
+ 
+
+              //console.log("this.state.boardInfo・ボードのコマをマウスダウン時に更新:",updatedBoardInfo)
+              resolve({ BoardInfo: updatedBoardInfo });
+              //return { boardInfo: updatedBoardInfo };
+            });
+
+          });
+        }
+      }
+      //return result;
+    /*} catch (error) {
+      console.error('マウスダウン選択エラー:', error);
+    }*/
+    
+    /*
+    let result;
+    if (i === -1) {
+      result = this.pieceStandClick(this.state.boardInfo.pieceStand[this.state.yourRole][j]);
+    } else {
+      result = await this.handleBoardClick(i, j, this.state.yourRole);
+      console.log("result:"+ JSON.stringify(result))
+    }
+
+    if (result && result.BoardInfo) {
+      this.setState({ boardInfo: result.BoardInfo });
+    }
+  };
+
+  render() {
+    const { yourRole } = this.state;
+    
+    return (
+      <div>
+        <Board
+          board={this.state.boardInfo.board}
+          boardSelectInfo={this.state.boardInfo.selection.boardSelectInfo}
+          onClick={(i, j) => this.handleBoardClick(i, j, yourRole)}
+          onMouseDown={this.handleMouseDown}
+          onDragStart={this.handleDragStart}
+          onDragEnd={this.handleDragEnd}
+          onDrop={this.handleDrop}
+          yourRole={yourRole}
+        />
+      </div>
+    );*/
+  }
+  // ドラッグ開始時の処理
+  roomHandleDragStart = async (i, j) => {
+    //console.log('ドラッグ開始:', i, j);
+
+    /*
+    let result;
+    if (i === -1) {
+      // 持ち駒台からのドラッグ
+      result = this.pieceStandClick(this.state.boardInfo.pieceStand[this.state.yourRole][j]);
+    } else {
+      // 盤面からのドラッグ
+      result = await this.handleBoardClick(i, j, this.state.yourRole);
+    }
+    }*/
+   
+    
+    this.draggedPiece = { i, j };
+  };
+  // ドラッグ終了時の処理
+  roomHandleDragEnd = () => {
+    console.log("roomHandleDragEnd")
+    // ドラッグ状態をクリア
+    setTimeout(() => {
+      this.draggedPiece = null;
+    }, 100);
+  };
+  // ドロップ時の処理
+  roomHandleDrop = async (dragData, dropI, dropJ) => {
+    console.log('ドロップ:', dragData, 'to', dropI, dropJ);
+   
+  //try {
+    // 盤面上のマスにドロップした場合のみ移動処理
+    if (dropI >= 0 && dropJ >= 0) {
+      //console.log("this.state.boardInfo.selection"+ JSON.stringify(this.state.boardInfo.selection))
+      
+      // 現在のboardInfoを取得（常に最新のstateから）
+      /*const currentBoardInfo = this.state.boardInfo;
+      
+      // boardInfoが存在し、必要なメソッドを持っているかチェック
+      if (!currentBoardInfo) {
+        console.error('boardInfo が存在しません');
+        return { success: false, reason: "no_boardinfo" };
+      }
+      
+      if (typeof currentBoardInfo.boardClick !== 'function') {
+        this.debugBoardInfo();
+        console.error('boardInfo.boardClick が関数ではありません:', typeof currentBoardInfo.boardClick);
+        console.log('currentBoardInfo:', currentBoardInfo);
+        return { success: false, reason: "invalid_boardinfo" };
+      }
+      
+      // selection情報をチェック
+      console.log("currentBoardInfo.selection:", JSON.stringify(currentBoardInfo.selection));
+      
+      // 選択状態がない場合はエラー
+      if (!currentBoardInfo.selection || !currentBoardInfo.selection.state) {
+        console.log('選択状態がありません');
+        return { success: false, reason: "no_selection" };
+      }
+      
+      // 移動可能かチェック（安全にアクセス）
+      let selectInfo = null;
+      try {
+        if (currentBoardInfo.selection.boardSelectInfo && 
+            currentBoardInfo.selection.boardSelectInfo[dropI] && 
+            currentBoardInfo.selection.boardSelectInfo[dropI][dropJ] !== undefined) {
+          selectInfo = currentBoardInfo.selection.boardSelectInfo[dropI][dropJ];
+        }
+      } catch (e) {
+        console.warn('selectInfo取得エラー:', e);
+      }
+      
+      console.log("selectInfo:", selectInfo);
+      */
+
+      // 移動可能かチェック
+      //const selectInfo = this.state.boardInfo.selection.boardSelectInfo[dropI][dropJ];
+      //const selectInfo = this.boardInfoInstance.selection.boardSelectInfo[dropI][dropJ];
+      //console.log("this.boardInfoInstance.selection"+ JSON.stringify(this.boardInfoInstance.selection))
+      //console.log("selectInfo"+ JSON.stringify(selectInfo))
+
+      //if (selectInfo === "移動可能") {
+        // 移動処理を実行
+        //this.handleBoardClick(dropI, dropJ, this.state.yourRole);
+        const result = await this.handleBoardClick(dropI, dropJ, this.state.yourRole);
+
+        //console.log('マウスダウン選択結果:', result);
+      //} else {
+        // 移動不可能な場合は選択をリセット
+        //this.resetSelection();
+      //}
+      } else {
+        // 盤面外にドロップした場合は選択をリセット
+        this.resetSelection();
+        console.log('盤面外へのドロップのため処理なし');
+        //return { success: false, reason: "out_of_board" };
+      }
+    //} catch (error) {
+      //console.error('handleDrop エラー:', error);
+      //return { success: false, reason: "exception", error };
+    //}
+  };
+  // 選択状態をリセット
+  resetSelection = () => {
+    //console.log('選択をリセット');
+    
+    // 既存の選択リセットロジックに合わせて実装
+    const updatedBoardInfo = { ...this.state.boardInfo };
+    updatedBoardInfo.selection.state = false;
+    updatedBoardInfo.selection.isNow = false;
+    
+    // 選択情報を初期化
+    updatedBoardInfo.selection.boardSelectInfo = Array(9).fill().map(() => Array(9).fill("未選択"));
+    updatedBoardInfo.selection.pieceStandSelectInfo = {
+      "先手": Array(9).fill("未選択"),
+      "後手": Array(9).fill("未選択")
+    };
+    
+    this.setState({ boardInfo: updatedBoardInfo });
+  };
+  /*
+  //コマのドラッグ移動
+  destroyDraggable() {
+    if (this.draggableInstance) {
+      this.draggableInstance.destroy();
+      this.draggableInstance = null;
+    }
+  }
+  initializeDraggable() {
+    // 駒が存在し、自分の手番の駒のみドラッグ可能にする
+    const draggableElements = document.querySelectorAll('.square img[id]:not([id=""])');
+    const validElements = Array.from(draggableElements).filter(img => {
+      const square = img.closest('.square');
+      const i = parseInt(square.dataset.i);
+      const j = parseInt(square.dataset.j);
+      
+      //console.log("square:"+String(square))
+      //console.log("square:", square, "i:", i, "j:", j);
+
+      // 盤面の駒の場合
+      if (i >= 0 && j >= 0 && this.state.boardInfo.board[i] && this.state.boardInfo.board[i][j]) {
+        //return this.state.boardInfo.board[i][j].owner === this.state.yourRole;
+        return this.state.boardInfo.board[i][j].owner ;
+      }
+      
+      // 持ち駒台の駒の場合
+      if (i === -1) {
+        const pieceStandSide = square.closest('.piece-stand').classList.contains('先手') ? '先手' : '後手';
+        return pieceStandSide === this.state.yourRole;
+      }
+      
+      return false;
+    });
+
+    console.log("validElements:"+validElements)
+    console.log("draggableElements:"+String(draggableElements))
+
+    if (validElements.length > 0) {
+      //this.draggableInstance = new Draggable.Draggable(validElements, {
+      this.draggableInstance = new Draggable(validElements, {
+        draggable: '.square',
+        delay: 100, // ドラッグ開始の遅延
+      });
+      //this.draggableInstance = new Draggable(validElements)
+
+      setTimeout(() => {
+        const King = document.getElementById('King');// ドラッグしたい要素を取得
+        if (King) {
+          new Draggable(King);// Draggable.js のインスタンスを作成し、要素をドラッグ可能にする// 'new Draggable()' の引数にドラッグ対象の要素を渡します。
+        }
+      }, 100);
+
+      // ドラッグ開始イベント
+      this.draggableInstance.on('drag:start', (event) => {
+        const square = event.source;
+        const i = parseInt(square.dataset.i);
+        const j = parseInt(square.dataset.j);
+        
+        console.log('ドラッグ開始:', i, j);
+        
+        // 盤面の駒の場合
+        if (i >= 0 && j >= 0) {
+          // 選択状態にする（既存のboardClickロジックを使用）
+          this.handleBoardClick(i, j, this.state.yourRole);
+        } else if (i === -1) {
+          // 持ち駒台の場合
+          const pieceStandSide = square.closest('.piece-stand').classList.contains('先手') ? '先手' : '後手';
+          this.pieceStandClick(this.state.boardInfo.pieceStand[pieceStandSide][j]);
+        }
+      });
+
+      // ドラッグ終了イベント
+      this.draggableInstance.on('drag:stop', (event) => {
+        const dropTarget = document.elementFromPoint(event.data.sensorEvent.clientX, event.data.sensorEvent.clientY);
+        const targetSquare = dropTarget ? dropTarget.closest('.square') : null;
+        
+        if (targetSquare) {
+          const targetI = parseInt(targetSquare.dataset.i);
+          const targetJ = parseInt(targetSquare.dataset.j);
+          
+          console.log('ドロップ先:', targetI, targetJ);
+          
+          // 盤面上のマスにドロップした場合のみ移動処理
+          if (targetI >= 0 && targetJ >= 0) {
+            // 移動可能かチェック
+            const selectInfo = this.state.boardInfo.selection.boardSelectInfo[targetI][targetJ];
+            if (selectInfo === "移動可能") {
+              // 移動処理を実行
+              this.handleBoardClick(targetI, targetJ, this.state.yourRole);
+            } else {
+              // 移動不可能な場合は選択をリセット
+              this.resetSelection();
+            }
+          } else {
+            // 盤面外にドロップした場合は選択をリセット
+            this.resetSelection();
+          }
+        } else {
+          // 有効なドロップ先が見つからない場合は選択をリセット
+          this.resetSelection();
+        }
+      });
+    }
+  }
+  resetSelection() {
+    // 選択状態をリセットする処理
+    // この部分は既存のリセットロジックに合わせて実装
+    console.log('選択をリセット');
+    // 例: 選択状態を初期化するメソッドを呼び出し
+    this.clearSelection();
+  }*/
+  //コマのドラッグ移動
+
+  //BoardInfoにsetPromoteConfirmCallbackコールバックを設定
+  setupBoardInfoCallback = (boardInfoInstance = null) => {
+    const targetBoardInfo = boardInfoInstance || this.state.boardInfo;
+    
+    if (targetBoardInfo) {
+      // setPromoteConfirmCallbackメソッドが存在するかチェック
+      if (typeof targetBoardInfo.setPromoteConfirmCallback === 'function') {
+        //console.warn("BoardInfo.setPromoteConfirmCallbackがコールバックとして設定されているのでOK");
+        //console.log("コールバックを設定中...");
+        targetBoardInfo.setPromoteConfirmCallback(this.handlePromoteConfirm);
+        //console.log("BoardInfoにsetPromoteConfirmCallbackコールバック設定完了:", !!targetBoardInfo.onPromoteConfirmCallback);
+        this.setState(prevState => ({ boardInfoHistory: [ ...prevState.boardInfoHistory, { reason: "setupBoardInfoCallbackでBoardInfoにsetPromoteConfirmCallbackコールバックを設定", boardInfo: targetBoardInfo }] }));
+      } else {
+        console.warn("setPromoteConfirmCallback メソッドが存在しません");
+        /*this.setState(prevState => ({ boardInfoHistory: [ ...prevState.boardInfoHistory, { reason: "前・setupBoardInfoCallbackでBoardInfoにsetPromoteConfirmCallbackコールバックを設定する前", boardInfo: targetBoardInfo }] }));
+        targetBoardInfo.setPromoteConfirmCallback(this.handlePromoteConfirm);
+        console.log("BoardInfoにsetPromoteConfirmCallbackコールバック設定完了:", !!targetBoardInfo.onPromoteConfirmCallback);
+        this.setState(prevState => ({ boardInfoHistory: [ ...prevState.boardInfoHistory, { reason: "後・setupBoardInfoCallbackでBoardInfoにsetPromoteConfirmCallbackコールバックを設定した後", boardInfo: targetBoardInfo }] }));
+        */
+      }
+      
+      // 直接プロパティを設定する場合（フォールバック）
+      if (!targetBoardInfo.onPromoteConfirmCallback) {
+        console.log("BoardInfo.onPromoteConfirmCallback直接プロパティにコールバックを設定");
+        targetBoardInfo.onPromoteConfirmCallback = this.handlePromoteConfirm;
+      }else{
+        console.log("BoardInfo.onPromoteConfirmCallbackは存在するのでOK");
+      }
+    } else {
+      console.error("targetBoardInfo が存在しません");
+    }
+    /*setupBoardInfoCallback = () => {
+      console.log("コールバックの設定");
+      //this.state.boardInfo.setPromoteConfirmCallback(this.handlePromoteConfirm);
+      
+      // BoardInfoにコールバック関数を設定
+      // 重要：stateのboardInfoに対してコールバックを設定
+      //this.state.boardInfo.setPromoteConfirmCallback(this.handlePromoteConfirm);
+      this.boardInfoInstance.setPromoteConfirmCallback(this.handlePromoteConfirm);
+      //console.log("BoardInfo instance in state:", this.state.boardInfo);
+      //console.log("Callback set to:", this.state.boardInfo.onPromoteConfirmCallback);
+      */
   }
 
   // 成り確認のコールバック関数
-  //handlePromoteConfirm = (piece, callback) => {
   handlePromoteConfirm = (piece, i, j, callback) => {
       //console.log("成り確認のコールバック関数呼ばれた");
-      //console.log(`成り確認要求: piece=${piece.name}, position=(${i}, ${j})`);
+      console.log(`成り確認要求: piece=${piece.name}, position=(${i}, ${j})`);
       //console.log("handlePromoteConfirm called with piece:", piece);
-      //i（行 index） → 縦方向（上から下）
-      //j（列 index） → 横方向（左から右）
+      //i（行）→ 横方向（左から右）
+	    //j（列）→ 縦方向（上から下）
       //console.log("yourRole:"+this.state.yourRole)
-      if(this.state.yourRole=="後手"){//後手の時は座標を逆にする
+      
+      /*if(this.state.yourRole=="後手"){//後手の時は座標を逆にする
         //console.log("後手の時は座標を逆にする:")
-        i = 8 - i; // 後手用の縦座標
-        j = 8 - j; // 後手用の横座標
-      }
+        i = 8 - i; // 後手用の横座標
+        j = 8 - j; // 後手用の縦座標
+      }*/
+
       this.setState({
           promoteCallback: callback,
           showPromoteModal: true,
@@ -349,7 +1406,7 @@ class Room extends React.Component {
           promoteModalPosition: { i, j }
       });
 
-      if (this.state.aiMode && this.state.nowTurn==this.state.enemyRole ) { //ai対戦モードでaiのターンならtrueで自動進化
+      if (this.state.aiMode && this.state.nowTurn==this.state.enemyRole ) { //ai対戦モードでaiのターンならtrueで自動成り
         console.log("成り判定でai対戦モードでaiのターンならtrueで自動成り")
         callback(true);
         this.setState({
@@ -360,7 +1417,6 @@ class Room extends React.Component {
         });
       }
   }
-
   // モーダルでの選択処理
   handlePromoteChoice = (shouldPromote) => {
       //console.log("ユーザーの選択:", shouldPromote ? "成る" : "成らない");
@@ -378,14 +1434,103 @@ class Room extends React.Component {
   }
 
 
+  // デバッグ用：BoardInfoの状態をチェックするメソッド
+  debugBoardInfo = () => {
+    const boardInfo = this.state.boardInfo;
+    console.log('=== BoardInfo Debug ===');
+    console.log('boardInfo exists:', !!boardInfo);
+    console.log('boardInfo type:', typeof boardInfo);
+    console.log('boardInfo constructor:', boardInfo?.constructor?.name);
+    console.log('boardClick method exists:', typeof boardInfo?.boardClick);
+    console.log('selection exists:', !!boardInfo?.selection);
+    console.log('board exists:', !!boardInfo?.board);
+    
+    if (boardInfo) {
+      console.log('boardInfo keys:', Object.keys(boardInfo));
+      console.log('boardInfo methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(boardInfo)));
+    }
+    
+    // this.boardInfoInstanceも確認
+    if (this.boardInfoInstance) {
+      console.log('this.boardInfoInstance exists:', !!this.boardInfoInstance);
+      console.log('this.boardInfoInstance === this.state.boardInfo:', this.boardInfoInstance === this.state.boardInfo);
+    }
+    console.log('========================');
+  }
+
+  // BoardInfoインスタンスを安全に取得するヘルパーメソッド
+  getSafeBoardInfo = () => {
+    const boardInfo = this.state.boardInfo;
+    
+    if (!boardInfo) {
+      console.error('boardInfo が存在しません');
+      return null;
+    }
+    
+    if (typeof boardInfo.boardClick !== 'function') {
+      console.error('boardInfo.boardClick が関数ではありません');
+      console.log('利用可能なメソッド:', Object.getOwnPropertyNames(Object.getPrototypeOf(boardInfo)));
+      return null;
+    }
+    
+    return boardInfo;
+  }
+
+  // セットアップ時やエラー時にBoardInfoを再初期化するメソッド
+  /*reinitializeBoardInfo = () => {
+    console.log('BoardInfo を再初期化します');
+    
+    try {
+      // 現在のゲーム状態を保持してBoardInfoを再作成
+      const currentState = this.state;
+      
+      if (!currentState.boardInfo) {
+        console.error('現在のboardInfoが存在しないため再初期化できません');
+        return false;
+      }
+      
+      // 既存のデータを使って新しいBoardInfoインスタンスを作成
+      const gameData = {
+        moveDetails: null, // 再初期化時は移動詳細なし
+        boardSFEN: currentState.boardInfo.boardSFEN || currentState.boardInfo.getBoardSFEN?.(),
+        BoardInfo: currentState.boardInfo.board,
+        pieceStandNum: currentState.boardInfo.pieceStandNum,
+        pieceStand: currentState.boardInfo.pieceStand,
+        nowTurn: currentState.nowTurn,
+        isCheck: currentState.isCheck,
+        isCheckmate: currentState.isCheckmate,
+        winner: currentState.winner
+      };
+      
+      const newBoardInfo = new BoardInfo(gameData);
+      
+      // コールバックを再設定
+      this.setupBoardInfoCallback();
+      
+      this.setState({
+        boardInfo: newBoardInfo
+      });
+      
+      console.log('BoardInfo の再初期化が完了しました');
+      return true;
+      
+    } catch (error) {
+      console.error('BoardInfo の再初期化中にエラー:', error);
+      return false;
+    }
+  }*/
+
+
+
 
 
   // コンポーネントがマウントされた後に一度だけ実行される
   componentDidMount() {
     this.initializeRoom();
     this.setupAudio()
+    //this.initializeDraggable();
 
-    this.setupBoardInfoCallback();
+    //this.setupBoardInfoCallback();
 
     //デバッグモード
     window.addEventListener('keydown', (event) => { if (event.key === 'd' || event.key === 'D') { 
@@ -396,6 +1541,10 @@ class Room extends React.Component {
 
   //prevProps と prevState を引数として明示的に受け取る
   componentDidUpdate(prevProps, prevState) {
+    // stateが更新されたらDraggableを再初期化
+    //this.destroyDraggable();
+    //this.initializeDraggable();
+
     // stateが更新されたときにコールバックが失われていないかチェック
     if (prevState.boardInfo !== this.state.boardInfo) {
         //console.log("BoardInfoインスタンスが変更されました。コールバックをリセットします。");
@@ -458,6 +1607,8 @@ class Room extends React.Component {
 
   // コンポーネントがアンマウントされる前に実行される（クリーンアップ）
   componentWillUnmount() {
+    //this.destroyDraggable();
+
     if (this.subscription) {
       this.subscription.unsubscribe();
       this.subscription = null;
@@ -481,6 +1632,7 @@ class Room extends React.Component {
         connected: () => {
           //console.log(`ShogiGameChannelに接続されています（ルームID: ${roomId}）`);
           this.setState({ isConnected: true });
+          //console.log("subscribe RoomChannel");
         },
         disconnected: () => {
           //console.log(`ShogiGameChannelからroom_idで接続が切断されました。: ${roomId}`);
@@ -496,7 +1648,7 @@ class Room extends React.Component {
             //console.log("aiMode:"+this.state.aiMode)
             //console.log("enemyRole:"+this.state.enemyRole)
             //console.log("nowTurn:"+this.state.nowTurn)
-            if( this.state.aiMode && this.state.enemyRole==this.state.nowTurn && !this.state.isCheckmate){ 
+            if( this.state.aiMode && this.state.enemyRole==this.state.nowTurn && !this.state.isCheckmate && !this.state.shogiDebugMode){ 
               this.aiAct(new BoardInfo())
             } //Ai対戦モードで、現在のターンがaiのターンだったら
             return
@@ -525,23 +1677,29 @@ class Room extends React.Component {
             //moveHistory取得
             let moveHistory_redis = data.moveHistory; //moveHistoryを取り出し ["後手8六と"]
             moveHistory_redis = moveHistory_redis.filter(Boolean); //空文字列の要素を除去する (先頭のカンマによる空要素のため)
-            
+            console.log("already_redis_stored_board_dataのmoveHistory_redis:"+moveHistory_redis)
             const boardDataFromServer = data;
             if (boardDataFromServer) {
               //サーバーから受け取ったデータ（プレーンオブジェクト）を引数に渡し、新しいBoardInfoインスタンスを生成
               const newBoardInfoInstance = new BoardInfo(boardDataFromServer);
-              this.setState({
+              //this.setState({
+              this.setState(prevState => ({
                 boardInfo: newBoardInfoInstance,
                 nowTurn: newBoardInfoInstance.nowTurn, // BoardInfoのturnをstateに反映
                 moveHistory: moveHistory_redis,
                 isLoading: false,
                 loadingMessage: "",
-              }, () => {
+                boardInfoHistory: [ ...prevState.boardInfoHistory, { reason: "initializeRoomのreceivedのdata_type==already_redis_stored_board_dataでサーバーから受け取ったデータ（プレーンオブジェクト）を引数に渡し、新しいBoardInfoインスタンスを生成", boardInfo: newBoardInfoInstance }]
+              }), () => {
                 //console.log(`BoardInfo instance reconstructed:`, this.state.boardInfo);
               });
-            }            
+            }
+            //this.setState(prevState => ({ boardInfoHistory: [ ...prevState.boardInfoHistory, { reason: "initializeRoomのreceivedのdata_type==already_redis_stored_board_dataでサーバーから受け取ったデータ（プレーンオブジェクト）を引数に渡し、新しいBoardInfoインスタンスを生成", boardInfo: newBoardInfoInstance }] }));        
           }else if(data.data_type=="board_update"){
+            //console.log("ActionCableのboard_update")
+
             if (this.state.nowTurn===this.state.yourRole) {
+              console.log("piece_move_sound");
               this.piece_move_sound()
             }
             const boardDataFromServer = data.new_board_data; // サーバーから来たプレーンなデータ
@@ -551,23 +1709,35 @@ class Room extends React.Component {
               //console.log("boardDataFromServer:"+JSON.stringify(boardDataFromServer))
               //サーバーから受け取ったデータ（プレーンオブジェクト）を引数に渡し、新しいBoardInfoインスタンスを生成
               const newBoardInfoInstance = new BoardInfo(boardDataFromServer);
+              //const newBoardInfoInstance = this.boardInfoInstance(boardDataFromServer);
+              //const newBoardInfoInstance = this.state.boardInfo(boardDataFromServer);
               //console.log("newBoardInfoInstance:"+JSON.stringify(newBoardInfoInstance))
-              this.setState({
+              console.log("redisからのデータnewBoardInfoInstanceを取得時(盤面更新後)boardInfoを更新")
+              this.setState(prevState => ({
                 boardInfo: newBoardInfoInstance,
                 moveHistory: moveHistory_redis,
                 nowTurn: newBoardInfoInstance.nowTurn, // BoardInfoのturnをstateに反映
                 isLoading: false,
                 loadingMessage: "",
-              }, () => {
+                boardInfoHistory: [ ...prevState.boardInfoHistory,{reason: "shogi_game_channel.rbのboard_broadcast_and_storeメソッドのActionCable.server.broadcastでサブスクライバー全員がデータ受け取り、新しくBoardInfoインスタンス作ってstateのboardデータ更新", boardInfo: newBoardInfoInstance } ]
+                //this.setState(prevState => ({ boardInfoHistory: [ ...prevState.boardInfoHistory, { reason: "shogi_game_channel.rbのboard_broadcast_and_storeメソッドのActionCable.server.broadcastからデータ受け取り新しくBoardInfoインスタンス作ってstateのboardデータ更新", boardInfo: boardData }] }));
+              /*this.setState({
+                boardInfo: newBoardInfoInstance,
+                moveHistory: moveHistory_redis,
+                nowTurn: newBoardInfoInstance.nowTurn, // BoardInfoのturnをstateに反映
+                isLoading: false,
+                loadingMessage: "",
+              */
+              }), () => {
                 //console.log("aiMode:"+this.state.aiMode)
                 //console.log("enemyRole:"+this.state.enemyRole)
                 //console.log("nowTurn:"+this.state.nowTurn)
-                if( this.state.aiMode && this.state.enemyRole==this.state.nowTurn && !this.state.isCheckmate){
+                if( this.state.aiMode && this.state.enemyRole==this.state.nowTurn && !this.state.isCheckmate && !this.state.shogiDebugMode){
                   this.aiAct(newBoardInfoInstance)
                 }
                 //console.log(`BoardInfo instance reconstructed:`, this.state.boardInfo);
               });
-            }            
+            }
           }else if(data.data_type=="already_redis_stored_chat_data" || data.data_type=="chat_update"){
             if (data.data_type=="already_redis_stored_chat_data"){ 
               this.setState({ isLoading: false, loadingMessage: "" });//ローディングを終了 
@@ -586,7 +1756,7 @@ class Room extends React.Component {
             }
             //console.log(`this.state.chatMessages：`, this.state.chatMessages);
             return
-          } else if (data.data_type === 'game_set'){
+          }else if (data.data_type === 'game_set'){
               console.log("ゲームセット")
               this.setState({
                 isCheckmate: true ,// 詰み状態
@@ -620,18 +1790,18 @@ class Room extends React.Component {
               console.log("あなたが再対戦をリクエストしました。相手の返答をお待ちください。");
               // または、リクエスト中であることを示すUI（例: ボタンを無効にする）
             }
-        }else if (data.data_type === 'decline_rematch') {
-          const declinedRole = data.declined_role;
-          if (this.state.yourRole !== declinedRole) {
-              this.setState({ decline_received: true ,rematch_sended: false});
-            } else {
-              // 先手のプレイヤーの場合：自分がリクエストしたことの確認メッセージを表示（任意）
-              console.log("あなたが再対戦をリクエストしました。相手の返答をお待ちください。");
-              // または、リクエスト中であることを示すUI（例: ボタンを無効にする）
-            }
-        }
+          }else if (data.data_type === 'decline_rematch') {
+            const declinedRole = data.declined_role;
+            if (this.state.yourRole !== declinedRole) {
+                this.setState({ decline_received: true ,rematch_sended: false});
+              } else {
+                // 先手のプレイヤーの場合：自分がリクエストしたことの確認メッセージを表示（任意）
+                console.log("あなたが再対戦をリクエストしました。相手の返答をお待ちください。");
+                // または、リクエスト中であることを示すUI（例: ボタンを無効にする）
+              }
+          }
         },
-
+        //shogi_game_channel.rbのboard_broadcast_and_store呼び出し
         // クライアントからサーバーにメッセージを送るメソッド
         board_update: (boardData,moveDetails) => {
           // ここで boardData は getBoardState() から返されるプレーンなオブジェクトであることを想定
@@ -643,6 +1813,7 @@ class Room extends React.Component {
             room_id: this.state.roomId,
             game_id: this.state.gameId
            });
+          this.setState(prevState => ({ boardInfoHistory: [ ...prevState.boardInfoHistory, { reason: "initializeRoomメソッドからshogi_game_channel.rbのboard_broadcast_and_storeメソッド呼び出してredisにデータ格納してブロードキャスト", boardInfo: boardData }] }));
         },
         // サーバーにメッセージを送信するためのカスタムメソッド
         sendChatMessage: (chat_data)=> {//
@@ -654,7 +1825,8 @@ class Room extends React.Component {
             game_id: this.state.gameId 
           });
         //再対戦
-        },rematch_send: (yourRole)=> {
+        },
+        rematch_send: (yourRole)=> {
           this.subscription.perform('rematch_setup', {
               yourRole: yourRole, // キーが'yourRole'
               room_id: this.state.roomId,   // キーが'room_id'
@@ -678,52 +1850,232 @@ class Room extends React.Component {
     );
   };
 
-  canselSelection() {
-    if(this.state.isCheckmate){ console.log("ゲームセットしているので操作できない"); return }//ゲームセット状態なら操作できないように
-    const nextBoardInfo = this.state.boardInfo;// 現在のboardInfoの状態を取得
-    if (nextBoardInfo.selection.isNow) {// 既に何か選択されている状態の場合
-      nextBoardInfo.selection.isNow = false;// 選択状態を解除
-    } else {//何も選択されてない状態の場合
-      nextBoardInfo.selection = new Selection();//selectionオブジェクトを初期状態に戻す (新しいSelectionインスタンスを作成し、選択状態を完全に初期化する)
+  canselSelection(i,j,nowTurn) {
+  //canselSelection() {
+    console.log("canselSelectionで選択解除")
+    console.log("canselSelectionのnowTurn:"+nowTurn)
+    console.log("canselSelectionのthis.state.yourRole:"+this.state.yourRole)
+
+    if (i === -1) {// 持ち駒台の場合
+      console.log("持ち駒台の場合のcanselSelection")
+      //if(this.state.boardInfo.selection.pieceStandSelectInfo[i][j]!=="配置可能" && nowTurn===this.state.yourRole){//配置可能じゃなく、自分のターンなら
+        //console.log("pieceStandのcanselSelectionで配置可能じゃなく、自分のターンなのでselectionを初期化する")
+        //console.log("pieceStandのcanselSelectionで更新前のboardInfo.selection:", this.state.boardInfo.selection);
+
+        // boardInfo全体をコピーしつつ、一部だけ書き換える
+        const newBoardInfo = {
+          ...this.state.boardInfo,       // 現在のboardInfoを全て展開
+          selection: new Selection()     // selectionだけ新しい値で上書き
+        };
+
+        //this.setState({ boardInfo: newBoardInfo });
+        this.setState(
+          { boardInfo: newBoardInfo },
+          () => {//↓state更新後の処理
+            console.log("canselSelectionで更新後のboardInfo.selection:", this.state.boardInfo.selection);
+          }
+        );
+      //}else{
+        //console.log("canselSelectionで配置可能か、自分のターンじゃないのでselectionを初期化しない")
+      //}
+    }else{//ボードのコマの場合
+      //console.log("canselSelectionでthis.BoardInfo"+JSON.stringify(this.state.boardInfo))
+      console.log("boardのcanselSelectionでthis.BoardInfo.selection.boardSelectInfo"+JSON.stringify(this.state.boardInfo.selection.boardSelectInfo[i][j]))
+      console.log("boardのcanselSelectionでthis.BoardInfo.selection.boardSelectInfo"+JSON.stringify(this.state.boardInfo.selection.boardSelectInfo[j][i]))
+
+      //if(this.state.boardInfo.selection.boardSelectInfo[i][j]!=="配置可能" && nowTurn==this.state.yourRole){//配置可能じゃなく、自分のターンなら
+      if(this.state.boardInfo.selection.boardSelectInfo[i][j]!=="配置可能" && nowTurn===this.state.yourRole){//配置可能じゃなく、自分のターンなら
+          //this.state.boardInfo.selection.isNow = false;// 選択状態を解除
+          //this.state.boardInfo.selection = new Selection();
+          console.log("canselSelectionで配置可能じゃなく、自分のターンなのでselectionを初期化する")
+
+          console.log("canselSelectionで更新前のboardInfo.selection:", this.state.boardInfo.selection);
+
+          // boardInfo全体をコピーしつつ、一部だけ書き換える
+          const newBoardInfo = {
+            ...this.state.boardInfo,       // 現在のboardInfoを全て展開
+            //selection: false               // selectionだけ新しい値で上書き
+            selection: new Selection()               // selectionだけ新しい値で上書き
+          };
+
+          //this.setState({ boardInfo: newBoardInfo });
+          this.setState(
+            { boardInfo: newBoardInfo },
+            () => {//↓state更新後の処理
+              console.log("canselSelectionで更新後のboardInfo.selection:", this.state.boardInfo.selection);
+            }
+          );
+
+      }else{
+        console.log("canselSelectionで配置可能か、自分のターンじゃないのでselectionを初期化しない")
+      }
+      //this.BoardInfo.selection.boardSelectInfo(1,j)
+
+      /*if(this.state.isCheckmate){ console.log("ゲームセットしているので操作できない"); return }//ゲームセット状態なら操作できないように
+      const nextBoardInfo = this.state.boardInfo;// 現在のboardInfoの状態を取得
+      if (nextBoardInfo.selection.isNow) {// 既に何か選択されている状態の場合
+        nextBoardInfo.selection.isNow = false;// 選択状態を解除
+      } else {//何も選択されてない状態の場合
+        nextBoardInfo.selection = new Selection();//selectionオブジェクトを初期状態に戻す (新しいSelectionインスタンスを作成し、選択状態を完全に初期化する)
+      }
+      //nextBoardInfo.selection = new Selection();//selectionオブジェクトを初期状態に戻す (新しいSelectionインスタンスを作成し、選択状態を完全に初期化する)
+
+      //stateにぶちこまないといけない？
+      //this.setState({boardInfo: nextBoardInfo});//盤面情報の更新
+      this.setState(prevState => ({
+        boardInfo: nextBoardInfo,
+        boardInfoHistory: [ ...prevState.boardInfoHistory, { reason: "canselSelectionで選択解除でboardInfoを更新", boardInfo: nextBoardInfo }]
+      }));
+      */
     }
-    this.setState({boardInfo: nextBoardInfo});//盤面情報の更新
+    
+    //成りモーダルの非表示して初期化処理
+    if(this.state.showPromoteModal){
+      console.log("成りモーダルの非表示して初期化処理")
+      this.setState({
+        showPromoteModal: false,
+        promoteCallback: null,
+        currentPiece: null,
+        promoteModalPosition: { i: -1, j: -1 }
+      });
+    }
+
   }
-/// 
+
+
+
+
   //ユーザーが盤面上のi行、j列をクリックしたときに呼ばれるメソッド
   async handleBoardClick(i, j,player) {
   //handleBoardClick(i, j,player) {
-    //console.log(`handleBoardClick: i=${i}, j=${j}, player=${player}`);
+    console.log(`handleBoardClick:player=${player}, i=${i}, j=${j} `);
     //console.log("Current BoardInfo:", this.state.boardInfo);
     //console.log("BoardInfo callback exists?", !!this.state.boardInfo.onPromoteConfirmCallback);
-    // 念のため、呼び出し前にコールバックが存在するかチェック
-    if (!this.state.boardInfo.onPromoteConfirmCallback) {
-        //console.log("Callback missing, resetting...");
-        this.setupBoardInfoCallback();
-    }
 
     //console.log("handleBoardClick起動、i , j :" +i+","+j);
     if(this.state.isCheckmate){ console.log("ゲームセットしているので操作できない"); return }//ゲームセット状態なら操作できないように
     const { boardInfo, isConnected, yourRole, aiMode } = this.state;
     //const clickResult = boardInfo.boardClick(i, j,yourRole);// BoardInfoインスタンスのboardClickメソッドを呼び出す・この呼び出しで boardInfo インスタンス内部の状態が更新される・戻り値clickResultに移動情報などがまとまっている
 
-    //const clickResult = boardInfo.boardClick(i, j,player);// BoardInfoインスタンスのboardClickメソッドを呼び出す・この呼び出しで boardInfo インスタンス内部の状態が更新される・戻り値clickResultに移動情報などがまとまっている
-    const clickResult = await boardInfo.boardClick(i, j, player);
+    // BoardInfoがクラスインスタンスでない場合、再構築する
+    let boardInstance = boardInfo; // 元のboardInfoを変数に格納
+    if (typeof boardInfo.boardClick !== 'function') {
+      console.log('BoardInfoインスタンスを再構築します');
+      // 現在のデータから新しいBoardInfoインスタンスを作成
+      //console.log('boardInfo:'+JSON.stringify(boardInfo));
+      const dataForBoardInfo = {
+        board: boardInfo.board,
+        nowTurn: boardInfo.nowTurn,
+        selection: boardInfo.selection,
+        pieceStandNum: boardInfo.pieceStandNum,
+        pieceStand: boardInfo.pieceStand,
+      };
+      
+      // BoardInfoのコンストラクタが`{ BoardInfo: {...} }`という形式を期待しているため、それに合わせてデータを整形
+      boardInstance = new BoardInfo({
+        BoardInfo: dataForBoardInfo,
+      });
 
-    if( clickResult.move_status=="illegalMove" && aiMode){//aiモードで自殺手ならaiの手番をやり直す
-      console.log("aiモードで自殺手ならaiの手番をやり直す"); 
-      //console.log("boardInfo:"+JSON.stringify(boardInfo));
-      //console.log("boardInfo.selection:"+JSON.stringify(boardInfo.selection));
-      //const EasyBoardData = this.state.boardInfo.board.map(row =>row.map(cell => cell && cell.name ? "「"+cell.owner+"の"+cell.name+"」" : "「　　　　」")).map(row => row.join(", ")).join("\n");
-      //const EasyBoardData = boardInfo.board.map(row =>row.map(cell => cell && cell.name ? "「"+cell.owner+"の"+cell.name+"」" : "「　　　　」")).map(row => row.join(", ")).join("\n");
-      //console.log("EasyBoardData:\n"+this.CreateEasyBoard(boardInfo.board));
-      //console.log("boardInfoのseen:"+this.boardToSFEN(boardInfo.board));
-      this.aiAct(boardInfo)
+      //this.setState(prevState => ({ boardInfoHistory: [ ...prevState.boardInfoHistory, { reason: "BoardInfoがクラスインスタンスでない場合、再構築する", boardInfo: boardInstance }] }));
+      
+      /*boardInstance = new BoardInfo({
+        board: boardInfo.board,
+        nowTurn: boardInfo.nowTurn,
+        selection: boardInfo.selection,
+        pieceStandNum: boardInfo.pieceStandNum,
+        pieceStand: boardInfo.pieceStand,
+        // 必要に応じて他のプロパティを追加
+      });*/
+      //boardInstance = new BoardInfo(boardInfo);
+      /*boardInstance = new BoardInfo({
+        moveDetails: boardInfo.moveDetails || null,
+        boardSFEN: boardInfo.boardSFEN || null,
+        BoardInfo: boardInfo.board, // オブジェクトのキーを修正しました
+        pieceStandNum: boardInfo.pieceStandNum,
+        pieceStand: boardInfo.pieceStand,
+        nowTurn: boardInfo.nowTurn || this.state.nowTurn,
+        isCheck: this.state.isCheck,
+        isCheckmate: this.state.isCheckmate,
+        winner: this.state.winner
+      });*/
+
+      if (!boardInstance.onPromoteConfirmCallback) {//boardInstance.onPromoteConfirmCallbackが存在しないなら再設定
+        // コールバックを設定（再構築したインスタンスに対して）
+        this.setupBoardInfoCallback(boardInstance);
+
+        // デバッグ：コールバックが正しく設定されているか確認
+        console.log("boardInstance.onPromoteConfirmCallbackが存在しないなら再設定");
+        console.log("再構築後のコールバック:", !!boardInstance.onPromoteConfirmCallback);
+        console.log("再構築後のsetPromoteConfirmCallbackメソッド:", typeof boardInstance.setPromoteConfirmCallback);
+      }
+      
+    
+
+      // 選択状態を復元（存在する場合）
+      if (boardInfo.selection) {
+        boardInstance.selection = boardInfo.selection;
+      }
+
+      //boardInstance.setPromoteConfirmCallback(this.handlePromoteConfirm);
+      //this.setupBoardInfoCallback(boardInstance);
+      /*if (!this.state.boardInfo.onPromoteConfirmCallback) {
+        console.log("コールバックが欠落・リセット中...");
+        this.setupBoardInfoCallback();
+      }*/
+      //this.setupBoardInfoCallback(boardInstance); // ここで新しいインスタンスにコールバックを設定
+      //this.setupBoardInfoCallback();
+      //this.setState({ boardInfo: boardInstance });
+      
+      this.setState(prevState => {
+        return {
+          boardInfoHistory: [ ...prevState.boardInfoHistory,{ reason: "handleBoardClickでBoardInfoがクラスインスタンスでない場合、再構築するときに更新", boardInfo: boardInstance } ],
+          boardInfo: boardInstance
+        };
+      });
     }
 
+    // 念のため、呼び出し前にコールバックが存在するかチェック
+    if (!this.state.boardInfo.onPromoteConfirmCallback) {
+      console.log("コールバックが欠落・リセット中...");
+      this.setupBoardInfoCallback();
+    }
+  
+    //const clickResult = boardInfo.boardClick(i, j,player);// BoardInfoインスタンスのboardClickメソッドを呼び出す・この呼び出しで boardInfo インスタンス内部の状態が更新される・戻り値clickResultに移動情報などがまとまっている
+    //const clickResult = await boardInfo.boardClick(i, j, player);
+    const clickResult = await boardInstance.boardClick(i, j, player);
+    //const clickResult = await this.boardInfoInstance.boardClick(i, j, player);
     //console.log("clickResult:"+JSON.stringify(clickResult));
+    console.log("clickResult:",clickResult);
     //console.log("clickResult.moved_check:"+clickResult.moved_check);
+    
+    //console.log("clickResult.moveDetails:"+clickResult.moveDetails)
+    //if(clickResult.moveDetails==undefined){
+    /*if (!clickResult || clickResult.moveDetails === undefined) {
+      console.log("選択したコマを動かさなかった場合・moveDetailsがundefined"); 
+      this.resetSelection();//選択状態をリセット
+      //return
+    }*/
+
+    try {
+      //if( clickResult.move_status=="illegalMove" && aiMode){//aiモードで自殺手ならaiの手番をやり直す
+      if( clickResult.move_status=="illegalMove" && aiMode && !this.state.shogiDebugMode){
+        console.log("aiモードで自殺手ならaiの手番をやり直す"); 
+        //console.log("boardInfo:"+JSON.stringify(boardInfo));
+        //console.log("boardInfo.selection:"+JSON.stringify(boardInfo.selection));
+        //const EasyBoardData = this.state.boardInfo.board.map(row =>row.map(cell => cell && cell.name ? "「"+cell.owner+"の"+cell.name+"」" : "「　　　　」")).map(row => row.join(", ")).join("\n");
+        //const EasyBoardData = boardInfo.board.map(row =>row.map(cell => cell && cell.name ? "「"+cell.owner+"の"+cell.name+"」" : "「　　　　」")).map(row => row.join(", ")).join("\n");
+        //console.log("EasyBoardData:\n"+this.CreateEasyBoard(boardInfo.board));
+        //console.log("boardInfoのseen:"+this.boardToSFEN(boardInfo.board));
+        //this.aiAct(boardInfo)
+        this.aiAct(boardInstance);
+      }
+    } catch (error) {
+      console.error('エラーaiモードで自殺手ならaiの手番をやり直す:', error);
+    }
+
+
     //console.log("clickResult.moveDetails:"+clickResult.moveDetails);
-    if(clickResult!==undefined && clickResult.moved_check){//自分の手番じゃなかったり、クリックされたマスが移動先として不適切だったり、クリックされた駒が自分の手番の駒でなければ
+    if(clickResult!==undefined && clickResult.moved_check){//ちゃんとコマが移動すれば
       //新しいボードデータ作るためのデータを作成
       const game_data = {
         moveDetails: clickResult.moveDetails,
@@ -736,8 +2088,15 @@ class Room extends React.Component {
         isCheckmate: clickResult.isCheckmate ,// 詰み状態
         winner: clickResult.winner
       };
-      //console.log("clickResult.moveDetails:"+clickResult.moveDetails)
+      
       const newBoardInfoInstance = new BoardInfo(game_data); // clickResult.newBoardState には、boardClick 後の BoardInfo 内部の最新状態が返される・これを基に、新しい BoardInfo インスタンスを生成して React の state を更新する
+      //this.setupBoardInfoCallback(newBoardInfoInstance); // 新しいインスタンスにコールバックを設定
+      /*if (!this.state.boardInfo.onPromoteConfirmCallback) {
+        console.log("コールバックが欠落・リセット中...");
+        this.setupBoardInfoCallback();
+      }*/
+      //const newBoardInfoInstance = boardInfo(game_data);
+      //const newBoardInfoInstance = this.boardInfoInstance(game_data);
       this.setState(prevState => {
         let newMoveHistory;
         if (prevState.moveHistory === undefined) { // prevState.moveHistory が undefined なら、新しい配列を作成して最初の要素として clickResult.moveDetails を入れる
@@ -746,7 +2105,6 @@ class Room extends React.Component {
             // そうでなければ、既存の配列に clickResult.moveDetails を追加する
             newMoveHistory = [...prevState.moveHistory, clickResult.moveDetails];
         }
-
         let newBoardSfenHistory;
         if (prevState.boardSfenHistory === undefined) { // prevState.moveHistory が undefined なら、新しい配列を作成して最初の要素として clickResult.moveDetails を入れる
             newBoardSfenHistory = [clickResult.boardSFEN];
@@ -757,8 +2115,16 @@ class Room extends React.Component {
         //console.log("this.state.boardSfenHistory:"+this.state.boardSfenHistory)
         //console.log("clickResult.boardSFEN:"+clickResult.boardSFEN)
         //console.log("this.state.moveHistory:"+this.state.moveHistory)
-       
+        
+        //将棋デバッグモードがtrueならコマが動くか打った後にロールを自動でチェンジ
+        if(this.state.shogiDebugMode){
+          this.chengeRoleDebug()
+        }
+
+
+
         return {
+            boardInfoHistory: [ ...prevState.boardInfoHistory,{ reason: "handleBoardClickでコマが移動すれば更新", boardInfo: newBoardInfoInstance }],
             boardInfo: newBoardInfoInstance, // 新しいインスタンスでstateを更新
             moveHistory: newMoveHistory,     // 修正した moveHistory
             boardSfenHistory : newBoardSfenHistory,
@@ -768,6 +2134,12 @@ class Room extends React.Component {
             winner: clickResult.winner,
         };
       }, () => {
+        
+        //打った最新の手の背景色を変える
+        const board = document.getElementById('board');
+        const square = board.querySelector(`button.square[data-i="${i}"][data-j="${j}"]`);
+        square.classList.add('lastMoveByMe');
+
         //勝敗がついてたら
         if(clickResult.isCheckmate){
           //console.log("勝敗がついている")
@@ -795,7 +2167,7 @@ class Room extends React.Component {
             newBoardInfoInstance,
             clickResult.moveDetails
           )//,() => {
-            this.piece_move_sound()
+            //this.piece_move_sound()
 
         } else if (clickResult.moved_check) {
           console.warn("WebSocket接続が確立されていないため、盤面更新を送信できません。");
@@ -803,16 +2175,155 @@ class Room extends React.Component {
       });
     }else if(clickResult===undefined){
       console.log(`clickResultがundefined`);
+      return "clickResultがundefined"
     }else if(!clickResult.moved_check){
       console.log(`選択状態などでclickResult.moved_checkがfalse:${clickResult.moved_check}`);
+      /*return { 
+        success: true, 
+        reason: "piece_selected", 
+        clickResult,
+        selection: clickResult.selection || this.state.boardInfo.selection
+      };*/
+      return new Promise((resolve) => {
+        let updatedBoardInfo
+        /*this.setState(prevState => {
+          // 更新後の boardInfo を事前に作成
+          updatedBoardInfo = {
+            ...prevState.boardInfo,
+            board: clickResult.BoardInfo.board,
+            nowTurn: clickResult.BoardInfo.nowTurn,
+            pieceStand: clickResult.BoardInfo.pieceStand,
+            pieceStandNum: clickResult.BoardInfo.pieceStandNum,
+            selection: clickResult.BoardInfo.selection
+          };
+
+          return {
+            boardInfoHistory: [ ...prevState.boardInfoHistory, { reason: "ボードのコマをマウスダウン時に更新", boardInfo: updatedBoardInfo }],
+            boardInfo: updatedBoardInfo
+          };
+        //});
+        }, () => {//setStateが完了した（Stateが反映された）後にここが実行される
+        */
+        const prevBoardInfo = this.state.boardInfo;
+
+        updatedBoardInfo = {
+          ...prevBoardInfo,
+          board: clickResult.BoardInfo.board,
+          nowTurn: clickResult.BoardInfo.nowTurn,
+          pieceStand: clickResult.BoardInfo.pieceStand,
+          pieceStandNum: clickResult.BoardInfo.pieceStandNum,
+          selection: clickResult.BoardInfo.selection
+        };
+
+        this.setState(prevState => ({ boardInfoHistory: [ ...prevState.boardInfoHistory, { reason: "選択状態にしてboardInfo更新", boardInfo: updatedBoardInfo }] }));
+
+        // state ではなく ref に保存
+        this.boardInfoRef.current = updatedBoardInfo;
+        console.log("this.state.boardInfo・ボードのコマをマウスダウン時に更新:",updatedBoardInfo)
+
+        
+        // 呼び出し側の await handleBoardClick() にこのオブジェクトが返る
+        resolve({ BoardInfo: updatedBoardInfo });
+
+        //return { boardInfo: updatedBoardInfo };
+
+      //});
+
+      });
     }else{
       console.error(`その他エラー`);
+      return "その他エラー"
     }
   }
 
-  pieceStandClick(piece) {
-    console.log("pieceStandClickのpiece:"+JSON.stringify(piece))
-    this.state.boardInfo.pieceStandClick(piece);
+  async pieceStandClick(piece) {
+  //pieceStandClick(piece) {
+    if(this.state.isCheckmate){ console.log("ゲームセットしているので操作できない"); return }//ゲームセット状態なら操作できないように
+    const { boardInfo, isConnected, yourRole, aiMode } = this.state;
+
+    // BoardInfoがクラスインスタンスでない場合、再構築する
+    /*let boardInstance = boardInfo; // 元のboardInfoを変数に格納
+    if (typeof boardInfo.pieceStandClick !== 'function') {
+      console.log('pieceStandClick・BoardInfoインスタンスを再構築します');
+      // 現在のデータから新しいBoardInfoインスタンスを作成
+      //console.log('boardInfo:'+JSON.stringify(boardInfo));
+      const dataForBoardInfo = {
+        board: boardInfo.board,
+        nowTurn: boardInfo.nowTurn,
+        selection: boardInfo.selection,
+        pieceStandNum: boardInfo.pieceStandNum,
+        pieceStand: boardInfo.pieceStand,
+      };
+      boardInstance = new BoardInfo({ BoardInfo: dataForBoardInfo }); // BoardInfoのコンストラクタが`{ BoardInfo: {...} }`という形式を期待しているため、それに合わせてデータを整形
+      this.setupBoardInfoCallback(boardInstance);// コールバックを設定（重要：再構築したインスタンスに対して）
+      
+      // デバッグ：コールバックが正しく設定されているか確認
+      console.log("再構築後のコールバック:", !!boardInstance.onPromoteConfirmCallback);
+      console.log("再構築後のsetPromoteConfirmCallbackメソッド:", typeof boardInstance.setPromoteConfirmCallback);
+  
+      // 選択状態を復元（存在する場合）
+      if (boardInfo.selection) {
+        boardInstance.selection = boardInfo.selection;
+      }
+      this.setState({ boardInfo: boardInstance });
+    }
+
+    // 念のため、呼び出し前にコールバックが存在するかチェック
+    if (!this.state.boardInfo.onPromoteConfirmCallback) {
+      console.log("コールバックが欠落・リセット中...");
+      this.setupBoardInfoCallback();
+    }*/
+
+    console.log("pieceStandClickのthis.state.boardInfo",this.state.boardInfo);
+    console.log("this.state.boardInfo.pieceStandClick(piece)に送るpiece",piece);
+    //console.log("pieceStandClickのpiece:"+JSON.stringify(piece))
+    //this.state.boardInfo.pieceStandClick(piece);
+    const result = await this.state.boardInfo.pieceStandClick(piece);
+    console.log("持ち駒pieceStandClickのresult:",result)
+
+    if(result!==undefined && result.moved_check){//ちゃんとコマを打てたら
+      // boardとnowTurnを新しい値で更新する
+      this.setState(prevState => ({
+        boardInfoHistory: [
+          ...prevState.boardInfoHistory,{
+            reason: "pieceStandClickでちゃんとコマを打てたら更新",
+            boardInfo: result.BoardInfo   // ← 更新後の boardInfo を履歴に追加
+          }
+        ],
+        boardInfo: {
+          ...prevState.boardInfo,  // 既存のboardInfoを展開
+          board: result.BoardInfo.board,         // 新しいboardに置き換え
+          nowTurn: result.BoardInfo.nowTurn,        // 新しいnowTurnに置き換え
+          pieceStand: result.BoardInfo.pieceStand,
+          pieceStandNum: result.BoardInfo.pieceStandNum,
+          selection: result.BoardInfo.selection
+        }
+      }, () => {
+        console.log("変更後:",this.state.boardInfo)
+      }));
+    }else if(result===undefined){
+      console.log(`持ち駒resultがundefined`);
+    }else if(!result.moved_check){
+      console.log(`持ち駒選択状態などでresult.moved_checkがfalse:${result.moved_check}`);
+      return { 
+        success: true, 
+        reason: "piece_selected", 
+        result: result,
+        selection: result.selection || this.state.boardInfo.selection
+      };
+    }else{
+      console.error(`その他エラー`);
+    }
+    /*moveDetails: clickResult.moveDetails,
+    boardSFEN: clickResult.boardSFEN,
+    BoardInfo: clickResult.BoardInfo,
+    pieceStandNum: clickResult.pieceStandNum,
+    pieceStand: clickResult.pieceStand,
+    nowTurn: clickResult.nowTurn,
+    isCheck: clickResult.isCheck, // 王手状態を結果に追加
+    isCheckmate: clickResult.isCheckmate ,// 詰み状態
+    winner: clickResult.winner*/
+    return result
   }
 
   piece_move_sound(){
@@ -820,6 +2331,7 @@ class Room extends React.Component {
     audio.volume = 0.8; // 無音で開始
     audio.play()
   }
+
   async aiAct(newBoardInfoInstance){
   //aiAct(newBoardInfoInstance){
     //console.log("newBoardInfoInstance:"+JSON.stringify(newBoardInfoInstance))
@@ -845,9 +2357,8 @@ class Room extends React.Component {
     //const sfen = "9/1r3+P1b1/4+P1ppp/PPPP2PPP/9/pp1ppp1pp/PP+pP1P+p1P/1B5R1/4K4 b 2p 6" //K(後手の王が消えてるからetBestMoveFromSFEN(sfen)でnullになってしまう)
     //const sfen = "4k4/1r5b1/+P5ppp/P1PPPPPPP/9/pp3pppP/PP2+pPP2/3+p5/B8 w 2P2pr 11" //K(後手の王が消えてるからetBestMoveFromSFEN(sfen)でnullになってしまう)
     //const sfen = "4k4/1r3+P1b1/4+P1ppp/PPPP2PPP/9/pp1ppp1pp/PP+pP1P+p1P/1B5R1/4K4 b 2p 6"
-    console.log("sfen:"+sfen); // 例：sfen:lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1
+    //console.log("sfen:"+sfen); // 例：sfen:lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1
 
-    //let move = getBestMoveFromSFEN(sfen); //
     let move;
     try {
         const response = await fetch("http://168.138.215.52:5000/move", {
@@ -867,7 +2378,7 @@ class Room extends React.Component {
         const response_data = await response.json();
         console.log("AIの応答:", response_data);
         move=response_data.move
-
+        //let move = getBestMoveFromSFEN(sfen); //自作cpu
         //let move ="P*2d"
         console.log("CPUの差し手・move:"+move);//例：6g6f
         const regex = /^[1-9][a-i][1-9][a-i](?:\+)?$/;
@@ -1068,7 +2579,7 @@ class Room extends React.Component {
   }
 
   // 時間切れ時に実行されるコールバック関数
-   handleActionCableMessage(data) {
+  handleActionCableMessage(data) {
     //console.log("handleActionCableMessage(data):", data); // JSON.stringify(data) はオブジェクトを見にくくするので直接 data をログに出す
     switch (data.type) {
       case 'initial_timer_state':
@@ -1097,7 +2608,6 @@ class Room extends React.Component {
         //console.log("Unknown message type:", data.type);
     }
   }
-
   handleTimeUp(player) {
     //console.log(`${player} の時間切れです！ゲームを終了します。`);
     const winner = player === 'sente' ? '後手' : '先手';//値がsenteならgoteにして、goteならsenteに
@@ -1107,7 +2617,6 @@ class Room extends React.Component {
       winner: winner,
     });
   }
-
   // ShogiTimer の startTimer メソッドを呼び出す
   handleStartTimer = () => {
     //console.log("handleStartTimer呼び出された"+JSON.stringify(this.shogiTimerRef.current))
@@ -1116,7 +2625,6 @@ class Room extends React.Component {
     }
        // this.shogiTimerInstance が null でないことを確認
   };
-
   // ShogiTimer の pauseTimer メソッドを呼び出す
   handlePauseTimer = () => {
     //console.log("handlePauseTimer呼び出された"+JSON.stringify(this.shogiTimerRef.current))
@@ -1124,7 +2632,6 @@ class Room extends React.Component {
       this.shogiTimerRef.current.pause(); // ShogiTimer で公開した 'pause' メソッドを呼び出す
     }
   };
-
   // ShogiTimer の toggleStartPause メソッドを呼び出す
   handleToggleTimer = () => {
     //console.log("handleToggleTimer呼び出された"+JSON.stringify(this.shogiTimerRef.current))
@@ -1132,7 +2639,6 @@ class Room extends React.Component {
       this.shogiTimerRef.current.toggle(); // ShogiTimer で公開した 'toggle' メソッドを呼び出す
     }
   };
-
   // ShogiTimer の switchTurn メソッドを呼び出す
   handleSwitchTurn = () => {
     //console.log("handleSwitchTurn呼び出された"+JSON.stringify(this.shogiTimerRef.current))
@@ -1140,7 +2646,6 @@ class Room extends React.Component {
       this.shogiTimerRef.current.switchTurn(); // ShogiTimer で公開した 'switchTurn' メソッドを呼び出す
     }
   };
-
   // ShogiTimer の resetTimer メソッドを呼び出す
   handleResetTimer = () => {
     console.log("handleResetTimer呼び出された"+JSON.stringify(this.shogiTimerRef.current))
@@ -1163,11 +2668,33 @@ class Room extends React.Component {
         const debugArea = document.getElementById('debugArea');// ドラッグしたい要素を取得
         if (debugArea) {
             new Draggable(debugArea);// Draggable.js のインスタンスを作成し、要素をドラッグ可能にする// 'new Draggable()' の引数にドラッグ対象の要素を渡します。
+            /*new Draggable(debugArea, {
+              handle: '.debug-handle',
+              //draggable: '.debug-content', // 必要なら指定
+              distance: 5  // 5px 以上動かないとドラッグ開始しない
+            });*/
+
+            //中をドラッグしてコピーなどできるようにする
+            const content = debugArea.querySelector('.debug-content');
+            //Draggable にイベントを渡さない
+            content.addEventListener('mousedown',(e) => {
+                e.stopPropagation();
+              },
+              true //capture フェーズ
+            );
+            content.addEventListener('mousemove',(e) => {
+                e.stopPropagation();
+              },
+              true
+            );
         }
       }, 100);
     }
   };
-
+  //stateのshogiDebugModeのtrueとfalseの切り替えメソッド
+  handleShogiDebugModeChange = (e) => {
+    this.setState({ shogiDebugMode: e.target.checked });
+  };
   chengeRoleDebug(){
     //setStateを呼び出す前に、nowTurnとyourRoleを決定する
     let newNowTurn;
@@ -1220,7 +2747,6 @@ class Room extends React.Component {
     //手数・次の指し手の手数をそのまま数字で記載する。初期局面なら「1」となる。
 
   }
-
   /**
    * 将棋盤の情報をSFEN形式の文字列に変換します。
    * @param {Array<Array<Object>>} board - 将棋盤の2次元配列。
@@ -1279,7 +2805,6 @@ class Room extends React.Component {
       return sfenRow;
     }).join("/");
   }
-
   piecesToSFEN(pieces) {
     const map = { "歩": "P", "香": "L", "桂": "N", "銀": "S", "金": "G", "角": "B", "飛": "R" };
     
@@ -1303,7 +2828,6 @@ class Room extends React.Component {
 
     return sfen === "" ? "-" : sfen;
   }
-
   turnToSFEN(turn){
     if(turn=="先手"){
       return "w"
@@ -1311,7 +2835,6 @@ class Room extends React.Component {
       return "b"
     }
   }
-
   // SFEN位置を (x, y) の座標に変換
   sfenPosToCoord(pos) {
     const file = parseInt(pos[0], 10); // 筋 (9〜1)
@@ -1591,7 +3114,7 @@ class Room extends React.Component {
             {!isCheckmate && ( //ゲームセットしていないなら
               <div>
                 <ShogiTimer
-                  initialMinutes={1000}
+                  initialMinutes={10}
                   onTimeUp={this.handleTimeUp}
                   ref={this.shogiTimerRef}
                   yourRole={yourRole}
@@ -1631,25 +3154,25 @@ class Room extends React.Component {
               </div>
             )}
         </div>
-      </div>
+          </div>
 
-          <div className="game-container column" onClick={() => this.canselSelection()}
+          {/*<div className="game-container column" onClick={() => this.canselSelection()}*/}
+          <div className="game-container column" 
             style={ ( yourRole === "後手" || yourRole === "gote") //&& !aiMode//後手でaiモードがtrueなら回転させる・align-items:flex-startで垂直方向を上端揃え
-                    ? { alignItems: "flex-start" }
+                    ? { alignItems: "center" /*alignItems: "flex-start"*/ }
                     : undefined
                   }
           >
 
-
             {/* 成り確認モーダル - 特定のマスに表示 */}
-            {this.state.showPromoteModal && (
+            {/*this.state.showPromoteModal && (
                 <PromoteModal
                     position={this.state.promoteModalPosition}
                     piece={this.state.currentPiece}
                     yourRole={this.state.yourRole}
                     onChoice={this.handlePromoteChoice}
                 />
-            )}
+            )*/}
 
             <div className="game-board"
                 style={ (yourRole === "後手" || yourRole === "gote" ) //&& !aiMode //後手でaiモードがtrueなら回転させる・align-items:flex-startで垂直方向を上端揃え
@@ -1657,6 +3180,77 @@ class Room extends React.Component {
                     : undefined
                   }
             >
+
+              <PieceStand
+                side="後手"
+                pieceStand={this.state.boardInfo.pieceStand["後手"]}
+                pieceStandNum={this.state.boardInfo.pieceStandNum["後手"]}
+                pieceStandSelectInfo={this.state.boardInfo.selection.pieceStandSelectInfo["後手"]}
+                onClick={(i) => this.pieceStandClick(this.state.boardInfo.pieceStand["後手"][i])}
+                roomOnMouseDown={this.roomHandleMouseDown}
+                roomOnDragStart={this.roomHandleDragStart}
+                roomOnDragEnd={this.roomHandleDragEnd}
+                roomOnDrop={this.roomHandleDrop}
+                yourRole={yourRole}
+                nowTurn={nowTurn}
+              />
+              <br />
+              <Board
+                board={this.state.boardInfo.board}
+                boardSelectInfo={this.state.boardInfo.selection.boardSelectInfo}
+                
+                //onClick={(i, j) => this.handleBoardClick(i, j, yourRole)}
+                //onMouseDown={(i, j) => this.handleBoardClick(i, j, yourRole)}
+                
+                roomOnMouseDown={this.roomHandleMouseDown}
+                roomOnDragStart={this.roomHandleDragStart}
+                roomOnDragEnd={this.roomHandleDragEnd}
+                roomOnDrop={this.roomHandleDrop}
+                yourRole={yourRole}
+                nowTurn={nowTurn}
+
+                showPromoteModal={this.state.showPromoteModal}
+                promoteModalPosition={this.state.promoteModalPosition}
+                currentPiece={this.state.currentPiece}
+                handlePromoteOnChoice={this.handlePromoteChoice}
+              />
+
+              <br />
+              <PieceStand
+                side="先手"
+                pieceStand={this.state.boardInfo.pieceStand["先手"]}
+                pieceStandNum={this.state.boardInfo.pieceStandNum["先手"]}
+                pieceStandSelectInfo={this.state.boardInfo.selection.pieceStandSelectInfo["先手"]}
+                onClick={(i) => this.pieceStandClick(this.state.boardInfo.pieceStand["先手"][i])}
+                roomOnMouseDown={this.roomHandleMouseDown}
+                roomOnDragStart={this.roomHandleDragStart}
+                roomOnDragEnd={this.roomHandleDragEnd}
+                roomOnDrop={this.roomHandleDrop}
+                yourRole={yourRole}
+                nowTurn={nowTurn}
+              />
+              {/*<PieceStand
+                side="後手"
+                pieceStand={this.state.boardInfo.pieceStand["後手"]}
+                pieceStandNum={this.state.boardInfo.pieceStandNum["後手"]}
+                pieceStandSelectInfo={this.state.boardInfo.selection.pieceStandSelectInfo["後手"]}
+                onClick={(i) => this.pieceStandClick(this.state.boardInfo.pieceStand["後手"][i])}
+              />
+              <br />
+              <Board
+                board={this.state.boardInfo.board}
+                boardSelectInfo={this.state.boardInfo.selection.boardSelectInfo}
+                onClick={(i, j) => this.handleBoardClick(i, j, yourRole)}
+              />
+              <br />
+              <PieceStand
+                side="先手"
+                pieceStand={this.state.boardInfo.pieceStand["先手"]}
+                pieceStandNum={this.state.boardInfo.pieceStandNum["先手"]}
+                pieceStandSelectInfo={this.state.boardInfo.selection.pieceStandSelectInfo["先手"]}
+                onClick={(i) => this.pieceStandClick(this.state.boardInfo.pieceStand["先手"][i])}
+              />
+              
               <PieceStand
                 pieceStand={this.state.boardInfo.pieceStand["後手"]}
                 pieceStandNum={this.state.boardInfo.pieceStandNum["後手"]}
@@ -1677,6 +3271,7 @@ class Room extends React.Component {
                 pieceStandSelectInfo={this.state.boardInfo.selection.pieceStandSelectInfo["先手"]}
                 onClick={(i) => this.pieceStandClick(this.state.boardInfo.pieceStand["先手"][i])}
               />
+              */}
             </div>
           </div>
 
@@ -1694,6 +3289,7 @@ class Room extends React.Component {
                         ${moveHistorySelectedIndex === index ? "bg-blue-600" : "hover:bg-gray-700"}`}
                       /*onClick={() => this.backHistory(boardSfenHistory[index])}*/
                       onClick={() => {
+                        if (!this.state.isCheckmate) return;
                         this.backHistory(boardSfenHistory[index],index);
                       }}
                     >
@@ -1704,12 +3300,14 @@ class Room extends React.Component {
                 <div className="flex justify-between mb-2">
                   <button
                     className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600"
+                    disabled={!this.state.isCheckmate}
                     onClick={() => { this.backHistory(boardSfenHistory[moveHistorySelectedIndex-1],moveHistorySelectedIndex-1); }}
                   >
                     ←
                   </button>
                   <button
                     className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600"
+                    disabled={!this.state.isCheckmate}
                     onClick={() => { this.backHistory(boardSfenHistory[moveHistorySelectedIndex+1],moveHistorySelectedIndex+1); }}
                   >
                     →
@@ -1799,74 +3397,99 @@ class Room extends React.Component {
                   </form>
                 </div>
               )}
-            </div>
-        </div>
-
-      {rematchRequest && ( //再戦リクエストが来たら
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div 
-            className={`fixed inset-0 bg-black transition-opacity duration-300 ${
-              !rematchRequest ? 'opacity-0' : 'opacity-50'
-            }`}
-          ></div>
-
-          <div className={`
-            relative bg-white rounded-lg shadow-2xl max-w-md w-full mx-4 
-            transform transition-all duration-300 
-            ${!rematchRequest ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}
-          `}>
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-t-lg">
-              <h2 className="text-xl font-bold text-center">再戦リクエスト</h2>
-            </div>
-
-            <div className="p-6">
-              <div className="text-center mb-6">
-                <div className="text-4xl mb-3">⚔️</div>
-                <p className="text-gray-700 text-lg">
-                  相手から再戦の申し込みがあります
-                </p>
-              </div>
-
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => this.acceptRematch()}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
-                >
-                  承諾
-                </button>
-                <button
-                  onClick={() => this.declineRematch()}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
-                >
-                  拒否
-                </button>
-              </div>
-            </div>
-
-            <button
-              className="absolute top-2 right-2 text-white hover:text-gray-200 transition-colors duration-200"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
           </div>
         </div>
-      )}
 
+        {rematchRequest && ( //再戦リクエストが来たら
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div 
+              className={`fixed inset-0 bg-black transition-opacity duration-300 ${
+                !rematchRequest ? 'opacity-0' : 'opacity-50'
+              }`}
+            ></div>
+
+            <div className={`
+              relative bg-white rounded-lg shadow-2xl max-w-md w-full mx-4 
+              transform transition-all duration-300 
+              ${!rematchRequest ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}
+            `}>
+              <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-t-lg">
+                <h2 className="text-xl font-bold text-center">再戦リクエスト</h2>
+              </div>
+
+              <div className="p-6">
+                <div className="text-center mb-6">
+                  <div className="text-4xl mb-3">⚔️</div>
+                  <p className="text-gray-700 text-lg">
+                    相手から再戦の申し込みがあります
+                  </p>
+                </div>
+
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => this.acceptRematch()}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+                  >
+                    承諾
+                  </button>
+                  <button
+                    onClick={() => this.declineRematch()}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+                  >
+                    拒否
+                  </button>
+                </div>
+              </div>
+
+              <button
+                className="absolute top-2 right-2 text-white hover:text-gray-200 transition-colors duration-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
 
         {debugMode  && railsEnv=="development" && (
           <div id="debugArea"
-            className="w-[90%] h-[50%] fixed top-7 right-4 z-50 opacity-80 border bg-gray-500 items-center justify-center overflow-auto whitespace-pre-line"
-          >  
-<h3>Version1</h3>
-                <span className="font-semibold m-5">あなたは{yourRole}</span>
+            className="w-[90%] h-[80%] fixed top-7 right-4 z-50 opacity-95 border bg-gray-500 items-center justify-center overflow-auto whitespace-pre-line"
+          >
+              <div class="debug-handle fixed cursor-move bg-gray-800 text-white px-2 py-1 select-none">
+                ドラッグ移動
+              </div>
+
+              <div className='debug-content'>
+                <h3>Version1</h3>
+
+                <div>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={this.state.shogiDebugMode}
+                      onChange={this.handleShogiDebugModeChange}
+                    />
+                    将棋デバッグモード・チェックを入れるとaiの手番でも自分で打てる
+                  </label>
+
+                  {this.state.shogiDebugMode && <div>将棋デバッグモードオン中</div>}
+                </div>
+
+                <span className="font-semibold m-5 p-2">あなたは{yourRole}</span>
 
                 <button
                   onClick={() => this.chengeRoleDebug()}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
                 >
                   自分の役割の手番を変更
+                </button>
+
+                <button
+                  onClick={() => this.piece_move_sound()}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+                >
+                  コマの打つ音鳴らす
                 </button>
 
                 <button
@@ -1896,32 +3519,56 @@ class Room extends React.Component {
                   </span>
                 </div>
 
-                {/* */}
                 <div
-                 className="mb-3 text-white
-                  whitespace-pre    /* 改行をそのまま反映、折り返しも無効 */
-                  font-mono         /* 等幅フォントで見やすく */
-                  text-sm
-                  bg-black
-                  p-3
-                  border border-gray-200
-                  overflow-x-auto   /* 横長のときはスクロール */
-                ">
+                 className="debug-content mb-3 text-white whitespace-pre font-mono text-sm bg-black p-3 border border-gray-200 overflow-x-auto"
+                >
                   <p>ボードデータ: </p>
                   {EasyBoardData}
                 </div>
-                <div className="mb-3 text-white">
-                  先手の持ち駒: {JSON.stringify(this.state.boardInfo.pieceStand["先手"])}
+
+                <div
+                 className="mb-3 text-white whitespace-pre font-mono text-sm bg-black p-3 border border-gray-200 overflow-x-auto"
+                >
+                  <BoardInfoDebugger boardInfoHistory={this.state.boardInfoHistory} />
+                    
+                    {/*JSON.stringify(this.state.boardInfo)*/}
+
+                    {/*
+                    <BoardInfoDebugger boardInfo={this.state.boardInfo} />
+                    <p>this.state.boardInfo: </p><br/>
+
+                    <details>
+                        <summary>board</summary>
+                        <pre>{JSON.stringify(boardInfo.board, null, 1)}</pre>
+                    </details>
+                    <details>
+                        <summary>pieceStandNum</summary>
+                        <pre>{JSON.stringify(boardInfo.pieceStandNum, null, 3)}</pre>
+                    </details>
+                    <details>
+                        <summary>pieceStand</summary>
+                        <pre>{JSON.stringify(boardInfo.pieceStand, null, 10)}</pre>
+                    </details>
+                    <details>
+                        <summary>selection</summary>
+                        <pre>{JSON.stringify(boardInfo.selection, null, 2)}</pre>
+                    </details>
+                    <details>
+                        <summary>nowTurn</summary>
+                        <pre>{JSON.stringify(boardInfo.nowTurn, null, 2)}</pre>
+                    </details>
+                      */}
                 </div>
-                <div className="mb-3 text-white">
-                  後手の持ち駒: {JSON.stringify(this.state.boardInfo.pieceStand["後手"])}
-                </div>
+
+
                 <div>
                   gameRoomData: {gameRoomData}
+                </div>
                 </div>
           </div>
         )}
 
+        {/* BGM */}
         <audio 
           src={gameBgmPath}
           id="game_bgm" 
@@ -1929,7 +3576,6 @@ class Room extends React.Component {
           loop
           className="fixed bottom-4 left-25 hidden"
         />
-
         <div
           className="fixed left-4 bottom-4 z-50"
         >
