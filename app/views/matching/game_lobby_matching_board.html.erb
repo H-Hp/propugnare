@@ -1,7 +1,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/draggable@4.2.0/dist/draggable.min.js"></script>
 <div id="lobby-container" 
-  data-session-id="<%= session.id.to_s %>" 
+  data-session-id="<%= @session_id %>"
   data-all-gameroomdatas="<%= @game_room_datas %>" 
   data-logo-path="<%= image_path('Logo.png') %>" 
   data-king-path="<%= image_path('shogi/king.png') %>" 

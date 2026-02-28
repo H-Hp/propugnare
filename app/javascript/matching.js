@@ -319,7 +319,7 @@ class Matching extends React.Component {
   attemptRedirect(roomId) {
     if (document.visibilityState === 'visible') {
       console.log("タブがアクティブなので、即座にリダイレクトします。");
-      //window.location.href = `/shogi/${roomId}`; // 自動リダイレクトが必要なら有効化
+      window.location.href = `/shogi/${roomId}`; // 自動リダイレクトが必要なら有効化
       this.stopFlashingPageTitle();
     } else {
       console.log("タブが非アクティブなので、アクティブ化を待ちます。");
@@ -859,6 +859,8 @@ class Matching extends React.Component {
               <div>
                 <input
                   type="text"
+                  name="nickName"
+                  id="nickName"
                   value={this.state.username}
                   onChange={this.handleUsernameChange}
                   placeholder="ニックネーム"

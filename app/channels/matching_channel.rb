@@ -8,7 +8,7 @@ class MatchingChannel < ApplicationCable::Channel
     identifier = params[:identifier]
     stream_from "matching_status" #マッチングの全員共通のストリーム
     stream_from "personal_notification_#{identifier}" #個人通知用のストリーム
-    Rails.logger.info "RoomChannelのdef subscribedのidentifier:#{identifier} "
+    puts "RoomChannelのdef subscribedのidentifier:#{identifier} "
     # 接続時に、もしこのセッションがまだキューにいる場合は、念のため 'in_progress' 状態をブロードキャストしてUIを更新する
     if $redis.lrange(MATCHING_QUEUE_KEY, 0, -1).any? { |json| JSON.parse(json).symbolize_keys[:identifier] == identifier }
       ActionCable.server.broadcast("matching_status", { status: 'in_progress', message: 'マッチング待機中です...' })

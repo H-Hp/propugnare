@@ -6,6 +6,9 @@ class MatchingController < ApplicationController
   #DELETE_TIME=1000
   DELETE_TIME = 30 * 60 #30分を秒単位で定義・30分 * 60秒 = 1800秒
 
+  # テスト環境の時だけ、マッチング開始アクションのCSRFチェックを免除する
+  skip_before_action :verify_authenticity_token, if: -> { Rails.env.test? }
+
   def game_lobby_matching_board
     zeitwerk_enabled = Rails.autoloaders.zeitwerk_enabled?# Zeitwerkモードが有効化されているかを取得
     Rails.logger.info "Zeitwerk enabled: #{zeitwerk_enabled}"
@@ -32,13 +35,42 @@ class MatchingController < ApplicationController
     @game_room_datas = @game_room_datas.to_json
 
     @rails_env = Rails.env
+
+    # テスト環境かつparamsにidentifierがあればそれを使う（Request Spec用）
+    # なければSecureRandomで生成する（Feature Spec用）
+    if Rails.env.test?
+      #@session_id = params[:session_id].presence || "test_user_#{SecureRandom.hex(4)}"
+      #@session_id = "test_user_#{SecureRandom.hex(4)}"
+      # すでにセッションにあればそれを使い、なければ生成して保存する
+      session[:test_user_id] ||= "test_user_#{SecureRandom.hex(4)}"
+      @session_id = session[:test_user_id]
+    else
+      @session_id = session.id.to_s
+    end
+    puts "DEBUG: user @session_id is [#{@session_id}]"
+
+
+    # Feature Spec（ブラウザテスト）では、この生成したIDを後続の「将棋ページ」でも使えるようにセッションに入れておく
+    #session[:test_user_id] = user_identifier if Rails.env.test?
   end
 
   #このstartメソッドは、将棋のオンライン対戦における「マッチング機能」を実装・Redisのキューを使って2つのプレイヤーを待機させ、2人揃ったら対戦部屋を作成する仕組み
   #render json: {...}の値はJsのマッチ開始イベントのfetch内のresponse.json()で取得
   def start
     #各ユーザーは自身のユニークな識別子を持つ
-    user_identifier = session.id.to_s # 現在のセッションIDをユーザー識別子として使用
+    # テスト時は params[:identifier] を使い、通常時は session.id を使うようにする
+    #user_identifier = params[:identifier].presence || session.id.to_s # 現在のセッションIDをユーザー識別子として使用
+    #user_identifier = params[:identifier].presence || session.id.to_s # 現在のセッションIDをユーザー識別子として使用
+    user_identifier =""
+    if Rails.env.test?
+      # session[:test_user_id] から値を取り出す
+      # params[:identifier] がある場合は Request Spec のためにそちらを優先
+      user_identifier = session[:test_user_id] || params[:session_id].presence
+    else
+      user_identifier = session.id.to_s
+    end
+    #user_identifier = session.id.to_s # 現在のセッションIDをユーザー識別子として使用
+    #user_identifier = @session_id
 
     battleType = params[:battleType]
     userName = params[:userName]
@@ -84,6 +116,7 @@ class MatchingController < ApplicationController
     #キューの長さが2以上になると、「対戦相手が揃った」と判断してマッチング処理を進める
     #1人だけなら、クライアントへ 「in_progress」 を返して待機を継続させる
     if @matching_queue_length >= 2
+      puts "マッチした"
       # 2人のプレイヤーをキューから取り出す・先入れ先出し（FIFO） の順序で、待機キューの左端から2件をLPOPで取り出し
       player1_json = $redis.lpop(MATCHING_QUEUE_KEY)
       player2_json = $redis.lpop(MATCHING_QUEUE_KEY)
@@ -140,6 +173,7 @@ class MatchingController < ApplicationController
         battleType: battleType,
         created_at: Time.current.to_i,
       }
+      puts"作成したroom_data:#{room_data}"
       game_rooms_key = "game_room:#{room_id}"
       #Redisのハッシュ（GAME_ROOMS_HASH_KEY）に対し、キーroom_idでroom_dataをJSON文字列として保存する
       #$redis.hset(GAME_ROOMS_HASH_KEY, room_id, room_data.to_json)

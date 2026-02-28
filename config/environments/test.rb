@@ -6,6 +6,8 @@
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
+  config.active_support.to_time_preserves_timezone = :zone
+
   # While tests run files are not watched, reloading is not necessary.
   config.enable_reloading = false
 
@@ -26,8 +28,16 @@ Rails.application.configure do
   config.action_dispatch.show_exceptions = :rescuable
 
   # Disable request forgery protection in test environment.
-  config.action_controller.allow_forgery_protection = false
+  #config.action_controller.allow_forgery_protection = false
+  # falseからtrueに変更
+  #Railsのテスト環境でCSRF保護を有効にする・通常、Railsのテスト環境では allow_forgery_protection が false になっています。これを true にすることで、テスト時も本番同様に meta タグへトークンが埋め込まれるようになります。
+  config.action_controller.allow_forgery_protection = true
+  # (ActionCable用) テスト中のWebSocket接続拒否を防ぐ
+  config.action_cable.disable_request_forgery_protection = true
 
+  # trueで古いファイルを使い回さない設定
+  config.assets.compile = true
+  
   # Store uploaded files on the local file system in a temporary directory.
   config.active_storage.service = :test
 

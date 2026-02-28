@@ -7,6 +7,7 @@ class ShogiController < ApplicationController
 
   def index
     @rails_env = Rails.env
+    puts "@rails_env:#{@rails_env}"
     #@game_id = params[:id]
     @room_id = params[:id]
     game_rooms_key = "game_room:#{@room_id}"
@@ -61,9 +62,10 @@ class ShogiController < ApplicationController
     else# データが存在する場合の処理
       # 特定のroom_idのデータを取得
       @game_room_data_json = $redis.get(game_rooms_key)
-      Rails.logger.info "redisからデータ取得: #{@game_room_data_json}"#redisからデータ取得: {"sente_identifier":"9a407895123bef7a65202dfb165a9aff","gote_identifier":"9f63ac8f86022e04a98aa62b8be8a737","status":"active","created_at":1750569827,"player1_user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36","player2_user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"}
+      puts "redisからデータ取得: #{@game_room_data_json}"#redisからデータ取得: {"sente_identifier":"9a407895123bef7a65202dfb165a9aff","gote_identifier":"9f63ac8f86022e04a98aa62b8be8a737","status":"active","created_at":1750569827,"player1_user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36","player2_user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"}
       @game_room_data_json=JSON.parse(@game_room_data_json)
-      current_session_id = session.id.to_s
+      #current_session_id = session.id.to_s
+      current_session_id =(Rails.env.test? && session[:test_user_id]) ? session[:test_user_id] : session.id.to_s
       @your_role=""
       now_player=""
       your_user_agent=""

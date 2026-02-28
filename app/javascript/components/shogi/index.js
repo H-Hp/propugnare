@@ -690,7 +690,7 @@ class Room extends React.Component {
     const yourUsername = element.dataset.yourUsername;
     const pieceMoveSoundPath = element.dataset.piece_move_soundPath;
     const gameBgmPath = element.dataset.game_bgmPath;
-    const aimode = element.dataset.aimode;
+    const aimode = JSON.parse(element.dataset.aimode);// 文字列 "true"/"false" を boolean の true/false に変換
     const railsEnv = element.dataset.railsEnv;
 
     //console.log("audienceUser: "+audienceUser)
@@ -1649,6 +1649,8 @@ class Room extends React.Component {
             //console.log("enemyRole:"+this.state.enemyRole)
             //console.log("nowTurn:"+this.state.nowTurn)
             if( this.state.aiMode && this.state.enemyRole==this.state.nowTurn && !this.state.isCheckmate && !this.state.shogiDebugMode){ 
+              console.log("initializeRoomのreceivedのdata=initializeのaiAct")
+              console.log("this.state.aiMode:"+JSON.stringify(this.state.aiMode))
               this.aiAct(new BoardInfo())
             } //Ai対戦モードで、現在のターンがaiのターンだったら
             return
@@ -1733,6 +1735,8 @@ class Room extends React.Component {
                 //console.log("enemyRole:"+this.state.enemyRole)
                 //console.log("nowTurn:"+this.state.nowTurn)
                 if( this.state.aiMode && this.state.enemyRole==this.state.nowTurn && !this.state.isCheckmate && !this.state.shogiDebugMode){
+                  console.log("initializeRoomのreceivedのdata=board_updateのaiAct")
+                  console.log("this.state.aiMode:"+JSON.stringify(this.state.aiMode))
                   this.aiAct(newBoardInfoInstance)
                 }
                 //console.log(`BoardInfo instance reconstructed:`, this.state.boardInfo);
@@ -3452,7 +3456,8 @@ class Room extends React.Component {
           </div>
         )}
 
-        {debugMode  && railsEnv=="development" && (
+        {/*debugMode  && railsEnv=="development" && (*/}
+        {debugMode && (railsEnv === "development" || railsEnv === "test") && (
           <div id="debugArea"
             className="w-[90%] h-[80%] fixed top-7 right-4 z-50 opacity-95 border bg-gray-500 items-center justify-center overflow-auto whitespace-pre-line"
           >
@@ -3517,6 +3522,18 @@ class Room extends React.Component {
                   }`}>
                     {isConnected ? '接続中' : '未接続'}
                   </span>
+                </div>
+
+                {/* state全体を表示 */}
+                <div className="debug-content mb-3 text-white whitespace-pre font-mono text-sm bg-black p-3 border border-gray-200 overflow-x-auto">
+                  <p>stateデータ: </p>
+                  <pre>
+                    {(() => {
+                      // stateからboardInfoを除外し、残りを表示用オブジェクトにする
+                      const { boardInfo,boardInfoHistory, ...otherState } = this.state;
+                      return JSON.stringify(otherState, null, 2);
+                    })()}
+                  </pre>
                 </div>
 
                 <div

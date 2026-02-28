@@ -39,9 +39,11 @@ group :development do
 end
 
 group :test do
-  gem 'capybara', '>= 3.26'
-  gem 'selenium-webdriver', '>= 4.0.0.rc1'
-  gem 'webdrivers'
+  #gem 'capybara', '>= 3.26'
+  gem 'capybara', '>= 3.40.0'
+  #gem 'selenium-webdriver', '>= 4.0.0.rc1'
+  gem 'selenium-webdriver', '>= 4.11.0' # 最近のSeleniumはドライバー管理を自前で行うため以下は不要
+  #gem 'webdrivers' # ← Rails 8 / Selenium 4.x では不要なので削除を推奨
 end
 
 gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
