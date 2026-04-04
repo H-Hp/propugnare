@@ -1,0 +1,13 @@
+name: Keep Redis Alive
+
+on:
+  schedule:
+    - cron: '0 0 1,6,11,16,21,26,31 * *'  # 5日ごと
+
+jobs:
+  keep_alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call redis_keep_alive
+        #run: curl https://propugnare-myapp.fly.dev/redis_keep_alive
+        run: curl https://propugnare.online/redis_keep_alive

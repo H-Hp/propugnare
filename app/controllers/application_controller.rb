@@ -86,5 +86,15 @@ def health_check
   status_code = (result[:external] == 200 && result[:db] && result[:redis] && result[:oci]) ? 200 : 500
   render json: result, status: status_code
 end
+
+def redis_keep_alive
+  begin
+    $redis.set("keep_alive", "ok", ex: 300) # 5分で消える
+    render json: { status: "ok" }
+  rescue => e
+    Rails.logger.error("Redis keep alive error: #{e.message}")
+    render json: { status: "ng" }, status: 500
+  end
+end
   
 end

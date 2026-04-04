@@ -21,6 +21,8 @@ Rails.application.routes.draw do
 
   get "/health_check", to: "application#health_check"
 
+  get "/redis_keep_alive", to: "application#redis_keep_alive"
+
   #get 'shogi/index'
   #get '/'  => 'home#index'
   mount ActionCable.server => '/cable'
