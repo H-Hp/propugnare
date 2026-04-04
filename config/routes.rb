@@ -19,6 +19,8 @@ Rails.application.routes.draw do
 
   post '/contacts', to: 'matching#contacts', as: :contacts
 
+  get "/health_check", to: "application#health_check"
+
   #get 'shogi/index'
   #get '/'  => 'home#index'
   mount ActionCable.server => '/cable'
