@@ -715,11 +715,53 @@ class Room extends React.Component {
       gameRoomData: gameRoomData,
       moveHistory: [],
       boardSfenHistory: [],
+      /*boardSfenHistory: [ //千日手用
+        "lnsgkgsnl/1r5b1/ppppppppp/9/9/2P6/PP1PPPPPP/1B5R1/LNSGKGSNL w - 1",
+        "lnsgkgsnl/2r4b1/ppppppppp/9/9/2P6/PP1PPPPPP/1B5R1/LNSGKGSNL b - 2",
+        "lnsgkgsnl/2r4b1/ppppppppp/9/9/2P6/PP1PPPPPP/1B4R2/LNSGKGSNL w - 3",
+        "lnsgkgsnl/1r5b1/ppppppppp/9/9/2P6/PP1PPPPPP/1B4R2/LNSGKGSNL b - 4",
+        "lnsgkgsnl/1r5b1/ppppppppp/9/9/2P6/PP1PPPPPP/1B5R1/LNSGKGSNL w - 5",
+        "lnsgkgsnl/2r4b1/ppppppppp/9/9/2P6/PP1PPPPPP/1B5R1/LNSGKGSNL b - 6",
+        "lnsgkgsnl/2r4b1/ppppppppp/9/9/2P6/PP1PPPPPP/1B4R2/LNSGKGSNL w - 7",
+        "lnsgkgsnl/1r5b1/ppppppppp/9/9/2P6/PP1PPPPPP/1B4R2/LNSGKGSNL b - 8",
+        "lnsgkgsnl/1r5b1/ppppppppp/9/9/2P6/PP1PPPPPP/1B5R1/LNSGKGSNL w - 9",
+        "lnsgkgsnl/2r4b1/ppppppppp/9/9/2P6/PP1PPPPPP/1B5R1/LNSGKGSNL b - 10",
+        "lnsgkgsnl/2r4b1/ppppppppp/9/9/2P6/PP1PPPPPP/1B4R2/LNSGKGSNL w - 11",
+      ],*/
+      /*boardSfenHistory:[ //王手千日手用
+        "4k2+R1/9/9/1r7/9/9/9/9/4K4 w - 1",
+        "7+R1/3k5/9/1r7/9/9/9/9/4K4 b - 2",
+        "9/3k2+R2/9/1r7/9/9/9/9/4K4 w - 3",
+        "3k5/6+R2/9/1r7/9/9/9/9/4K4 b - 4",
+        "3k5/6+R2/9/1r7/9/9/9/9/3K5 w - 5",
+        "3k5/6+R2/9/3r5/9/9/9/9/3K5 b - 6",
+        "3k5/6+R2/9/3r5/9/9/9/9/4K4 w - 7",
+        "3k5/6+R2/9/4r4/9/9/9/9/4K4 b - 8",
+        "3k5/6+R2/9/4r4/9/9/9/9/3K5 w - 9",
+        "3k5/6+R2/9/3r5/9/9/9/9/3K5 b - 10",
+        "3k5/6+R2/9/3r5/9/9/9/9/4K4 w - 11",
+        "3k5/6+R2/9/4r4/9/9/9/9/4K4 b - 12",
+        "3k5/6+R2/9/4r4/9/9/9/9/3K5 w - 13",
+        "3k5/6+R2/9/3r5/9/9/9/9/3K5 b - 14",
+        "3k5/6+R2/9/3r5/9/9/9/9/4K4 w - 15",
+        "3k5/6+R2/9/4r4/9/9/9/9/4K4 b - 16",
+        "3k5/6+R2/9/4r4/9/9/9/9/3K5 w - 17",
+        "3k5/6+R2/9/3r5/9/9/9/9/3K5 b - 18",
+        "3k5/6+R2/9/3r5/9/9/9/9/4K4 w - 19",
+        "3k5/6+R2/9/4r4/9/9/9/9/4K4 b - 20"
+      ],*/
+      moveSfenHistory: {
+        move: [], //指し手のSFEN履歴
+        kingCheck: [], //王手の履歴
+      },
       moveHistorySelectedIndex:-1,
       yourUsername: yourUsername,
       nowTurn: '先手',
+      turnCount: 0,
       isCheck: false, // 王手状態を結果に追加
       isCheckmate: false ,// 詰み状態
+      isSennichite: "no_sennichite", // 千日手状態
+      isGameset: false,
 
       showPromoteModal: false,//成るかどうかのモーダル
       promoteModalPosition: { i: -1, j: -1 }, // /成り確認モーダル位置情報を追加
@@ -1679,6 +1721,12 @@ class Room extends React.Component {
             //moveHistory取得
             let moveHistory_redis = data.moveHistory; //moveHistoryを取り出し ["後手8六と"]
             moveHistory_redis = moveHistory_redis.filter(Boolean); //空文字列の要素を除去する (先頭のカンマによる空要素のため)
+            let boardSfenHistory_redis = data.boardSfenHistory.filter(Boolean); 
+            //let moveSfenHistory_redis = data.moveSfenHistory.filter(Boolean); 
+            const turnCount = boardSfenHistory_redis.length;//現在の手数
+            console.log("これだあああdata.moveSfenHistory:"+JSON.stringify(data.moveSfenHistory) )
+
+
             console.log("already_redis_stored_board_dataのmoveHistory_redis:"+moveHistory_redis)
             const boardDataFromServer = data;
             if (boardDataFromServer) {
@@ -1689,6 +1737,10 @@ class Room extends React.Component {
                 boardInfo: newBoardInfoInstance,
                 nowTurn: newBoardInfoInstance.nowTurn, // BoardInfoのturnをstateに反映
                 moveHistory: moveHistory_redis,
+                boardSfenHistory: boardSfenHistory_redis,
+                //moveSfenHistory: moveSfenHistory_redis,
+                moveSfenHistory: data.moveSfenHistory,
+                turnCount: turnCount,
                 isLoading: false,
                 loadingMessage: "",
                 boardInfoHistory: [ ...prevState.boardInfoHistory, { reason: "initializeRoomのreceivedのdata_type==already_redis_stored_board_dataでサーバーから受け取ったデータ（プレーンオブジェクト）を引数に渡し、新しいBoardInfoインスタンスを生成", boardInfo: newBoardInfoInstance }]
@@ -1705,8 +1757,14 @@ class Room extends React.Component {
               this.piece_move_sound()
             }
             const boardDataFromServer = data.new_board_data; // サーバーから来たプレーンなデータ
-            let moveHistory_redis = boardDataFromServer.moveHistory; //moveHistoryを取り出し ["後手8六と"]
-            moveHistory_redis = moveHistory_redis.filter(Boolean); //空文字列の要素を除去する (先頭のカンマによる空要素のため)
+            let moveHistory_redis = boardDataFromServer.moveHistory.filter(Boolean); //moveHistoryを取り出し ["後手8六と"]・filter(Boolean)で空文字列の要素を除去する (先頭のカンマによる空要素のため)
+            let boardSfenHistory_redis = boardDataFromServer.boardSfenHistory.filter(Boolean); 
+            //let moveSfenHistory_redis = boardDataFromServer.moveSfenHistory.filter(Boolean); 
+            const turnCount = boardSfenHistory_redis.length;//現在の手数
+
+            console.log("これだあああdata.moveSfenHistory:"+JSON.stringify(boardDataFromServer.moveSfenHistory) )
+
+
             if (boardDataFromServer) {
               //console.log("boardDataFromServer:"+JSON.stringify(boardDataFromServer))
               //サーバーから受け取ったデータ（プレーンオブジェクト）を引数に渡し、新しいBoardInfoインスタンスを生成
@@ -1718,6 +1776,10 @@ class Room extends React.Component {
               this.setState(prevState => ({
                 boardInfo: newBoardInfoInstance,
                 moveHistory: moveHistory_redis,
+                boardSfenHistory: boardSfenHistory_redis,
+                //moveSfenHistory: moveSfenHistory_redis,
+                moveSfenHistory: boardDataFromServer.moveSfenHistory,
+                turnCount: turnCount,
                 nowTurn: newBoardInfoInstance.nowTurn, // BoardInfoのturnをstateに反映
                 isLoading: false,
                 loadingMessage: "",
@@ -1807,10 +1869,12 @@ class Room extends React.Component {
         },
         //shogi_game_channel.rbのboard_broadcast_and_store呼び出し
         // クライアントからサーバーにメッセージを送るメソッド
-        board_update: (boardData,moveDetails) => {
+        board_update: (boardData) => {
           // ここで boardData は getBoardState() から返されるプレーンなオブジェクトであることを想定
           this.subscription.perform('board_broadcast_and_store', { 
             moveHistory: this.state.moveHistory, 
+            boardSfenHistory: this.state.boardSfenHistory, 
+            moveSfenHistory: this.state.moveSfenHistory, 
             //moveHistory: [], 
             BoardInfo: boardData,
             nowTurn: this.state.nowTurn,
@@ -1952,7 +2016,7 @@ class Room extends React.Component {
   //ユーザーが盤面上のi行、j列をクリックしたときに呼ばれるメソッド
   async handleBoardClick(i, j,player) {
   //handleBoardClick(i, j,player) {
-    console.log(`handleBoardClick:player=${player}, i=${i}, j=${j} `);
+    //console.log(`handleBoardClick:player=${player}, i=${i}, j=${j} `);
     //console.log("Current BoardInfo:", this.state.boardInfo);
     //console.log("BoardInfo callback exists?", !!this.state.boardInfo.onPromoteConfirmCallback);
 
@@ -1964,12 +2028,13 @@ class Room extends React.Component {
     // BoardInfoがクラスインスタンスでない場合、再構築する
     let boardInstance = boardInfo; // 元のboardInfoを変数に格納
     if (typeof boardInfo.boardClick !== 'function') {
-      console.log('BoardInfoインスタンスを再構築します');
+      //console.log('BoardInfoインスタンスを再構築します');
       // 現在のデータから新しいBoardInfoインスタンスを作成
       //console.log('boardInfo:'+JSON.stringify(boardInfo));
       const dataForBoardInfo = {
         board: boardInfo.board,
         nowTurn: boardInfo.nowTurn,
+        //turnCount: boardInfo.turnCount,
         selection: boardInfo.selection,
         pieceStandNum: boardInfo.pieceStandNum,
         pieceStand: boardInfo.pieceStand,
@@ -2008,9 +2073,9 @@ class Room extends React.Component {
         this.setupBoardInfoCallback(boardInstance);
 
         // デバッグ：コールバックが正しく設定されているか確認
-        console.log("boardInstance.onPromoteConfirmCallbackが存在しないなら再設定");
-        console.log("再構築後のコールバック:", !!boardInstance.onPromoteConfirmCallback);
-        console.log("再構築後のsetPromoteConfirmCallbackメソッド:", typeof boardInstance.setPromoteConfirmCallback);
+        //console.log("boardInstance.onPromoteConfirmCallbackが存在しないなら再設定");
+        //console.log("再構築後のコールバック:", !!boardInstance.onPromoteConfirmCallback);
+        //console.log("再構築後のsetPromoteConfirmCallbackメソッド:", typeof boardInstance.setPromoteConfirmCallback);
       }
       
     
@@ -2040,16 +2105,18 @@ class Room extends React.Component {
 
     // 念のため、呼び出し前にコールバックが存在するかチェック
     if (!this.state.boardInfo.onPromoteConfirmCallback) {
-      console.log("コールバックが欠落・リセット中...");
+      //console.log("コールバックが欠落・リセット中...");
       this.setupBoardInfoCallback();
     }
   
     //const clickResult = boardInfo.boardClick(i, j,player);// BoardInfoインスタンスのboardClickメソッドを呼び出す・この呼び出しで boardInfo インスタンス内部の状態が更新される・戻り値clickResultに移動情報などがまとまっている
     //const clickResult = await boardInfo.boardClick(i, j, player);
-    const clickResult = await boardInstance.boardClick(i, j, player);
+    //const clickResult = await boardInstance.boardClick(i, j, player);
+    const clickResult = await boardInstance.boardClick(i, j, player,this.state.boardSfenHistory ,this.state.moveSfenHistory);
+
     //const clickResult = await this.boardInfoInstance.boardClick(i, j, player);
     //console.log("clickResult:"+JSON.stringify(clickResult));
-    console.log("clickResult:",clickResult);
+    //console.log("clickResult:",clickResult);
     //console.log("clickResult.moved_check:"+clickResult.moved_check);
     
     //console.log("clickResult.moveDetails:"+clickResult.moveDetails)
@@ -2063,7 +2130,7 @@ class Room extends React.Component {
     try {
       //if( clickResult.move_status=="illegalMove" && aiMode){//aiモードで自殺手ならaiの手番をやり直す
       if( clickResult.move_status=="illegalMove" && aiMode && !this.state.shogiDebugMode){
-        console.log("aiモードで自殺手ならaiの手番をやり直す"); 
+        //console.log("aiモードで自殺手ならaiの手番をやり直す"); 
         //console.log("boardInfo:"+JSON.stringify(boardInfo));
         //console.log("boardInfo.selection:"+JSON.stringify(boardInfo.selection));
         //const EasyBoardData = this.state.boardInfo.board.map(row =>row.map(cell => cell && cell.name ? "「"+cell.owner+"の"+cell.name+"」" : "「　　　　」")).map(row => row.join(", ")).join("\n");
@@ -2084,13 +2151,16 @@ class Room extends React.Component {
       const game_data = {
         moveDetails: clickResult.moveDetails,
         boardSFEN: clickResult.boardSFEN,
+        moveSFEN: clickResult.moveSFEN,
         BoardInfo: clickResult.BoardInfo,
         pieceStandNum: clickResult.pieceStandNum,
         pieceStand: clickResult.pieceStand,
         nowTurn: clickResult.nowTurn,
         isCheck: clickResult.isCheck, // 王手状態を結果に追加
         isCheckmate: clickResult.isCheckmate ,// 詰み状態
-        winner: clickResult.winner
+        isSennichite: clickResult.isSennichite, // 千日手状態
+        winner: clickResult.winner,
+        isGameset: clickResult.isGameset, // ゲームセット状態
       };
       
       const newBoardInfoInstance = new BoardInfo(game_data); // clickResult.newBoardState には、boardClick 後の BoardInfo 内部の最新状態が返される・これを基に、新しい BoardInfo インスタンスを生成して React の state を更新する
@@ -2109,6 +2179,7 @@ class Room extends React.Component {
             // そうでなければ、既存の配列に clickResult.moveDetails を追加する
             newMoveHistory = [...prevState.moveHistory, clickResult.moveDetails];
         }
+
         let newBoardSfenHistory;
         if (prevState.boardSfenHistory === undefined) { // prevState.moveHistory が undefined なら、新しい配列を作成して最初の要素として clickResult.moveDetails を入れる
             newBoardSfenHistory = [clickResult.boardSFEN];
@@ -2116,6 +2187,23 @@ class Room extends React.Component {
             // そうでなければ、既存の配列に clickResult.moveDetails を追加する
             newBoardSfenHistory = [...prevState.boardSfenHistory, clickResult.boardSFEN];
         }
+
+        let newMoveSfenHistory;
+        if (prevState.moveSfenHistory === undefined) { // prevState.moveHistory が undefined なら、新しい配列を作成して最初の要素として clickResult.moveDetails を入れる
+            //newMoveSfenHistory = [clickResult.moveSFEN];
+            newMoveSfenHistory = {
+              move: [clickResult.moveSFEN],
+              kingCheck: [clickResult.isCheck]
+            };
+        } else {
+            // そうでなければ、既存の配列に clickResult.moveDetails を追加する
+            //newMoveSfenHistory = [...prevState.moveSfenHistory, clickResult.moveSFEN]
+            newMoveSfenHistory = {
+              move: [...prevState.moveSfenHistory.move , clickResult.moveSFEN],
+              kingCheck: [...prevState.moveSfenHistory.kingCheck, clickResult.isCheck]
+            };
+        }
+        console.log("これこれnewMoveSfenHistory:"+JSON.stringify(newMoveSfenHistory))
         //console.log("this.state.boardSfenHistory:"+this.state.boardSfenHistory)
         //console.log("clickResult.boardSFEN:"+clickResult.boardSFEN)
         //console.log("this.state.moveHistory:"+this.state.moveHistory)
@@ -2132,9 +2220,12 @@ class Room extends React.Component {
             boardInfo: newBoardInfoInstance, // 新しいインスタンスでstateを更新
             moveHistory: newMoveHistory,     // 修正した moveHistory
             boardSfenHistory : newBoardSfenHistory,
+            moveSfenHistory : newMoveSfenHistory,
             nowTurn: clickResult.nowTurn,    // BoardInfoインスタンスで手番を交代し取得して更新
             isCheck: clickResult.isCheck, // 王手状態を結果に追加
             isCheckmate: clickResult.isCheckmate, // 詰み状態
+            isSennichite: clickResult.isSennichite, // 千日手状態
+            isGameset: clickResult.isGameset, // ゲームセット状態
             winner: clickResult.winner,
         };
       }, () => {
@@ -2144,20 +2235,62 @@ class Room extends React.Component {
         const square = board.querySelector(`button.square[data-i="${i}"][data-j="${j}"]`);
         square.classList.add('lastMoveByMe');
 
-        //勝敗がついてたら
-        if(clickResult.isCheckmate){
-          //console.log("勝敗がついている")
+        if(clickResult.isGameset){
+          console.log("ゲームセット")
+          let winReason;
+          if(clickResult.isCheckmate){
+            winReason = "Tumi";
+          } else if (clickResult.isSennichite.result === "sennichite") {
+            winReason = "sennichite";
+          } else if (clickResult.isSennichite.result === "oute_sennichite") {
+            winReason = "oute_sennichite";
+          } else {
+            winReason = "unknown";
+          }
           this.subscription.perform('game_set', {
             room_id: this.state.roomId,
-            winReason: "Tumi", 
+            winReason: winReason, 
             winner: clickResult.winner,
           });
+
+          /*
+          //詰みで勝敗がついてたら
+          if(clickResult.isCheckmate){
+            //console.log("勝敗がついている")
+            this.subscription.perform('game_set', {
+              room_id: this.state.roomId,
+              winReason: "Tumi", 
+              winner: clickResult.winner,
+            });
+          }
+
+          //千日手で勝敗がついてたら
+          //isSennichite.result="no_sennichite";//千日手ではない
+          //isSennichite.result="sennichite";//千日手でドロー
+          //isSennichite.result="oute_sennichite" isSennichite.winner
+          if(clickResult.isSennichite.result==="sennichite"){
+              // 千日手の場合は引き分け
+              this.subscription.perform('game_set', {
+                room_id: this.state.roomId,
+                winReason: "sennichite", 
+                winner: clickResult.winner,
+              });
+          } else if (clickResult.isSennichite.result === "oute_sennichite") {
+              //王手をかけ続けた側が反則負けとなるルール
+              this.subscription.perform('game_set', {
+                room_id: this.state.roomId,
+                winReason: "oute_sennichite", 
+                winner: clickResult.winner,
+              });
+          }else if(clickResult.isSennichite.result === "no_sennichite"){
+              // 千日手でない場合は勝者の変更なし
+          }*/
         }
+
         //console.log("moveHistory:"+this.state.moveHistory[0])
         // stateの更新が完了した後、WebSocketでサーバーに送信
         if (isConnected && this.subscription && clickResult.moved_check) { // 駒が動いた場合
           this.handleSwitchTurn({ // ShogiTimerが呼び出すメソッドではなく、RoomがActionCableに送信するメソッドを呼ぶ
-          //this.sendSwitchTurn({ // ShogiTimerが呼び出すメソッドではなく、RoomがActionCableに送信するメソッドを呼ぶ
             senteTime: this.shogiTimerRef.current?.getSenteTime(), // 現在の時間を取得して送る
             goteTime: this.shogiTimerRef.current?.getGoteTime(),   // getSenteTime/getGoteTime はShogiTimerで公開する必要がある
             activePlayer: clickResult.nowTurn, // 次の手番
@@ -2178,7 +2311,7 @@ class Room extends React.Component {
         }
       });
     }else if(clickResult===undefined){
-      console.log(`clickResultがundefined`);
+      //console.log(`clickResultがundefined`);
       return "clickResultがundefined"
     }else if(!clickResult.moved_check){
       console.log(`選択状態などでclickResult.moved_checkがfalse:${clickResult.moved_check}`);
@@ -2223,7 +2356,7 @@ class Room extends React.Component {
 
         // state ではなく ref に保存
         this.boardInfoRef.current = updatedBoardInfo;
-        console.log("this.state.boardInfo・ボードのコマをマウスダウン時に更新:",updatedBoardInfo)
+        //console.log("this.state.boardInfo・ボードのコマをマウスダウン時に更新:",updatedBoardInfo)
 
         
         // 呼び出し側の await handleBoardClick() にこのオブジェクトが返る
@@ -3021,7 +3154,7 @@ class Room extends React.Component {
   }
 
   render() {
-    const { logoPath,gamebackPath,gameBgmPath,loadingimgPath, boardInfo, gameInfo, gameRoomData, moveHistory, boardSfenHistory, moveHistorySelectedIndex, nowTurn, isConnected, isLoading, loadingMessage, chatMessages, currentChatMessage, isChatOpen, yourRole, enemyRole, isCheck, isCheckmate,winner, winReason,rematch_sended,rematchRequest,decline_received,gameStatus, timeUpPlayer,debugMode ,aiMode ,audienceUser, railsEnv} = this.state;
+    const { logoPath,gamebackPath,gameBgmPath,loadingimgPath, boardInfo, gameInfo, gameRoomData, moveHistory, boardSfenHistory, moveHistorySelectedIndex, nowTurn, isConnected, isLoading, loadingMessage, chatMessages, currentChatMessage, isChatOpen, yourRole, enemyRole, isCheck, isCheckmate,isGameset,winner, winReason,rematch_sended,rematchRequest,decline_received,gameStatus, timeUpPlayer,debugMode ,aiMode ,audienceUser, railsEnv} = this.state;
     const roomId = this.state.roomId; // renderメソッド内でstateからroomIdを取得
 
     // Action Cable の送信メソッド群を ShogiTimer に渡すオブジェクトを作成・gameChannel がまだ null の可能性があるので ?. (オプショナルチェイニング) を使用
@@ -3063,7 +3196,7 @@ class Room extends React.Component {
         <div className={`main-container h-[calc(100%-30px)] bg-no-repeat bg-cover bg-center bg-[url('${gamebackPath}')]`}>
           <div className="menu-container column">
             <div className={`menu-div ${myDarkGradient} text-white`}>
-              {isCheckmate && ( //勝敗に決着が着いたら
+              {isGameset && ( //isCheckmate && ( //勝敗に決着が着いたら
                   <div className="rounded-lg shadow-lg p-6 max-w-md mx-auto">
                     <div className="text-center mb-6">
                       <h2 className="text-[1.2rem] font-bold text-white mb-2">
@@ -3115,7 +3248,7 @@ class Room extends React.Component {
                 </div>
               )}
 
-            {!isCheckmate && ( //ゲームセットしていないなら
+            {!isGameset && ( //!isCheckmate && ( //ゲームセットしていないなら
               <div>
                 <ShogiTimer
                   initialMinutes={10}

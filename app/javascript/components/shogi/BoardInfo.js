@@ -4,7 +4,7 @@ class BoardInfo {
     // initialDataがない場合は、デフォルトの初期盤面を生成
     constructor(initialData = {}) {
         // デフォルトの初期配置の配列
-        const defaultBoard = [
+        /*const defaultBoard = [
             [new Lance("後手"), new Knight("後手"), new SilverGeneral("後手"), new GoldGeneral("後手"), new Gyoku("後手"), new GoldGeneral("後手"), new SilverGeneral("後手"), new Knight("後手"), new Lance("後手")],
             [new Blank(), new Rook("後手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Bishop("後手"), new Blank()],
             [new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手")],
@@ -14,7 +14,7 @@ class BoardInfo {
             [new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手")],
             [new Blank(), new Bishop("先手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Rook("先手"), new Blank()],
             [new Lance("先手"), new Knight("先手"), new SilverGeneral("先手"), new GoldGeneral("先手"), new King("先手"), new GoldGeneral("先手"), new SilverGeneral("先手"), new Knight("先手"), new Lance("先手")]
-        ];     
+        ];*/ 
         //成り処理のテスト用ボード
         /*const defaultBoard = [
             [new Blank(), new Rook("後手"), new Blank(), new Blank(), new Gyoku("後手"), new Blank(), new Blank(), new Blank(), new Blank()],
@@ -41,6 +41,18 @@ class BoardInfo {
             //[new Blank(), new Bishop("先手"), new Blank(), new Blank(), new SilverGeneral("後手"), new Blank(), new Blank(), new Rook("先手"), new Blank()],
             [new Lance("先手"), new Knight("先手"), new SilverGeneral("先手"), new GoldGeneral("先手"), new King("先手"), new GoldGeneral("先手"), new SilverGeneral("先手"), new Knight("先手"), new Lance("先手")]
         ];*/
+        //王手千日手の処理のテスト用ボード・飛車で王手をかけ続けて往復するループを作る
+        const defaultBoard = [
+            [new Blank(), new Blank(), new Blank(), new Blank(), new King("後手"), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Rook("後手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Rook("先手"), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new King("先手"), new Blank(), new Blank(), new Blank(), new Blank()]
+        ];
         const defaultSelection = new Selection();
         const defaultPieceStandNum = {
             "先手": { "歩": 0, "香": 0, "桂": 0, "銀": 0, "金": 0, "角": 0, "飛": 0 },
@@ -140,19 +152,20 @@ class BoardInfo {
     //i（行）→ 横方向（左から右）
 	//j（列）→ 縦方向（上から下）
     //boardClick(i, j,yourRole) {
-    async boardClick(i, j,yourRole) {
+    //async boardClick(i, j,yourRole) {
+    async boardClick(i, j,yourRole,boardSfenHistory,moveSfenHistory) {
         //console.log("this.nowTurn:"+this.nowTurn)
         //console.log("yourRole:"+yourRole)
         //console.log("事前this.selection:"+JSON.stringify(this.selection))
         if(yourRole!==this.nowTurn){//自分のターンじゃなければ操作できないように
-            console.log("自分のターンじゃないので操作できない")
+            //console.log("自分のターンじゃないので操作できない")
             return
         }
             
         //this.board[i][j]
         //console.log("this.board[i][j]:",this.board[i][j])
         if(this.selection.before_j!=null){
-            console.log("this.board[this.selection.before_i][this.selection.before_j]:",this.board[this.selection.before_i][this.selection.before_j])
+            //console.log("this.board[this.selection.before_i][this.selection.before_j]:",this.board[this.selection.before_i][this.selection.before_j])
         }
         /*console.log("i,j:",i,j)
         console.log("this.selection.boardSelectInfo[i][j]:",this.selection.boardSelectInfo[i][j])
@@ -178,6 +191,9 @@ class BoardInfo {
             let yourPiece;
             const originalBoardState = JSON.parse(JSON.stringify(this.board)); // 元に戻すために文字列で保持
 
+            //let moveSfEN; // 指した手をSFEN形式で記録するための変数
+            let BoardOrPiecestand; // 駒移動か駒打ちで場合分けするための変数
+
             if (this.selection.pieceStandPiece.name) {// 持ち駒が選択されている場合 (駒を打つ)
                 myPiece = this.selection.pieceStandPiece;// 持ち駒を移動する駒(myPiece)にする
                 this.pieceStandNum[this.nowTurn][myPiece.name] -= 1;// 持ち駒の数を減らす
@@ -186,6 +202,7 @@ class BoardInfo {
                 this.board[i][j] = myPiece; // 駒を新しいマスに配置
                 //console.log("this.selection:"+JSON.stringify(this.selection))
                 //console.log("myPieceああ:"+JSON.stringify(myPiece))
+                BoardOrPiecestand="Piecestand"
 
             } else {// 盤上の駒が選択されている場合 (駒を動かす)
                 myPiece = this.board[this.selection.before_i][this.selection.before_j]; // 選択していた盤上の駒(myPiece)にする
@@ -200,7 +217,8 @@ class BoardInfo {
                     //console.log("持ち駒として追加・this.pieceStandNum:"+JSON.stringify(this.pieceStandNum))
                     this.makePieceStand();// 持ち駒台の表示を更新
                 }
-                
+                BoardOrPiecestand="Board"
+
                 //console.log(`this.selection.before_i：${this.selection.before_i}`)
 
                 // 成りの判定と処理
@@ -213,6 +231,7 @@ class BoardInfo {
                     const temp_selection_before_j= this.selection.before_j
 
                     myPiece = await this.checkPromote(myPiece, i, this.selection.before_i, j);
+
                     //[myPiece,i,j] = await this.checkPromote(myPiece, i, this.selection.before_i, j);
 
                     //const promoteResult = await this.checkPromote(myPiece, i, this.selection.before_i, j);
@@ -362,11 +381,11 @@ class BoardInfo {
             //console.log("あtempBoardのEasyBoard: \n"+this.CreateEasyBoard(tempBoard));
 
             // 自分の玉が王手になる手は指せない (自殺手の禁止)・盤面を元に戻す
-            console.log("this.isKingInCheck(tempBoard, this.nowTurn): ",this.isKingInCheck(tempBoard, this.nowTurn));
+            //console.log("this.isKingInCheck(tempBoard, this.nowTurn): ",this.isKingInCheck(tempBoard, this.nowTurn));
             //console.log("1isKingInCheckのtempBoard: ",tempBoard);
             if (this.isKingInCheck(tempBoard, this.nowTurn)) {//trueなら自分に王手がかかっている、falseなら自分に王手はかかっていない
                 // 盤面を元に戻す処理・元のマスに駒を戻し、取った駒も戻すか、 Blank にする
-                console.log("自分の玉が王手になる手は指せない (自殺手の禁止)・盤面を元に戻す")
+                //console.log("自分の玉が王手になる手は指せない (自殺手の禁止)・盤面を元に戻す")
                 //console.log("this.nowTurn:"+this.nowTurn)
                 if (!this.selection.pieceStandPiece.name) { // 盤上の駒を動かした場合
                     this.board[this.selection.before_i][this.selection.before_j] = myPiece; // 選択していた駒を元に戻す
@@ -383,7 +402,7 @@ class BoardInfo {
                     this.pieceStandNum[myPiece.owner][yourPiece.name] -= 1;
                     this.makePieceStand();
                 }
-                console.log("自分の玉が王手です！(自殺手)");
+                //console.log("自分の玉が王手です！(自殺手)");
                 //console.log("tempBoard:\n"+this.CreateEasyBoard(tempBoard));
                 //console.log("あthis.CreateEasyBoard(this.board)):\n"+this.CreateEasyBoard(this.board));
                 //console.log("this.getBoardState():"+JSON.stringify(this.getBoardState()));
@@ -401,14 +420,17 @@ class BoardInfo {
                     moveDetails: "自殺手",
                     //boardSFEN: boardSFEN,
                     boardSFEN: this.boardToSFEN(this.getBoardState()),
+                    moveSFEN: "none",
                     pieceStandNum: this.pieceStandNum,
                     pieceStand: this.pieceStand,
                     nowTurn: this.nowTurn,
                     isCheck: false,
                     isCheckmate: false,
+                    isSennichite: { result: "no_sennichite" }, // 千日手状態
                     //isCheck: isOpponentKingInCheck, // 王手状態を結果に追加
                     //isCheckmate: isOpponentKingInCheckmate, // 詰み状態
                     //winner: winner, // 詰み状態
+                    isGameset: false,
                     winner: "yet",
                     move_status: "illegalMove"
                 }; // 駒は動かなかった
@@ -427,7 +449,9 @@ class BoardInfo {
             //alert("相手（次の手番）が王手になっているかを確認・isOpponentKingInCheck: "+isOpponentKingInCheck);
             //console.log("2isKingInCheckのthis.board: ",this.board);
     
+            let isGameset=false
 
+            //詰みチェック
             //相手（次の手番）の玉が王手になっているか、そして詰んでいるかを確認
             const isOpponentKingInCheckmate = isOpponentKingInCheck && this.isCheckmate(this.board, this.nowTurn, this.pieceStandNum); // pieceStandNum を渡す
             //alert("相手（次の手番）の玉が王手になっているか、そして詰んでいるかを確認・isOpponentKingInCheck: "+isOpponentKingInCheckmate);
@@ -436,31 +460,59 @@ class BoardInfo {
             //console.log("board:\n"+this.CreateEasyBoard(this.board));
             if(isOpponentKingInCheckmate){//決着が付いたら勝者の設定
                 winner=previousTurn
+                isGameset=true
             }
             //console.log("sfenに変更したいデータ"+JSON.stringify(this.getBoardState()))
-            const boardSFEN = this.boardToSFEN(this.getBoardState());
+            let turnCount = boardSfenHistory.length + 1; // 現在の手数（0から始まるので+1）
+            const boardSFEN = this.boardToSFEN(this.getBoardState(),turnCount);
             //console.log("sfenに変更したデータ"+JSON.stringify(boardSFEN))
+
+            let moveSFEN=this.posToMoveSfen(i, j, yourRole, myPiece.name, BoardOrPiecestand); // 駒移動のSFENを生成
+            let originalName = myPiece.name;
+            if (myPiece.name !== originalName) {
+                moveSFEN += "+";
+            }
+            console.log("駒移動のmoveSFEN:"+moveSFEN);
+
+            //千日手と王手千日手チェック
+            //let isSennichite = this.checkSennichite(boardSfenHistory);
+            //isSennichite.result="no_sennichite";//千日手ではない
+            //isSennichite.result="sennichite";//千日手でドロー
+            //isSennichite.result="oute_sennichite" isSennichite.winner
+            let isSennichite = this.checkSennichite(boardSfenHistory, moveSfenHistory);
+            if (isSennichite.result === "oute_sennichite") {
+                winner = isSennichite.winner; // 王手千日手の場合は、王手をかけ続けた側が反則負け
+                isGameset=true
+            }else if(isSennichite.result==="sennichite"){
+                winner = "draw"; // 千日手の場合は引き分け
+                isGameset=true
+            }
+            //console.log("千日手・isSennichite:"+isSennichite);
+            console.log("千日手・isSennichite:",JSON.stringify(isSennichite));
 
             return {
                 BoardInfo: this.getBoardState(),
                 moved_check: true,
                 moveDetails: previousTurn + ShogiAddress + myPiece.name, // 指した手は自分の手番で記録
                 boardSFEN: boardSFEN,
+                moveSFEN: moveSFEN,
                 pieceStandNum: this.pieceStandNum,
                 pieceStand: this.pieceStand,
                 nowTurn: this.nowTurn,
                 isCheck: isOpponentKingInCheck, // 王手状態を結果に追加
                 isCheckmate: isOpponentKingInCheckmate, // 詰み状態
-                winner: winner, // 詰み状態
+                isSennichite: isSennichite, // 千日手状態
+                isGameset: isGameset,//ゲームセットしてるか
+                winner: winner, 
                 move_status: "ok"
             };
             //王手ここまで
 
         } else {// 何も駒が選択されていない状態の場合 (駒を選択する)
-            console.log("何も駒が選択されていない状態の場合 (駒を選択する)")
+            //console.log("何も駒が選択されていない状態の場合 (駒を選択する)")
             //console.log("this.board[i][j]:"+JSON.stringify(this.board[i][j]))
             if (this.nowTurn !== this.board[i][j].owner) {// クリックされた駒が自分の手番の駒でなければ
-                console.log("クリックされた駒が自分の手番の駒でなければ何もせず処理を終了")
+                //console.log("クリックされた駒が自分の手番の駒でなければ何もせず処理を終了")
                 return;// 何もせず処理を終了
             }
             this.selection.isNow = true;// 選択状態に入る
@@ -482,7 +534,8 @@ class BoardInfo {
                 BoardInfo: this.getBoardState(), // 変更後の盤面状態を返す
                 moved_check: false,// 駒が動いた場合
                 moveDetails: "select",
-                boardSFEN: "none",
+                boardSFEN: "select",
+                moveSFEN: "select",
                 pieceStandNum: this.pieceStandNum,
                 pieceStand: this.pieceStand,
                 nowTurn: this.nowTurn,
@@ -676,7 +729,7 @@ class BoardInfo {
         /*return{
             selection: this.selection
         }*/
-       console.log("持ちコマ台のコマを選択")
+       //console.log("持ちコマ台のコマを選択")
         return {
             BoardInfo: this.getBoardState(), // 変更後の盤面状態を返す
             moved_check: false,// 駒が動いた場合
@@ -1180,7 +1233,7 @@ class BoardInfo {
      * @param {Array<Array<Object>>} board - 将棋盤の2次元配列。
      * @returns {string} SFEN文字列。
      */
-    boardToSFEN(data) {
+    boardToSFEN(data,turnCount) {
         // 駒の日本語名とSFEN記号のマッピング
         const pieceMap = {
             '香': 'l', '桂': 'n', '銀': 's', '金': 'g', '角': 'b', '飛': 'r', '王': 'k', '玉': 'k', '歩': 'p',
@@ -1263,10 +1316,57 @@ class BoardInfo {
         }
         
         // 4. 手数の変換
-        const moveCount = 1;
+        //const moveCount = 1;
+        //const moveCount = turnCount+1;
+        const moveCount = turnCount;
 
         // 全ての要素を結合してSFEN文字列を完成させる
         return `${boardString} ${turn} ${handString} ${moveCount}`;
+    }
+
+    //盤面の座標 (i, j) を将棋の手のSFEN形式（例: 7g, 2b）に変換する
+    posToMoveSfen(i, j, yourRole, myPieceName, BoardOrPiecestand, isPromoted = false){
+        //i,jは盤面の座標で、左上が(0,0)、右下が(8,8)
+        //pieceType //"BoardPiece"はボードのコマ、"pieceStandPiece"は持ち駒のコマ
+        //myPieceName //飛、角、金、銀、桂、香、歩などの駒の名前
+        //yourRoleは"先手"か"後手"
+        //myPieceNameとpieceTypeを組み合わせて、駒の種類を特定する（例: "先手の飛"）
+
+        const destFile = String(9 - i);
+        const destRank = String.fromCharCode(97 + j); // 'a' + j
+        if (BoardOrPiecestand === "Piecestand") {//持ち駒から打つ時は*をつける
+            const pieceSFEN = this.getPieceSFEN(myPieceName, yourRole);
+            return pieceSFEN + "*" + destFile + destRank;
+        } else {//ボードの駒を動かすときは、移動元と移動先を両方表記する
+            const srcFile = String(9 - this.selection.before_i);
+            const srcRank = String.fromCharCode(97 + this.selection.before_j);
+            const promoteStr = isPromoted ? "+" : "";
+            return srcFile + srcRank + destFile + destRank + promoteStr;
+        }
+    }
+
+    //駒の日本語名と所有者から、その駒のSFEN記号を取得する
+    getPieceSFEN(name, owner) {
+        const map = {
+            "王": "K",
+            "玉": "K",
+            "飛": "R",
+            "角": "B",
+            "金": "G",
+            "銀": "S",
+            "桂": "N",
+            "香": "L",
+            "歩": "P",
+            "竜": "+R",
+            "馬": "+B",
+            "成銀": "+S",
+            "成桂": "+N",
+            "成香": "+L",
+            "と": "+P"
+        };
+        let sfen = map[name];
+        if (owner === "後手") sfen = sfen.toLowerCase();
+        return sfen;
     }
 
     /*getBoardState() {   
@@ -1278,6 +1378,105 @@ class BoardInfo {
             pieceStandNum: this.pieceStandNum,
             nowTurn: this.nowTurn
         };
+    }*/
+
+
+    /**
+     * 千日手＋王手千日手を判定
+     * @param {string[]} boardSfenHistory
+     * @param {boolean[]} isCheckHistory
+     * @returns {object}
+     */
+    checkSennichite(boardSfenHistory, moveSfenHistory) {
+        console.log("千日手チェック・checkSennichiteメソッドのmoveSfenHistory:",JSON.stringify(moveSfenHistory))
+        const isCheckHistory= moveSfenHistory.kingCheck
+        console.log("千日手チェック・isCheckHistory:",JSON.stringify(isCheckHistory))
+
+        const map = new Map();
+
+        for (let i = 0; i < boardSfenHistory.length; i++) {
+            const sfen = boardSfenHistory[i];
+            if (!sfen) continue;
+
+            // 手数除去
+            const key = sfen.trim().split(" ").slice(0, 3).join(" ");
+            const turn = sfen.split(" ")[1]; // b or w
+
+            const data = map.get(key) || {
+                count: 0,
+                checkSeq: [] // この局面に至る履歴インデックス
+            };
+
+            data.count++;
+            data.checkSeq.push({
+                index: i,
+                turn,
+                isCheck: isCheckHistory[i]
+            });
+
+            map.set(key, data);
+
+            // 同一局面4回
+            if (data.count >= 4) {
+
+                //王手千日手チェック
+                const last4 = data.checkSeq.slice(-4);
+
+                const allCheck = last4.every(x => x.isCheck);
+                const sameTurn = last4.every(x => x.turn === last4[0].turn);
+
+                if (allCheck && sameTurn) {
+                    //const loser= last4[0].turn // 王手してた側が負け
+                    //const winner = loser === "b" ? "w" : "b";
+                    const loserTurn = last4[0].turn; // "b" or "w"
+                    const loser = loserTurn === "b" ? "先手" : "後手";
+                    const winner = loserTurn === "b" ? "後手" : "先手";
+                    return {
+                        result: "oute_sennichite",
+                        loser: loser, // 王手してた側が負け
+                        winner: winner
+                    };
+                }
+
+                return { result: "sennichite" };
+            }
+        }
+
+        return { result: "no_sennichite" };
+        //return false;
+    }
+    /**
+     * 千日手を判定するメソッド
+     * 同じ局面（SFEN）が4回以上繰り返された場合にtrueを返す。
+     * @param {Array<string>} boardSfenHistory - SFEN形式の盤面履歴の配列。
+     * @returns {boolean} 千日手の場合true、そうでない場合false。
+     */
+    /*checkSennichite(boardSfenHistory, moveSfenHistory) {
+        const sfenCount = new Map();
+
+        for (const sfen of boardSfenHistory) {
+            // 手数を除去（盤面 + 手番 + 持ち駒）
+            const key = sfen.split(" ").slice(0, 3).join(" ");
+
+            sfenCount.set(key, (sfenCount.get(key) || 0) + 1);
+
+            if (sfenCount.get(key) >= 4) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    */
+    /*checkSennichite(boardSfenHistory) {
+        const sfenCount = new Map();
+        for (const sfen of boardSfenHistory) {
+            sfenCount.set(sfen, (sfenCount.get(sfen) || 0) + 1);
+            if (sfenCount.get(sfen) >= 4) {
+                return true;
+            }
+        }
+        return false;
     }*/
 }
 

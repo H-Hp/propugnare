@@ -43,11 +43,14 @@ class ShogiGameChannel < ApplicationCable::Channel
 
   # クライアントからメッセージを受信した時
   def board_broadcast_and_store(data)
-    moveHistory_data = data['moveHistory']
-    nowTurn_data = data['nowTurn']
-    boardInfo = data['BoardInfo']
+    #moveHistory_data = data['moveHistory']
+    #boardSfenHistory_data = data['boardSfenHistory']
+    #moveSfenHistory_data = data['moveSfenHistory']
+    #nowTurn_data = data['nowTurn']
+    #boardInfo = data['BoardInfo']
+    #@game_id = data['game_id']
     @room_id = data['room_id']
-    @game_id = data['game_id']
+
     new_board_data=data
 
     #redis_key = "shogi_game:#{@game_id}"
@@ -60,7 +63,7 @@ class ShogiGameChannel < ApplicationCable::Channel
     #WebSocketで配信
     ActionCable.server.broadcast("shogi_game_room_#{@room_id}",{data_type: "board_update",new_board_data: new_board_data})
     #Rails.logger.info "room_id に対応する moveHistory_data を受信しました： #{@room_id}: #{moveHistory_data}"
-    new_board_state = { board: "新盤面情報のboadstate", moveHistory: moveHistory_data, nowTurn: nowTurn_data } # 実際はゲームロジックで生成
+    #new_board_state = { board: "新盤面情報のboadstate", moveHistory: moveHistory_data, nowTurn: nowTurn_data } # 実際はゲームロジックで生成
   end
 
   def chat_broadcast_and_store(data)
