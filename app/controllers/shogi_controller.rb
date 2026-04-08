@@ -19,19 +19,38 @@ class ShogiController < ApplicationController
         ai_state="ai"
         player_identifier=session.id.to_s
         player_user_agent=request.user_agent
+        user_roll_for_ai = params[:user_roll_for_ai]
+        puts "user_roll_for_ai: #{user_roll_for_ai}"
+
         @your_user_name="あなた"
-        if [true, false].sample # ランダムに振り分け
+        if user_roll_for_ai == "先手"
           #この場合はplayer1が先手でplayer2が後手
           sente_identifier = player_identifier; sente_user_agent = player_user_agent; sente_user_name = @your_user_name;
           gote_identifier = ai_state; gote_user_agent = ai_state; gote_user_name = ai_state;
           @your_role = "先手"
           @enemy_role = "後手"
-        else
+        elsif user_roll_for_ai == "後手"
           #この場合はplayer2が先手でplayer1が後手
           sente_identifier = ai_state; sente_user_agent = ai_state; sente_user_name = ai_state;
           gote_identifier = player_identifier; gote_user_agent = player_user_agent; gote_user_name = @your_user_name;
           @your_role = "後手"
           @enemy_role = "先手"
+        end
+
+        if user_roll_for_ai == "ランダム"
+          if [true, false].sample # ランダムに振り分け
+            #この場合はplayer1が先手でplayer2が後手
+            sente_identifier = player_identifier; sente_user_agent = player_user_agent; sente_user_name = @your_user_name;
+            gote_identifier = ai_state; gote_user_agent = ai_state; gote_user_name = ai_state;
+            @your_role = "先手"
+            @enemy_role = "後手"
+          else
+            #この場合はplayer2が先手でplayer1が後手
+            sente_identifier = ai_state; sente_user_agent = ai_state; sente_user_name = ai_state;
+            gote_identifier = player_identifier; gote_user_agent = player_user_agent; gote_user_name = @your_user_name;
+            @your_role = "後手"
+            @enemy_role = "先手"
+          end
         end
         # 一意な room_id を生成
         #room_id = SecureRandom.uuid
@@ -55,7 +74,7 @@ class ShogiController < ApplicationController
         $redis.setex(game_rooms_key, DELETE_TIME, @game_room_data_json.to_json)
         @ai_mode=true
         @audienceUser=false
-      #AIモードの時
+      #対人モードの時
       else
         redirect_to root_path #リダイレクト
       end

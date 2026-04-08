@@ -41,6 +41,8 @@ class Matching extends React.Component {
       debugMode: false,
       debugMassage: "",
       battleType: '10min',
+      ShowModalAiBattleSetting: false,// AI対戦設定モーダルの表示状態
+      user_roll_for_ai: '先手', // AI対戦の先手か後手かの選択肢
       isMatching: false, // マッチング中の表示を制御
       isGameFound: false, // マッチング完了時の表示を制御
       matchingQueueLength: 0, // マッチング待機人数
@@ -739,13 +741,25 @@ class Matching extends React.Component {
     }));
   }
 
-
+  //AI対戦設定モーダルを開く
+  OpenModalAiBattleSetting() {
+    this.setState({ ShowModalAiBattleSetting: true });
+  }
+  //AI対戦設定モーダルを閉じる
+  CloseModalAiBattleSetting() {
+    this.setState({ ShowModalAiBattleSetting: false });
+  }
+  //AI対戦開始
   //async aiStartMatching(){
   aiStartMatching(){
+    //radio buttonで選択した対戦タイプをもとにAI対戦を開始する処理
+    const { user_roll_for_ai } = this.state;
+
     //const roomId= "ai"
     const roomId = crypto.randomUUID();
     console.log("roomId:"+roomId)
-    window.location.href = `/shogi/ai_${roomId}`;
+    //window.location.href = `/shogi/ai_${roomId}`;
+    window.location.href =`/shogi/ai_${roomId}?user_roll_for_ai=${encodeURIComponent(user_roll_for_ai)}`;
     //roomLink: `/shogi/${roomId}`,
 
     /*let fsen ="lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"
@@ -757,7 +771,7 @@ class Matching extends React.Component {
         body: JSON.stringify({
           fsen,
     */
-          //moves: moves.trim() ? moves.split(/\s*,\s*/ ) : []
+    //moves: moves.trim() ? moves.split(/\s*,\s*/ ) : []
     /*    })
       });
       
@@ -841,7 +855,9 @@ class Matching extends React.Component {
                 />
                 10分切負け
               </label>
-              {/* <label>
+
+              {/*
+               <label>
                 <input
                   type="radio"
                   name="battle_type"
@@ -850,8 +866,9 @@ class Matching extends React.Component {
                   onChange={this.handleBattleTypeChange}
                   className="mr-1"
                 />
-                10秒将棋
-              </label> */}
+                  10秒将棋
+                </label> 
+              */}
             </div>
             
             {/* マッチング開始ボタンは、マッチング中でない場合のみ表示 */}
@@ -879,13 +896,77 @@ class Matching extends React.Component {
                   <button
                     id="AiButton"
                     className="bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-6 rounded-full text-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300"
-                    onClick={this.aiStartMatching}
+                    /*onClick={
+                      this.OpenModalAiBattleSetting
+                      //this.aiStartMatching
+                    }*/
+                    onClick={() => this.OpenModalAiBattleSetting()}
                   >
                     AIと対戦する
                   </button>
                 )}
               </div>
             )}
+
+            { //AI対戦設定モーダル
+            this.state.ShowModalAiBattleSetting && (
+            <div className="modal fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+              <div className="modal-content bg-gradient-to-br from-gray-800 via-gray-700 to-gray-600 p-8 rounded-lg shadow-lg text-center">
+
+                <p className="text-xl font-bold text-white mb-4">手番を選択</p>
+                <div className="mb-6">
+                  <label className="mr-4 text-white">
+                    <input
+                      type="radio"
+                      name="player_side"
+                      value="先手"
+                      checked={this.state.user_roll_for_ai === '先手'}
+                      onChange={(e) => this.setState({ user_roll_for_ai: e.target.value })}
+                      className="mr-1"
+                    />
+                    先手
+                  </label>
+                  <label className="mr-4 text-white">
+                    <input
+                      type="radio"
+                      name="player_side"
+                      value="後手"
+                      checked={this.state.user_roll_for_ai === '後手'}
+                      onChange={(e) => this.setState({ user_roll_for_ai: e.target.value })}
+                      className="mr-1"
+                    />
+                    後手
+                  </label>
+                  <label className="mr-4 text-white">
+                    <input
+                      type="radio"
+                      name="player_side"
+                      value="ランダム"
+                      checked={this.state.user_roll_for_ai === 'ランダム'}
+                      onChange={(e) => this.setState({ user_roll_for_ai: e.target.value })}
+                      className="mr-1"
+                    />
+                    ランダム
+                  </label>
+                </div>
+                <button 
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                  //onClick={this.aiStartMatching}
+                  onClick={() => this.aiStartMatching()}
+                >
+                  対戦開始
+                </button>
+
+                <button 
+                  className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                  //onClick={this.CloseModalAiBattleSetting}
+                  onClick={() => this.CloseModalAiBattleSetting()}
+                >
+                  閉じる
+                </button>
+              </div>
+            </div>
+          )}
 
             {/* ローディング中の表示 */}
             {isMatching && (
@@ -925,6 +1006,7 @@ class Matching extends React.Component {
           </div>
         </div>
 
+          {/* */}
           <div
             className={` 
               text-white
@@ -959,191 +1041,165 @@ class Matching extends React.Component {
               </div>
             </div>
 
-          {/* バトルカード */}
-          <div className="space-y-4">
-            {allGameRoomDatas_json && Object.entries(allGameRoomDatas_json).map(([roomId, gameDetails]) => {
-                  const timeAgo = (ts) =>
-                  (d => d < 0 ? (d = -d, d < 60 ? `${d}秒後` : d < 3600 ? `${Math.floor(d / 60)}分後` : d < 86400 ? `${Math.floor(d / 3600)}時間後` : `${Math.floor(d / 86400)}日後`) :
-                    d < 60 ? `${d}秒前` : d < 3600 ? `${Math.floor(d / 60)}分前` : d < 86400 ? `${Math.floor(d / 3600)}時間前` : `${Math.floor(d / 86400)}日前`)
-                  (Math.floor(Date.now() / 1000 - ts));
-                  return (
-                    <a key={roomId} href={roomLink}>
-                      <div
-                        className={`
-                          relative group cursor-pointer
-                          bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-lg
-                          border border-white/20 rounded-2xl p-6
-                          hover:from-white/20 hover:to-white/10
-                          hover:border-white/30 hover:shadow-2xl hover:shadow-purple-500/20
-                          transform hover:-translate-y-1 transition-all duration-300
-                        `}
-                      >
-                        {/* LIVE インジケーター */}
-                        {gameDetails.status === "active" && (
-                          <div className="absolute -top-2 -right-2 z-10">
-                            <div className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 animate-pulse">
-                              <div className="w-2 h-2 bg-white rounded-full"></div>
-                              LIVE
+            {/* バトルカード */}
+            <div className="space-y-4">
+              {allGameRoomDatas_json && Object.entries(allGameRoomDatas_json).map(([roomId, gameDetails]) => {
+                    const timeAgo = (ts) =>
+                    (d => d < 0 ? (d = -d, d < 60 ? `${d}秒後` : d < 3600 ? `${Math.floor(d / 60)}分後` : d < 86400 ? `${Math.floor(d / 3600)}時間後` : `${Math.floor(d / 86400)}日後`) :
+                      d < 60 ? `${d}秒前` : d < 3600 ? `${Math.floor(d / 60)}分前` : d < 86400 ? `${Math.floor(d / 3600)}時間前` : `${Math.floor(d / 86400)}日前`)
+                    (Math.floor(Date.now() / 1000 - ts));
+                    return (
+                      <a key={roomId} href={roomLink}>
+                        <div
+                          className={`
+                            relative group cursor-pointer
+                            bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-lg
+                            border border-white/20 rounded-2xl p-6
+                            hover:from-white/20 hover:to-white/10
+                            hover:border-white/30 hover:shadow-2xl hover:shadow-purple-500/20
+                            transform hover:-translate-y-1 transition-all duration-300
+                          `}
+                        >
+                          {/* LIVE インジケーター */}
+                          {gameDetails.status === "active" && (
+                            <div className="absolute -top-2 -right-2 z-10">
+                              <div className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 animate-pulse">
+                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                                LIVE
+                              </div>
+                            </div>
+                          )}
+
+                          {/* メインコンテンツ */}
+                          <div className="flex items-center justify-between mb-4">
+                            {/* プレイヤー情報 */}
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-4">
+                                  {/* プレイヤー1 */}
+                                  <div className="text-center">
+                                    <div className="text-white font-bold text-lg mb-1">{gameDetails.sente_user_name}</div>
+                                  </div>
+
+                                  {/* VS */}
+                                  <div className="mx-4">
+                                    <div className="text-2xl font-bold text-yellow-400 drop-shadow-lg">VS</div>
+                                  </div>
+
+                                  {/* プレイヤー2 */}
+                                  <div className="text-center">
+                                    <div className="text-white font-bold text-lg mb-1">{gameDetails.gote_user_name}</div>
+                                  </div>
+                                </div>
+
+                                {/* 右側の情報 */}
+                                <div className="text-right">
+                                </div>
+                              </div>
+
+                              {/* ステータスバー */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                  {/* ステータス */}
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-2 h-2 rounded-full animate-pulse ${
+                                        gameDetails.status === "active" ? "bg-green-400" :
+                                        gameDetails.status === "finished" ? "bg-red-500" :
+                                        "bg-gray-400"
+                                      }`}></div>
+                                    <span className={`font-medium text-sm ${
+                                        gameDetails.status === "active" ? "text-green-400" :
+                                        gameDetails.status === "finished" ? "text-red-500" :
+                                        "text-gray-400"
+                                      }`}>
+                                        {gameDetails.status === "active" ? "対戦中" : 
+                                        gameDetails.status === "finished" ? "終局" : 
+                                        gameDetails.status}
+                                    </span>
+                                  </div>
+
+                                  {/* バトルタイプ */}
+                                  <div className={`bg-gradient-to-r text-white px-3 py-1 rounded-full text-sm font-medium`}>
+                                    {gameDetails.battleType === "10min" ? "10分切れ負け戦" : gameDetails.battleType}
+                                  </div>
+                                </div>
+
+                                {/* 時間 */}
+                                <div className="flex items-center gap-2 text-gray-400">
+                                  <span className="text-sm">{timeAgo(gameDetails.created_at)}</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        )}
 
-                        {/* メインコンテンツ */}
-                        <div className="flex items-center justify-between mb-4">
-                          {/* プレイヤー情報 */}
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-4">
-                                {/* プレイヤー1 */}
-                                <div className="text-center">
-                                  <div className="text-white font-bold text-lg mb-1">{gameDetails.sente_user_name}</div>
-                                </div>
-
-                                {/* VS */}
-                                <div className="mx-4">
-                                  <div className="text-2xl font-bold text-yellow-400 drop-shadow-lg">VS</div>
-                                </div>
-
-                                {/* プレイヤー2 */}
-                                <div className="text-center">
-                                  <div className="text-white font-bold text-lg mb-1">{gameDetails.gote_user_name}</div>
-                                </div>
-                              </div>
-
-                              {/* 右側の情報 */}
-                              <div className="text-right">
-                              </div>
-                            </div>
-
-                            {/* ステータスバー */}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4">
-                                {/* ステータス */}
-                                <div className="flex items-center gap-2">
-                                  <div className={`w-2 h-2 rounded-full animate-pulse ${
-                                      gameDetails.status === "active" ? "bg-green-400" :
-                                      gameDetails.status === "finished" ? "bg-red-500" :
-                                      "bg-gray-400"
-                                    }`}></div>
-                                  <span className={`font-medium text-sm ${
-                                      gameDetails.status === "active" ? "text-green-400" :
-                                      gameDetails.status === "finished" ? "text-red-500" :
-                                      "text-gray-400"
-                                    }`}>
-                                      {gameDetails.status === "active" ? "対戦中" : 
-                                      gameDetails.status === "finished" ? "終局" : 
-                                      gameDetails.status}
-                                  </span>
-                                </div>
-
-                                {/* バトルタイプ */}
-                                <div className={`bg-gradient-to-r text-white px-3 py-1 rounded-full text-sm font-medium`}>
-                                  {gameDetails.battleType === "10min" ? "10分切れ負け戦" : gameDetails.battleType}
-                                </div>
-                              </div>
-
-                              {/* 時間 */}
-                              <div className="flex items-center gap-2 text-gray-400">
-                                <span className="text-sm">{timeAgo(gameDetails.created_at)}</span>
-                              </div>
-                            </div>
+                          {/* 装飾的な要素 */}
+                          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-t-2xl">
                           </div>
                         </div>
-
-                        {/* 装飾的な要素 */}
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-t-2xl">
-                        </div>
-                      </div>
-                    </a>
-                  );
-                })}
+                      </a>
+                    );
+                  })}
             </div>
           </div>
 
-
-
-
-
-
-
-            <div 
-              className={`
-                chat-container 
-                fixed 
-                top-[30px]
-                right-0 
-                min-w-[300px] 
-                max-w-[350px] 
-                flex 
-                flex-col 
-                h-[calc(100%-30px)]
-                font-sans 
-                bg-[#18181b] 
-                shadow-[0_4px_12px_rgba(0,0,0,0.1)] 
-                transition 
-                duration-300 
-                ease-out 
-                transform 
-                opacity-100
-                ${isChatOpen ? '' : 'closed'}`} > {/* isChatOpen の状態に応じてクラスを適用 */}
-              {/* 開閉ボタン */}
-              <button
-                className={`chat-toggle-button bg-[#18181b] hover:bg-[#27272a] ${isChatOpen ? '' : 'pointer-events-auto'}`}
-                onClick={this.toggleChat} // クリックで開閉メソッドを呼び出す
-                aria-expanded={isChatOpen} // アクセシビリティのため
-                aria-controls="chat-messages-container" // 対象となるコンテナのID (chat-containerにIDを追加する場合)
-              >
-                {isChatOpen ? '→' : '←'} {/* isChatOpen の状態に応じてボタンのテキストを切り替える */}
-              </button>
-              
-              <div id="chat-messages" className="chat-messages">
-                {/*(() => {
-                  // もしchatMessagesが文字列の場合、配列に変換
-                  let messages = chatMessages;
-                  if (typeof chatMessages === 'string') {
-                    messages = chatMessages.split(',').map(msg => msg.trim());// カンマ区切りで文字列を分割
-                  }
-                  return Array.isArray(messages) ? (
-                    messages.map((message, index) => (
-                      <div key={index} className="chat-message p-2 mb-2 rounded">
-                        {message}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-red-500">メッセージがありません</p>
-                  );
-                })()
-                  
-                  {return JSON.parse(lobbyComments).forEach(comment => {
-                    <div className="chat-message p-2 mb-2 rounded">
-                      {comment}
-                    </div>
-                  }*/}
-                {
-                //JSON.parse(chatMessages).map((comment, index) => (
-                JSON.parse(chatMessages).slice().reverse().map((comment, index) => (
-                //JSON.parse(lobbyComments).map((comment, index) => (
-                  <div key={index} className="chat-message p-2 mb-2 rounded text-white text-[11px]">
-                    {comment.content}
-                  </div>
-                ))}
+        {/* チャットコンテナ - isChatOpenの状態に応じてクラスを切り替えて表示/非表示を制御 */}
+        <div 
+          className={`
+            chat-container 
+            fixed 
+            top-[30px]
+            right-0 
+            min-w-[300px] 
+            max-w-[350px] 
+            flex 
+            flex-col 
+            h-[calc(100%-30px)]
+            font-sans 
+            bg-[#18181b] 
+            shadow-[0_4px_12px_rgba(0,0,0,0.1)] 
+            transition 
+            duration-300 
+            ease-out 
+            transform 
+            opacity-100
+            ${isChatOpen ? '' : 'closed'}`} > {/* isChatOpen の状態に応じてクラスを適用 */}
+          {/* 開閉ボタン */}
+          <button
+            className={`chat-toggle-button bg-[#18181b] hover:bg-[#27272a] ${isChatOpen ? '' : 'pointer-events-auto'}`}
+            onClick={this.toggleChat} // クリックで開閉メソッドを呼び出す
+            aria-expanded={isChatOpen} // アクセシビリティのため
+            aria-controls="chat-messages-container" // 対象となるコンテナのID (chat-containerにIDを追加する場合)
+          >
+            {isChatOpen ? '→' : '←'} {/* isChatOpen の状態に応じてボタンのテキストを切り替える */}
+          </button>
+          
+          <div id="chat-messages" className="chat-messages">
+            {
+            //JSON.parse(chatMessages).map((comment, index) => (
+            JSON.parse(chatMessages).slice().reverse().map((comment, index) => (
+            //JSON.parse(lobbyComments).map((comment, index) => (
+              <div key={index} className="chat-message p-2 mb-2 rounded text-white text-[11px]">
+                {comment.content}
               </div>
-              <form id="chat-form" 
-                className="chat-form bg-[#18181b]" 
-                onSubmit={this.handleChatSubmit}>
-                <input
-                  type="text"
-                  id="chat-input"
-                  placeholder="メッセージを送信"
-                  className="chat-input text-white"
-                  autoComplete="off"
-                  value={currentChatMessage}
-                  onChange={this.handleChatInputChange}
-                />
-                {/*<button type="submit" className="chat-button">Send</button>*/}
-              </form>
-            </div>
+            ))}
+          </div>
+          <form id="chat-form" 
+            className="chat-form bg-[#18181b]" 
+            onSubmit={this.handleChatSubmit}>
+            <input
+              type="text"
+              id="chat-input"
+              placeholder="メッセージを送信"
+              className="chat-input text-white"
+              autoComplete="off"
+              value={currentChatMessage}
+              onChange={this.handleChatInputChange}
+            />
+            {/*<button type="submit" className="chat-button">Send</button>*/}
+          </form>
+        </div>
 
+        {/* BGM */}
         <audio 
           src={lobby_bgmPath}
           ref={this.lobbyBgmAudioRef}
@@ -1152,7 +1208,7 @@ class Matching extends React.Component {
           loop
           className="fixed bottom-4 left-25 hidden"
         />
-
+        {/* BGM制御ボタン */}
         <div
           className="fixed left-4 bottom-4 z-50"
         >

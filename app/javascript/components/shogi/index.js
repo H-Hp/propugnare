@@ -35,6 +35,8 @@ const prom_knightPath = element.dataset.prom_knightPath;
 const prom_lancePath = element.dataset.prom_lancePath;
 const prom_pawnPath = element.dataset.prom_pawnPath;
 
+import { Blank, King, Gyoku, Rook, Bishop, GoldGeneral, SilverGeneral, Knight, Lance, Pawn, PromotedRook,PromotedBishop,PromotedSilverGeneral,PromotedKnight,PromotedLance,PromotedPawn } from './Pieces';
+
 const imgByName = {
   "王": kingPath,
   "玉": gyokuPath,
@@ -1762,7 +1764,8 @@ class Room extends React.Component {
             //let moveSfenHistory_redis = boardDataFromServer.moveSfenHistory.filter(Boolean); 
             const turnCount = boardSfenHistory_redis.length;//現在の手数
 
-            console.log("これだあああdata.moveSfenHistory:"+JSON.stringify(boardDataFromServer.moveSfenHistory) )
+            console.log("これだあああdata.moveSfenHistory:" + JSON.stringify(boardDataFromServer.moveSfenHistory) );
+            console.log("これだあああboardDataFromServer:" + JSON.stringify(boardDataFromServer) );
 
 
             if (boardDataFromServer) {
@@ -1825,7 +1828,8 @@ class Room extends React.Component {
           }else if (data.data_type === 'game_set'){
               console.log("ゲームセット")
               this.setState({
-                isCheckmate: true ,// 詰み状態
+                //isCheckmate: true ,// 詰み状態
+                isGameset: true ,// 詰み状態
                 winner: data.winner,
                 winReason: data.winReason,
                 //gameStatus: 'time_up',
@@ -3153,6 +3157,185 @@ class Room extends React.Component {
       return EasyBoard
   }
 
+  //さまざまな局面にボードデータを編集
+  debugChengeBoard( caseName ){ 
+
+    const boardDataFromServer={
+      "moveHistory":["先手3八飛"],
+      "boardSfenHistory":["4k4/9/9/1r7/9/9/9/6R2/4K4 w - 1"],
+      "moveSfenHistory":{"move":["2h2g"],"kingCheck":[false]},
+      "BoardInfo":{
+        "board":[
+          [{},{},{},{},{"owner":"後手","name":"王","dx":[-1,-1,-1,0,1,1,1,0],"dy":[-1,0,1,1,1,0,-1,-1],"dk":[1,1,1,1,1,1,1,1]},{},{},{},{}],
+          [{},{},{},{},{},{},{},{},{}],
+          [{},{},{},{},{},{},{},{},{}],
+          [{},{"owner":"後手","name":"飛","dx":[-1,0,1,0],"dy":[0,1,0,-1],"dk":[10,10,10,10]},{},{},{},{},{},{},{}],
+          [{},{},{},{},{},{},{},{},{}],
+          [{},{},{},{},{},{},{},{},{}],
+          [{},{},{},{},{},{},{},{},{}],
+          [{},{},{},{},{},{},{"owner":"先手","name":"飛","dx":[-1,0,1,0],"dy":[0,1,0,-1],"dk":[10,10,10,10]},{},{}],
+          [{},{},{},{},{"owner":"先手","name":"王","dx":[-1,-1,-1,0,1,1,1,0],"dy":[-1,0,1,1,1,0,-1,-1],"dk":[1,1,1,1,1,1,1,1]},{},{},{},{}]
+        ],
+        "pieceStandNum":{
+          "先手":{"歩":0,"香":0,"桂":0,"銀":0,"金":0,"角":0,"飛":0},
+          "後手":{"歩":0,"香":0,"桂":0,"銀":0,"金":0,"角":0,"飛":0}
+        },
+        "pieceStand":{
+          "先手":[{},{},{},{},{},{},{},{},{}],
+          "後手":[{},{},{},{},{},{},{},{},{}]
+        },
+        "nowTurn":"先手",
+        "selection":{
+          "boardSelectInfo":[
+            ["","","","","","","","",""],
+            ["","","","","","","","",""],
+            ["","","","","","","","",""],
+            ["","","","","","","","",""],
+            ["","","","","","","","",""],
+            ["","","","","","","","",""],
+            ["","","","","","","","",""],
+            ["","","","","","","","",""],
+            ["","","","","","","","",""]
+          ],
+          "isNow":false,
+          "state":false,
+          "before_i":null,
+          "before_j":null,
+          "pieceStandSelectInfo":{
+            "先手":["持駒","持駒","持駒","持駒","持駒","持駒","持駒","持駒","持駒"],
+            "後手":["持駒","持駒","持駒","持駒","持駒","持駒","持駒","持駒","持駒"]},
+          "pieceStandPiece":{}}
+      },
+      "nowTurn":"後手",
+      "room_id":"ai_ffc1b87e-f0b7-4be1-abe8-11e765c1a918",
+      "game_id":"","action":"board_broadcast_and_store"
+    }
+    
+    if(caseName=="default"){
+      console.log("初期局面に変更")
+      boardDataFromServer.BoardInfo.board=[
+            [new Lance("後手"), new Knight("後手"), new SilverGeneral("後手"), new GoldGeneral("後手"), new Gyoku("後手"), new GoldGeneral("後手"), new SilverGeneral("後手"), new Knight("後手"), new Lance("後手")],
+            [new Blank(), new Rook("後手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Bishop("後手"), new Blank()],
+            [new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手")],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手")],
+            [new Blank(), new Bishop("先手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Rook("先手"), new Blank()],
+            [new Lance("先手"), new Knight("先手"), new SilverGeneral("先手"), new GoldGeneral("先手"), new King("先手"), new GoldGeneral("先手"), new SilverGeneral("先手"), new Knight("先手"), new Lance("先手")]
+      ];
+    }else if(caseName=="tumi"){
+      console.log("詰みの局面に変更")
+      boardDataFromServer.BoardInfo.board=[
+            [new Blank(), new Blank(), new Blank(), new Blank(), new King("後手"), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Bishop("後手"), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new GoldGeneral("先手"), new GoldGeneral("先手"), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Rook("後手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手")],
+            [new Blank(), new Bishop("先手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Rook("先手"), new Blank()],
+            //[new Blank(), new Bishop("先手"), new Blank(), new Blank(), new SilverGeneral("後手"), new Blank(), new Blank(), new Rook("先手"), new Blank()],
+            [new Lance("先手"), new Knight("先手"), new SilverGeneral("先手"), new GoldGeneral("先手"), new King("先手"), new GoldGeneral("先手"), new SilverGeneral("先手"), new Knight("先手"), new Lance("先手")]
+      ];
+      boardDataFromServer.BoardInfo.pieceStandNum = {
+          "先手": { "歩": 0, "香": 0, "桂": 0, "銀": 0, "金": 2, "角": 0, "飛": 0 },
+          "後手": { "歩": 0, "香": 0, "桂": 0, "銀": 0, "金": 2, "角": 0, "飛": 0 }
+      };
+      boardDataFromServer.BoardInfo.pieceStand = {
+          "先手": [new GoldGeneral("先手"), new GoldGeneral("先手"),new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+          "後手": [new GoldGeneral("後手"), new GoldGeneral("後手"),new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()]
+      };
+    }else if(caseName=="nari"){
+      console.log("成りの局面に変更")
+      boardDataFromServer.BoardInfo.board=[
+            [new Blank(), new Rook("後手"), new Blank(), new Blank(), new Gyoku("後手"), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Blank(), new Blank() , new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Bishop("後手"), new Blank()],
+            [new Blank(), new Blank() , new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Pawn("先手"), new Pawn("先手"), new Blank(), new Blank(), new Blank(), new Blank(), new Pawn("先手"), new Pawn("先手"), new Pawn("先手")],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            [new Pawn("後手"), new Pawn("後手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Pawn("後手"), new Pawn("後手")],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(),new Blank() , new Blank()],
+            [new Blank(),new Blank() , new Blank(), new Blank(), new Blank(), new Blank(), new Blank(),new Blank() , new Blank()],
+            [new Blank(), new Blank(), new Blank(), new Blank(), new King("先手"), new Blank(), new Blank(), new Rook("先手"), new Blank()]
+      ];
+    }else if(caseName=="sennichite"){
+      console.log("千日手の局面に変更")
+    }else if(caseName=="oute_sennichite"){
+      console.log("王手千日手の局面に変更")
+      boardDataFromServer.BoardInfo.board=[
+          [new Blank(), new Blank(), new Blank(), new Blank(), new King("後手"), new Blank(), new Blank(), new Blank(), new Blank()],
+          [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+          [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+          [new Blank(), new Rook("後手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+          [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+          [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+          [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+          [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Rook("先手"), new Blank()],
+          [new Blank(), new Blank(), new Blank(), new Blank(), new King("先手"), new Blank(), new Blank(), new Blank(), new Blank()]
+      ];
+    }else if (caseName=="uchifuzume"){
+        console.log("打ち歩詰めの局面に変更")
+
+        boardDataFromServer.BoardInfo.board=[
+              [new King("後手"), new Blank(), new GoldGeneral("先手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+              [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+              [new GoldGeneral("先手"), new Blank(), new Blank(), new Blank(), new Blank(),new Blank() , new Blank(), new Blank(), new Blank()],
+              [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+              [new Blank(), new Blank(), new Rook("先手"), new Blank(), new Blank(), new Blank(), new Blank(), new Rook("後手"), new Blank()],
+              [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+              [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new GoldGeneral("後手")],
+              [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+              [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new GoldGeneral("後手"), new Blank(), new King("先手")]
+        ];
+        boardDataFromServer.BoardInfo.pieceStandNum = {
+            "先手": { "歩": 1, "香": 0, "桂": 0, "銀": 0, "金": 0, "角": 0, "飛": 0 },
+            "後手": { "歩": 1, "香": 0, "桂": 0, "銀": 0, "金": 0, "角": 0, "飛": 0 }
+        };
+        boardDataFromServer.BoardInfo.pieceStand = {
+            "先手": [new Pawn("先手"), new Blank(),new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
+            "後手": [new Pawn("後手"), new Blank(),new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()]
+        };
+    } 
+
+    //console.log("ActionCableのboard_update")
+    if (this.state.nowTurn===this.state.yourRole) {
+      console.log("piece_move_sound");
+      this.piece_move_sound()
+    }
+    //const boardDataFromServer = data.new_board_data; // サーバーから来たプレーンなデータ
+    let moveHistory_redis = boardDataFromServer.moveHistory.filter(Boolean); //moveHistoryを取り出し ["後手8六と"]・filter(Boolean)で空文字列の要素を除去する (先頭のカンマによる空要素のため)
+    let boardSfenHistory_redis = boardDataFromServer.boardSfenHistory.filter(Boolean); 
+    //let moveSfenHistory_redis = boardDataFromServer.moveSfenHistory.filter(Boolean); 
+    const turnCount = boardSfenHistory_redis.length;//現在の手数
+    console.log("これだあああdata.moveSfenHistory:" + JSON.stringify(boardDataFromServer.moveSfenHistory) );
+    console.log("これだあああboardDataFromServer:" + JSON.stringify(boardDataFromServer) );
+
+    if (boardDataFromServer) {
+      //console.log("boardDataFromServer:"+JSON.stringify(boardDataFromServer))
+      //サーバーから受け取ったデータ（プレーンオブジェクト）を引数に渡し、新しいBoardInfoインスタンスを生成
+      const newBoardInfoInstance = new BoardInfo(boardDataFromServer);
+      console.log("redisからのデータnewBoardInfoInstanceを取得時(盤面更新後)boardInfoを更新")
+      this.setState(prevState => ({
+        boardInfo: newBoardInfoInstance,
+        moveHistory: moveHistory_redis,
+        boardSfenHistory: boardSfenHistory_redis,
+        moveSfenHistory: boardDataFromServer.moveSfenHistory,
+        turnCount: turnCount,
+        nowTurn: newBoardInfoInstance.nowTurn, // BoardInfoのturnをstateに反映
+        isLoading: false,
+        loadingMessage: "",
+        boardInfoHistory: [ ...prevState.boardInfoHistory,{reason: "shogi_game_channel.rbのboard_broadcast_and_storeメソッドのActionCable.server.broadcastでサブスクライバー全員がデータ受け取り、新しくBoardInfoインスタンス作ってstateのboardデータ更新", boardInfo: newBoardInfoInstance } ]
+      }), () => {
+        if( this.state.aiMode && this.state.enemyRole==this.state.nowTurn && !this.state.isCheckmate && !this.state.shogiDebugMode){
+          console.log("initializeRoomのreceivedのdata=board_updateのaiAct")
+          console.log("this.state.aiMode:"+JSON.stringify(this.state.aiMode))
+          this.aiAct(newBoardInfoInstance)
+        }
+      });
+    }
+  }
+
   render() {
     const { logoPath,gamebackPath,gameBgmPath,loadingimgPath, boardInfo, gameInfo, gameRoomData, moveHistory, boardSfenHistory, moveHistorySelectedIndex, nowTurn, isConnected, isLoading, loadingMessage, chatMessages, currentChatMessage, isChatOpen, yourRole, enemyRole, isCheck, isCheckmate,isGameset,winner, winReason,rematch_sended,rematchRequest,decline_received,gameStatus, timeUpPlayer,debugMode ,aiMode ,audienceUser, railsEnv} = this.state;
     const roomId = this.state.roomId; // renderメソッド内でstateからroomIdを取得
@@ -3248,48 +3431,48 @@ class Room extends React.Component {
                 </div>
               )}
 
-            {!isGameset && ( //!isCheckmate && ( //ゲームセットしていないなら
-              <div>
-                <ShogiTimer
-                  initialMinutes={10}
-                  onTimeUp={this.handleTimeUp}
-                  ref={this.shogiTimerRef}
-                  yourRole={yourRole}
-                  roomId={roomId} 
-                  sendActionCableMessage={sendActions} // Action Cable の送信メソッド群を props として渡す
-                  debugMode={debugMode}
-                />
+              {!isGameset && ( //!isCheckmate && ( //ゲームセットしていないなら
+                <div>
+                  <ShogiTimer
+                    initialMinutes={10}
+                    onTimeUp={this.handleTimeUp}
+                    ref={this.shogiTimerRef}
+                    yourRole={yourRole}
+                    roomId={roomId} 
+                    sendActionCableMessage={sendActions} // Action Cable の送信メソッド群を props として渡す
+                    debugMode={debugMode}
+                  />
 
-                <div style={ nowTurn !== yourRole
-                    ? { display: "none" }
-                    : undefined
-                  }>
-                </div>
-                <div className={`${myDarkGradient} rounded-lg shadow-lg p-2`}>
-                  <div className="relative">
-                    {nowTurn === yourRole && !audienceUser ? (
-                      <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-4 text-white overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-500/20 animate-pulse"></div>
-                        <div className="relative z-10 text-center">
-                          <div className="inline-block animate-bounce text-4xl mb-2">⚡</div>
-                          <div className="text-1xl font-bold mb-1"> {t('shogi.yourturn')} </div>
+                  <div style={ nowTurn !== yourRole
+                      ? { display: "none" }
+                      : undefined
+                    }>
+                  </div>
+                  <div className={`${myDarkGradient} rounded-lg shadow-lg p-2`}>
+                    <div className="relative">
+                      {nowTurn === yourRole && !audienceUser ? (
+                        <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-4 text-white overflow-hidden">
+                          <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-500/20 animate-pulse"></div>
+                          <div className="relative z-10 text-center">
+                            <div className="inline-block animate-bounce text-4xl mb-2">⚡</div>
+                            <div className="text-1xl font-bold mb-1"> {t('shogi.yourturn')} </div>
+                          </div>
+                          <div className="absolute -top-2 -right-2 w-20 h-20 bg-white/10 rounded-full animate-ping"></div>
                         </div>
-                        <div className="absolute -top-2 -right-2 w-20 h-20 bg-white/10 rounded-full animate-ping"></div>
-                      </div>
-                    ) : nowTurn !== yourRole  && !audienceUser ?(
-                      <div className="text-center py-6 px-6 bg-gray-100 border border-gray-300 rounded-xl">
-                        <div className="text-xl text-gray-600 mb-1"> {t('shogi.enemyturn')} </div>
-                        <div className="text-sm text-gray-500"> {t('shogi.turnwaiting')} </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 px-6 bg-gray-100 border border-gray-300 rounded-xl">
-                        <div className="text-xl text-gray-600 mb-1">{nowTurn}の手番</div>
-                      </div>
-                    )}
+                      ) : nowTurn !== yourRole  && !audienceUser ?(
+                        <div className="text-center py-6 px-6 bg-gray-100 border border-gray-300 rounded-xl">
+                          <div className="text-xl text-gray-600 mb-1"> {t('shogi.enemyturn')} </div>
+                          <div className="text-sm text-gray-500"> {t('shogi.turnwaiting')} </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 px-6 bg-gray-100 border border-gray-300 rounded-xl">
+                          <div className="text-xl text-gray-600 mb-1">{nowTurn}の手番</div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
         </div>
           </div>
 
@@ -3589,6 +3772,36 @@ class Room extends React.Component {
           </div>
         )}
 
+        {/* BGM */}
+        <audio 
+          src={gameBgmPath}
+          id="game_bgm" 
+          controls 
+          loop
+          className="fixed bottom-4 left-25 hidden"
+        />
+        <div
+          className="fixed left-4 bottom-4 z-50"
+        >
+          <button
+            onClick={() =>
+              document.getElementById("game_bgm")?.classList.toggle("hidden")
+            }
+            className={`w-full h-full bg-white rounded-full shadow-2xl p-3 flex items-center justify-center transform transition-transform duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="w-6 h-6 "
+              aria-hidden
+            >
+              <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z" />
+            </svg>
+          </button>
+        </div>
+
+
         {/*debugMode  && railsEnv=="development" && (*/}
         {debugMode && (railsEnv === "development" || railsEnv === "test") && (
           <div id="debugArea"
@@ -3602,6 +3815,7 @@ class Room extends React.Component {
                 <h3>Version1</h3>
 
                 <div>
+                  <br/>
                   <label>
                     <input
                       type="checkbox"
@@ -3616,12 +3830,16 @@ class Room extends React.Component {
 
                 <span className="font-semibold m-5 p-2">あなたは{yourRole}</span>
 
+                <br/>
+
                 <button
                   onClick={() => this.chengeRoleDebug()}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
                 >
                   自分の役割の手番を変更
                 </button>
+
+                <br/>
 
                 <button
                   onClick={() => this.piece_move_sound()}
@@ -3630,11 +3848,15 @@ class Room extends React.Component {
                   コマの打つ音鳴らす
                 </button>
 
+                <br/>
+
                 <button
                   onClick={this.deleteData}
                   className="m-5 mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
                   試合が終わったのでデータ削除
                 </button>
+
+                <br/>
 
                 <button
                   onClick={this.gameFinishTest}
@@ -3642,11 +3864,45 @@ class Room extends React.Component {
                   試合が終わらせる
                 </button>
 
+                <br/>
+
                 <button
                   onClick={() => this.aiTest()}
                   className="m-5 mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
                   AI
                 </button>
+
+                <br/>
+
+                {/* さまざまな局面にボードデータを編集 default、tumi、nari、sennichite、oute_sennichite */ }
+                <button
+                  onClick={() => this.debugChengeBoard("default")}
+                  className="m-5 mr-4 mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                  デフォルトの局面にする
+                </button>
+                <button
+                  onClick={() => this.debugChengeBoard("tumi")}
+                  className="m-5 mr-4 mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                  詰みの局面にする
+                </button>
+                <button
+                  onClick={() => this.debugChengeBoard("nari")}
+                  className="m-5 mr-4 mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                  成りの局面にする
+                </button>
+                <button
+                  onClick={() => this.debugChengeBoard("oute_sennichite")}
+                  className="m-5 mr-4 mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                  王手千日手の局面にする
+                </button>
+                <button
+                  onClick={() => this.debugChengeBoard("uchifuzume")}
+                  className="m-5 mr-4 mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                  打ち歩詰めの局面にする
+                </button>
+
+
+                <br/>
 
                 <div className="mb-3">
                   <span className="font-semibold">接続状態: </span>
@@ -3717,35 +3973,6 @@ class Room extends React.Component {
                 </div>
           </div>
         )}
-
-        {/* BGM */}
-        <audio 
-          src={gameBgmPath}
-          id="game_bgm" 
-          controls 
-          loop
-          className="fixed bottom-4 left-25 hidden"
-        />
-        <div
-          className="fixed left-4 bottom-4 z-50"
-        >
-          <button
-            onClick={() =>
-              document.getElementById("game_bgm")?.classList.toggle("hidden")
-            }
-            className={`w-full h-full bg-white rounded-full shadow-2xl p-3 flex items-center justify-center transform transition-transform duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900`}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="w-6 h-6 "
-              aria-hidden
-            >
-              <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z" />
-            </svg>
-          </button>
-        </div>
 
       </div>
     );

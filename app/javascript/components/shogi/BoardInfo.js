@@ -196,6 +196,28 @@ class BoardInfo {
 
             if (this.selection.pieceStandPiece.name) {// 持ち駒が選択されている場合 (駒を打つ)
                 myPiece = this.selection.pieceStandPiece;// 持ち駒を移動する駒(myPiece)にする
+
+                // 打ち歩詰めのチェック
+                if (myPiece.name === "歩" && this.isUchiFuZume(i, j, this.nowTurn)) {
+                    alert("打ち歩詰めは禁止です！");
+                    return {
+                        BoardInfo: this.getBoardState(),
+                        moved_check: false,
+                        moveDetails: "打ち歩詰め",
+                        boardSFEN: this.boardToSFEN(this.getBoardState()),
+                        moveSFEN: "none",
+                        pieceStandNum: this.pieceStandNum,
+                        pieceStand: this.pieceStand,
+                        nowTurn: this.nowTurn,
+                        isCheck: false,
+                        isCheckmate: false,
+                        isSennichite: { result: "no_sennichite" },
+                        isGameset: false,
+                        winner: "yet",
+                        move_status: "illegalMove"
+                    };
+                }
+
                 this.pieceStandNum[this.nowTurn][myPiece.name] -= 1;// 持ち駒の数を減らす
                 this.makePieceStand();// 持ち駒台の表示を更新
                 myPiece = Piece.getPieceByName(myPiece.name, this.nowTurn)
@@ -1212,6 +1234,20 @@ class BoardInfo {
         return legalMoves.length === 0; // 合法手が一つもなければ詰み
     }
     //詰み・決着の処理ここまで
+
+    // 打ち歩詰めのチェック
+    isUchiFuZume(i, j, nowTurn) {
+        // 仮想ボードを作成：歩を置く
+        const tempBoard = this.deserializeBoard(this.board); // 現在のボードをコピー
+        const pawn = Piece.getPieceByName("歩", nowTurn);
+        tempBoard[i][j] = pawn;
+
+        // 相手のターン
+        const opponentTurn = nowTurn === "先手" ? "後手" : "先手";
+
+        // 相手の王が詰んでいるかチェック
+        return this.isCheckmate(tempBoard, opponentTurn, this.pieceStandNum);
+    }
 
     //見やすいボード情報を作る
     CreateEasyBoard(board){
