@@ -1,3 +1,6 @@
+require "net/http"
+require "json"
+
 class ShogiController < ApplicationController
   MATCHING_QUEUE_KEY = 'shogi:matching_queue' # Redisのリストキー
   GAME_ROOMS_HASH_KEY = 'shogi:game_rooms'    # Redisのハッシュキー
@@ -128,6 +131,35 @@ class ShogiController < ApplicationController
       #redis_board_key = "shogi_game:#{@room_id}"
       #redis_chat_key = "shogi_game_chat:#{@room_id}"
     end
+  end
+
+
+  protect_from_forgery with: :null_session
+
+  def ai_move
+    uri = URI("http://168.138.215.52:5000/move")
+
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.open_timeout = 10
+    http.read_timeout = 30
+
+    req = Net::HTTP::Post.new(uri)
+    req["Content-Type"] = "application/json"
+
+    req.body = {
+      sfen: params[:sfen],
+      think_time: params[:think_time]
+    }.to_json
+
+    res = http.request(req)
+
+    render json: res.body, status: res.code
+  rescue => e
+    Rails.logger.error(e)
+
+    render json: {
+      error: e.message
+    }, status: 500
   end
 
 =begin

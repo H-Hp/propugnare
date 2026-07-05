@@ -4,7 +4,7 @@ class BoardInfo {
     // initialDataがない場合は、デフォルトの初期盤面を生成
     constructor(initialData = {}) {
         // デフォルトの初期配置の配列
-        /*const defaultBoard = [
+        const defaultBoard = [
             [new Lance("後手"), new Knight("後手"), new SilverGeneral("後手"), new GoldGeneral("後手"), new Gyoku("後手"), new GoldGeneral("後手"), new SilverGeneral("後手"), new Knight("後手"), new Lance("後手")],
             [new Blank(), new Rook("後手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Bishop("後手"), new Blank()],
             [new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手"), new Pawn("後手")],
@@ -14,7 +14,7 @@ class BoardInfo {
             [new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手"), new Pawn("先手")],
             [new Blank(), new Bishop("先手"), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Rook("先手"), new Blank()],
             [new Lance("先手"), new Knight("先手"), new SilverGeneral("先手"), new GoldGeneral("先手"), new King("先手"), new GoldGeneral("先手"), new SilverGeneral("先手"), new Knight("先手"), new Lance("先手")]
-        ];*/ 
+        ];
         //成り処理のテスト用ボード
         /*const defaultBoard = [
             [new Blank(), new Rook("後手"), new Blank(), new Blank(), new Gyoku("後手"), new Blank(), new Blank(), new Blank(), new Blank()],
@@ -42,7 +42,7 @@ class BoardInfo {
             [new Lance("先手"), new Knight("先手"), new SilverGeneral("先手"), new GoldGeneral("先手"), new King("先手"), new GoldGeneral("先手"), new SilverGeneral("先手"), new Knight("先手"), new Lance("先手")]
         ];*/
         //王手千日手の処理のテスト用ボード・飛車で王手をかけ続けて往復するループを作る
-        const defaultBoard = [
+        /*const defaultBoard = [
             [new Blank(), new Blank(), new Blank(), new Blank(), new King("後手"), new Blank(), new Blank(), new Blank(), new Blank()],
             [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
             [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
@@ -52,7 +52,7 @@ class BoardInfo {
             [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank()],
             [new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Blank(), new Rook("先手"), new Blank()],
             [new Blank(), new Blank(), new Blank(), new Blank(), new King("先手"), new Blank(), new Blank(), new Blank(), new Blank()]
-        ];
+        ];*/
         const defaultSelection = new Selection();
         const defaultPieceStandNum = {
             "先手": { "歩": 0, "香": 0, "桂": 0, "銀": 0, "金": 0, "角": 0, "飛": 0 },

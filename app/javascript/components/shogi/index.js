@@ -2502,7 +2502,8 @@ class Room extends React.Component {
 
     let move;
     try {
-        const response = await fetch("http://168.138.215.52:5000/move", {
+        //const response = await fetch("http://168.138.215.52:5000/move", {
+        const response = await fetch("/ai_move", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -3811,7 +3812,7 @@ class Room extends React.Component {
                 ドラッグ移動
               </div>
 
-              <div className='debug-content'>
+              <div className='debug-content mt-16'>
                 <h3>Version1</h3>
 
                 <div>

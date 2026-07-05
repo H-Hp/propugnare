@@ -17,6 +17,8 @@ Rails.application.routes.draw do
   get '/shogi/:id', to: 'shogi#index'
   delete '/shogi/:id/destroy', to: 'shogi#destroy'#試合終了後にデータ削除
 
+  post "/ai_move", to: "shogi#ai_move"
+
   post '/contacts', to: 'matching#contacts', as: :contacts
 
   get "/health_check", to: "application#health_check"

@@ -61,8 +61,8 @@ def health_check
     uri = URI("http://168.138.215.52:5000/move")
 
     http = Net::HTTP.new(uri.host, uri.port)
-    http.open_timeout = 2   # 接続タイムアウト
-    http.read_timeout = 3   # レスポンスタイムアウト
+    http.open_timeout = 5   # 接続タイムアウト
+    http.read_timeout = 6   # レスポンスタイムアウト
 
     req = Net::HTTP::Post.new(uri.path, { "Content-Type" => "application/json" })
     req.body = {
@@ -84,6 +84,7 @@ def health_check
 
   # ステータス判定
   status_code = (result[:external] == 200 && result[:db] && result[:redis] && result[:oci]) ? 200 : 500
+  puts "Health check result: #{result}, status_code: #{status_code}"
   render json: result, status: status_code
 end
 
